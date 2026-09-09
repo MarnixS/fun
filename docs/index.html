@@ -1,4 +1,13 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><title>The United Gimps</title><style>html,body{margin:0;background:#0b0d10;color:#ddd;font:16px system-ui}#boot{min-height:100vh;display:grid;place-items:center;text-align:center}small{color:#888}</style></head><body><div id="boot"><div><b>Loading The United Gimps…</b><br><small>collection log + progression dashboard</small></div></div><script>
-(async()=>{try{const urls=Array.from({length:15},(_,i)=>`site/v13b64-${String(i+1).padStart(3,'0')}.txt`);const parts=await Promise.all(urls.map(async u=>{const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error(`${u}: ${r.status}`);return r.text()}));const b64=parts.join('').trim();const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));const stream=new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));const html=await new Response(stream).text();document.open();document.write(html);document.close()}catch(e){document.getElementById('boot').innerHTML='<div><b>Site failed to load.</b><br><small>'+String(e).replace(/[<&]/g,'')+'</small></div>';console.error(e)}})();
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><title>The United Gimps</title><style>html,body{margin:0;background:#0b0d10;color:#ddd;font:16px system-ui}#boot{min-height:100vh;display:grid;place-items:center;text-align:center}small{color:#888}</style></head><body><div id="boot"><div><b>Loading The United Gimps…</b><br><small>live TempleOSRS collection log + Wise Old Man stats</small></div></div><script>
+(async()=>{try{const urls=[
+'site/v15b64-001.txt','site/v15b64-002.txt','site/v15b64-003.txt','site/v15b64-004.txt','site/v15b64-005.txt','site/v15b64-006.txt',
+'site/v15b64-007a.txt','site/v15b64-007b.txt','site/v15b64-007c.txt','site/v15b64-008.txt',
+'site/v15b64-009a.txt','site/v15b64-009b.txt','site/v15b64-009c.txt','site/v15b64-010.txt',
+'site/v15b64-011a.txt','site/v15b64-011b.txt','site/v15b64-011c.txt',
+'site/v15b64-012a.txt','site/v15b64-012b.txt','site/v15b64-012c.txt',
+'site/v15b64-013a.txt','site/v15b64-013b.txt','site/v15b64-013c.txt',
+'site/v15b64-014a.txt','site/v15b64-014b.txt','site/v15b64-014c.txt',
+'site/v15b64-015a.txt','site/v15b64-015b.txt','site/v15b64-015c.txt','site/v15b64-016a.txt'];
+const parts=await Promise.all(urls.map(async u=>{const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error(`${u}: ${r.status}`);return r.text()}));const b64=parts.join('').trim();const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));const stream=new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));const html=await new Response(stream).text();document.open();document.write(html);document.close()}catch(e){document.getElementById('boot').innerHTML='<div><b>Site failed to load.</b><br><small>'+String(e).replace(/[<&]/g,'')+'</small></div>';console.error(e)}})();
 </script></body></html>
