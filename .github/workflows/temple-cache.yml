@@ -3,7 +3,7 @@ name: Refresh TempleOSRS cache
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/5 * * * *'
   push:
     paths:
       - '.github/workflows/temple-cache.yml'
@@ -69,7 +69,7 @@ jobs:
           except Exception:
               pass
 
-          # Avoid a new Git commit every 15 minutes when no Collection Log data changed.
+          # Avoid a new Git commit every five minutes when no Collection Log data changed.
           if isinstance(old, dict) and old.get('players') == out:
               print('Temple data unchanged; keeping existing cache file.')
           else:
