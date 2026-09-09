@@ -1,0 +1,100 @@
+name: Refresh TempleOSRS cache
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
+  push:
+    paths:
+      - '.github/workflows/temple-cache.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temple-cache
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch TempleOSRS collection logs
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os, time, urllib.parse, urllib.request
+
+          players = {
+              'dikste': 'Dikste',
+              'big dog aura': 'Big Dog Aura',
+              'lijpste': 'Lijpste',
+          }
+          out = {}
+          for key, name in players.items():
+              q = urllib.parse.urlencode({
+                  'player': name,
+                  'categories': 'all',
+                  'includenames': '1',
+                  'onlyitems': '1',
+                  'dateformat': 'unix',
+              })
+              url = 'https://templeosrs.com/api/collection-log/player_collection_log.php?' + q
+              last = None
+              for attempt in range(4):
+                  try:
+                      req = urllib.request.Request(url, headers={
+                          'Accept': 'application/json',
+                          'User-Agent': 'United-Gimps-GitHub-Pages/1.0',
+                      })
+                      with urllib.request.urlopen(req, timeout=25) as r:
+                          payload = json.load(r)
+                      if not isinstance(payload, dict) or not isinstance(payload.get('data'), dict):
+                          raise RuntimeError(f'{name}: unexpected Temple response')
+                      out[key] = payload
+                      break
+                  except Exception as exc:
+                      last = exc
+                      if attempt == 3:
+                          raise
+                      time.sleep(2 ** attempt)
+              print(f'Fetched {name}')
+
+          path = 'docs/data/temple-clog.json'
+          os.makedirs(os.path.dirname(path), exist_ok=True)
+          old = None
+          try:
+              with open(path, 'r', encoding='utf-8') as f:
+                  old = json.load(f)
+          except Exception:
+              pass
+
+          # Avoid a new Git commit every 15 minutes when no Collection Log data changed.
+          if isinstance(old, dict) and old.get('players') == out:
+              print('Temple data unchanged; keeping existing cache file.')
+          else:
+              doc = {
+                  'source': 'TempleOSRS',
+                  'fetchedAt': int(time.time() * 1000),
+                  'players': out,
+              }
+              with open(path, 'w', encoding='utf-8') as f:
+                  json.dump(doc, f, ensure_ascii=False, separators=(',', ':'))
+                  f.write('\n')
+              print('Temple cache updated.')
+          PY
+
+      - name: Commit cache when changed
+        shell: bash
+        run: |
+          if git diff --quiet -- docs/data/temple-clog.json; then
+            echo 'No cache change to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/data/temple-clog.json
+          git commit -m 'Refresh TempleOSRS collection log cache'
+          git push
