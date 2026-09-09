@@ -42,7 +42,6 @@ jobs:
                   'dateformat': 'unix',
               })
               url = 'https://templeosrs.com/api/collection-log/player_collection_log.php?' + q
-              last = None
               for attempt in range(4):
                   try:
                       req = urllib.request.Request(url, headers={
@@ -55,8 +54,7 @@ jobs:
                           raise RuntimeError(f'{name}: unexpected Temple response')
                       out[key] = payload
                       break
-                  except Exception as exc:
-                      last = exc
+                  except Exception:
                       if attempt == 3:
                           raise
                       time.sleep(2 ** attempt)
@@ -89,7 +87,7 @@ jobs:
       - name: Commit cache when changed
         shell: bash
         run: |
-          if git diff --quiet -- docs/data/temple-clog.json; then
+          if [ -z "$(git status --porcelain -- docs/data/temple-clog.json)" ]; then
             echo 'No cache change to commit.'
             exit 0
           fi
