@@ -1,13 +1,57 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><title>The United Gimps</title><style>html,body{margin:0;background:#0b0d10;color:#ddd;font:16px system-ui}#boot{min-height:100vh;display:grid;place-items:center;text-align:center}small{color:#888}</style></head><body><div id="boot"><div><b>Loading The United Gimps…</b><br><small>live TempleOSRS collection log + Wise Old Man stats</small></div></div><script>
-(async()=>{try{const urls=[
-'site/v15b64-001.txt','site/v15b64-002.txt','site/v15b64-003.txt','site/v15b64-004.txt','site/v15b64-005.txt','site/v15b64-006.txt',
-'site/v15b64-007a.txt','site/v15b64-007b.txt','site/v15b64-007c.txt','site/v15b64-008.txt',
-'site/v15b64-009a.txt','site/v15b64-009b.txt','site/v15b64-009c.txt','site/v15b64-010.txt',
-'site/v15b64-011a.txt','site/v15b64-011b.txt','site/v15b64-011c.txt',
-'site/v15b64-012a.txt','site/v15b64-012b.txt','site/v15b64-012c.txt',
-'site/v15b64-013a.txt','site/v15b64-013b.txt','site/v15b64-013c.txt',
-'site/v15b64-014a.txt','site/v15b64-014b.txt','site/v15b64-014c.txt',
-'site/v15b64-015a.txt','site/v15b64-015b.txt','site/v15b64-015c.txt','site/v15b64-016a.txt'];
-const parts=await Promise.all(urls.map(async u=>{const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error(`${u}: ${r.status}`);return r.text()}));const b64=parts.join('').trim();const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));const stream=new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));const html=await new Response(stream).text();document.open();document.write(html);document.close()}catch(e){document.getElementById('boot').innerHTML='<div><b>Site failed to load.</b><br><small>'+String(e).replace(/[<&]/g,'')+'</small></div>';console.error(e)}})();
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><title>The United Gimps</title><style>html,body{margin:0;background:#0b0d10;color:#ddd;font:16px system-ui}#boot{min-height:100vh;display:grid;place-items:center;text-align:center}small{color:#888}</style></head><body><div id="boot"><div><b>Loading The United Gimps…</b><br><small>TempleOSRS server cache + live Wise Old Man stats</small></div></div><script>
+(async()=>{try{
+const urls=['site/v15b64-001.txt','site/v15b64-002.txt','site/v15b64-003.txt','site/v15b64-004.txt','site/v15b64-005.txt','site/v15b64-006.txt','site/v15b64-007a.txt','site/v15b64-007b.txt','site/v15b64-007c.txt','site/v15b64-008.txt','site/v15b64-009a.txt','site/v15b64-009b.txt','site/v15b64-009c.txt','site/v15b64-010.txt','site/v15b64-011a.txt','site/v15b64-011b.txt','site/v15b64-011c.txt','site/v15b64-012a.txt','site/v15b64-012b.txt','site/v15b64-012c.txt','site/v15b64-013a.txt','site/v15b64-013b.txt','site/v15b64-013c.txt','site/v15b64-014a.txt','site/v15b64-014b.txt','site/v15b64-014c.txt','site/v15b64-015a.txt','site/v15b64-015b.txt','site/v15b64-015c.txt','site/v15b64-016a.txt'];
+const parts=await Promise.all(urls.map(async u=>{const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error(`${u}: ${r.status}`);return r.text()}));
+const b64=parts.join('').trim();
+const bin=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+const stream=new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'));
+let html=await new Response(stream).text();
+
+/* Boss KC is impossible below zero: clamp plotted KC and pin the Y axis floor to 0. */
+html=html.replace("let span=maxY-minY;minY-=span*.06;maxY+=span*.08;","let span=maxY-minY;if(opts.floorZero)minY=0;else minY-=span*.06;maxY+=span*.08;");
+html=html.replace("renderLineChart('#chartBoss',lineSeries('boss',m),{})","renderLineChart('#chartBoss',lineSeries('boss',m).map(s=>({...s,data:s.data.map(d=>({...d,value:Math.max(0,Number(d.value)||0)}))})),{floorZero:true})");
+
+/* TempleOSRS does not permit this GitHub Pages origin to fetch its API directly.
+   Intercept only that API call and serve the GitHub Actions-refreshed same-origin cache. */
+const shimCode=`(function(){
+ const nativeFetch=window.fetch.bind(window);
+ let cachePromise=null,cacheAt=0;
+ async function getTempleCache(){
+   if(!cachePromise||Date.now()-cacheAt>2000){
+     cacheAt=Date.now();
+     cachePromise=nativeFetch('data/temple-clog.json?v='+Date.now(),{cache:'no-store'}).then(async r=>{
+       if(!r.ok)throw new Error('Temple cache HTTP '+r.status);
+       return r.json();
+     });
+   }
+   return cachePromise;
+ }
+ window.fetch=async function(input,init){
+   let u;
+   try{u=new URL(typeof input==='string'?input:input.url,location.href)}catch(e){return nativeFetch(input,init)}
+   if(u.hostname.replace(/^www\\./,'')==='templeosrs.com'&&u.pathname.endsWith('/api/collection-log/player_collection_log.php')){
+     const player=(u.searchParams.get('player')||'').trim().toLowerCase();
+     try{
+       const cache=await getTempleCache(),payload=cache&&cache.players&&cache.players[player];
+       if(!payload)return new Response(JSON.stringify({error:'Player missing from Temple cache'}),{status:404,headers:{'Content-Type':'application/json'}});
+       return new Response(JSON.stringify(payload),{status:200,headers:{'Content-Type':'application/json','X-United-Gimps-Source':'TempleOSRS-GitHub-cache'}});
+     }catch(e){
+       return new Response(JSON.stringify({error:String(e&&e.message||e)}),{status:503,headers:{'Content-Type':'application/json'}});
+     }
+   }
+   return nativeFetch(input,init);
+ };
+})();`;
+const shim='<script id="ug-temple-same-origin-cache">'+shimCode+'<'+'/script>';
+html=html.replace('</head>',shim+'</head>');
+html=html.replace(/live TempleOSRS/g,'TempleOSRS server cache');
+html=html.replace(/Refresh Temple Clog/g,'Reload Temple Clog');
+html=html.replace(/Fetching all three Collection Logs from TempleOSRS…/g,'Reloading the latest TempleOSRS server cache…');
+html=html.replace(/TempleOSRS refresh complete\./g,'TempleOSRS cache reload complete.');
+document.open();document.write(html);document.close()
+}catch(e){
+ document.getElementById('boot').innerHTML='<div><b>Site failed to load.</b><br><small>'+String(e).replace(/[<&]/g,'')+'</small></div>';
+ console.error(e)
+}})();
 </script></body></html>
