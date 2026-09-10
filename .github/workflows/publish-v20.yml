@@ -68,73 +68,76 @@ jobs:
           PY
           cp -f docs/img/united-gimps-banner.webp /tmp/v20/docs/img/united-gimps-banner.webp
           cp -f docs/img/gim-crest.svg /tmp/v20/docs/img/gim-crest.svg
-      - name: Install v20 and run one deliberate shared-data refresh
+      - name: Install v20 and harden five-player refresh data model
         shell: bash
         run: |
           set -euo pipefail
           cp -a /tmp/v20/docs/. docs/
           cp -f /tmp/v20/scripts/refresh_shared_data.py scripts/refresh_shared_data.py
-          python scripts/refresh_shared_data.py
-      - name: Make future shared refreshes manual-only and clean obsolete staging
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/refresh_shared_data.py')
+          s=p.read_text(encoding='utf-8')
+          repl={
+          "profiles = dict(oldw.get('profiles') or oldw.get('players') or {})":"profiles = {k: v for k, v in dict(oldw.get('profiles') or oldw.get('players') or {}).items() if k in PLAYERS}",
+          "gains = {p: dict((oldw.get('gains') or {}).get(p) or {}) for p in ('week', 'month', 'year')}":"gains = {p: {k: v for k, v in dict((oldw.get('gains') or {}).get(p) or {}).items() if k in CORE} for p in ('week', 'month', 'year')}",
+          "achievements = dict(oldw.get('achievements') or {})":"achievements = {k: v for k, v in dict(oldw.get('achievements') or {}).items() if k in PLAYERS}",
+          "snapshots = dict(oldw.get('snapshots') or oldw.get('history') or {})":"snapshots = {k: v for k, v in dict(oldw.get('snapshots') or oldw.get('history') or {}).items() if k in PLAYERS}",
+          "temple = dict(oldt.get('players') or {})":"temple = {k: v for k, v in dict(oldt.get('players') or {}).items() if k in PLAYERS and valid_temple(v)}",
+          "recent = []\nfor key, name in PLAYERS.items():":"recent = []\nfor key, name in PLAYERS.items():\n    if not valid_temple(temple.get(key)):\n        print('Temple recent skipped; no synced Collection Log:', name)\n        continue",
+          "temple_doc = {":"synced_names = {PLAYERS[k].lower() for k in PLAYERS if valid_temple(temple.get(k))}\nrecent = [r for r in recent if str(r.get('player_name_with_capitalization') or r.get('player') or '').lower() in synced_names]\n\ntemple_doc = {"
+          }
+          for old,new in repl.items():
+              if old not in s: raise SystemExit('refresh patch target missing: '+old[:60])
+              s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+          python -m py_compile scripts/refresh_shared_data.py
+      - name: Run one deliberate shared-data refresh
         shell: bash
         run: |
           set -euo pipefail
-          cat > .github/workflows/temple-cache.yml <<'YAML'
-          name: Refresh United Gimps shared data
-
-          on:
-            workflow_dispatch:
-
-          permissions:
-            contents: write
-
-          concurrency:
-            group: united-gimps-shared-data
-            cancel-in-progress: false
-
-          jobs:
-            refresh:
-              runs-on: ubuntu-latest
-              steps:
-                - uses: actions/checkout@v4
-                  with:
-                    fetch-depth: 0
-                - name: Refresh TempleOSRS and WOM caches for all five members
-                  run: python scripts/refresh_shared_data.py
-                - name: Commit shared cache when changed
-                  shell: bash
-                  run: |
-                    if [ -z "$(git status --porcelain -- docs/data/temple-clog.json docs/data/wom-cache.json)" ]; then
-                      echo 'No cache change to commit.'
-                      exit 0
-                    fi
-                    git config user.name 'github-actions[bot]'
-                    git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-                    git add docs/data/temple-clog.json docs/data/wom-cache.json
-                    git commit -m 'Refresh United Gimps five-man shared data'
-                    git fetch origin main
-                    git rebase origin/main
-                    git push origin HEAD:main
-          YAML
-          rm -rf .v18payload .v19payload .v20payload .v20payload-final docs/site
+          python scripts/refresh_shared_data.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          expected={'dikste','big dog aura','lijpste','poep aura','lompste'}
+          w=json.loads(Path('docs/data/wom-cache.json').read_text())
+          t=json.loads(Path('docs/data/temple-clog.json').read_text())
+          assert set(w.get('profiles',{})) == expected, set(w.get('profiles',{}))
+          assert 'dikste jr' not in json.dumps(w).lower()
+          assert set(t.get('players',{})).issubset(expected), set(t.get('players',{}))
+          assert 'dikste jr' not in json.dumps(t).lower()
+          assert t.get('groupSize') == 5
+          assert 0 <= int(t.get('membersWithClog',0)) <= 5
+          print('shared cache roster clean:', sorted(w['profiles']))
+          print('Temple synced count:', t.get('membersWithClog'))
+          PY
+      - name: Clean obsolete non-workflow staging
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .v18payload .v19payload .v20payload .v20payload-final docs/site scripts/__pycache__
           rm -f docs/v19.css docs/v19.js docs/img/*.b64.tmp docs/img/.keep docs/img/README.txt
-          rm -f .github/workflows/deploy-v18.yml .github/workflows/extract-v18-banner.yml .github/workflows/publish-v19-final.yml .github/workflows/publish-v19-real.yml .github/workflows/validate-v19.yml
       - name: Final validation and publish commit
         shell: bash
         run: |
           set -euo pipefail
           node --check docs/assets/app.js
           python -m py_compile scripts/refresh_shared_data.py
+          rm -rf scripts/__pycache__
           test -s docs/img/dikste.webp
           test -s docs/img/bigdog.webp
           test -s docs/img/lijpste.webp
           test -s docs/img/poep-aura.png
           test -s docs/img/lompste.png
+          test -s docs/img/united-gimps-banner.webp
+          test -s docs/img/gim-crest.svg
           test -s docs/data/wom-cache.json
           test -s docs/data/temple-clog.json
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
+          git add -A -- . ':!.github/workflows'
           git commit -m 'Publish United Gimps v20 restored site'
           git fetch origin main
           git rebase origin/main
