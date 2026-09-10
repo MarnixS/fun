@@ -27,15 +27,24 @@ jobs:
           import base64, hashlib, io, shutil, tarfile
           from pathlib import Path
           stage=Path('.v19publish')
-          parts=sorted(stage.glob('chunk-*.txt'))
-          if len(parts)!=16:
-              raise SystemExit(f'Expected 16 v19 chunks, found {len(parts)}')
+          names=[
+            'chunk-00a.txt','chunk-00b.txt','chunk-00c.txt',
+            'chunk-01.txt','chunk-02.txt','chunk-03.txt','chunk-04.txt','chunk-05.txt','chunk-06.txt',
+            'chunk-07a.txt','chunk-07b.txt','chunk-07c.txt',
+            'chunk-08.txt','chunk-09.txt','chunk-10.txt','chunk-11.txt','chunk-12.txt','chunk-13.txt',
+            'chunk-14a.txt','chunk-14b.txt','chunk-14c.txt','chunk-15.txt'
+          ]
+          parts=[stage/n for n in names]
+          missing=[str(p) for p in parts if not p.exists()]
+          if missing:
+              raise SystemExit('Missing authoritative v19 payload parts: '+', '.join(missing))
           packed=''.join(p.read_text(encoding='utf-8').strip() for p in parts)
           raw=base64.b64decode(packed, validate=True)
           sha=hashlib.sha256(raw).hexdigest()
           expected='190db676b5e732538aea5b0b16506844c5a35de4b1b03cc579c378cedd0f2d16'
           if sha!=expected:
               raise SystemExit(f'Payload checksum mismatch: {sha}')
+          print(f'Authoritative v19 payload verified: {len(raw)} bytes, sha256={sha}')
           tmp=Path('.v19-unpack'); shutil.rmtree(tmp,ignore_errors=True); tmp.mkdir()
           with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as tf:
               tf.extractall(tmp)
@@ -58,6 +67,8 @@ jobs:
           node --check docs/assets/app.js
           grep -q 'time-machine.html' docs/index.html
           grep -q 'chronicle.html' docs/index.html
+          grep -q 'Poep Aura' docs/assets/app.js
+          grep -q 'Lompste' docs/assets/app.js
           ! grep -Rqi 'tracked union' docs/assets docs/*.html
           ! grep -Rqi 'Dikste Jr' docs/assets docs/*.html
       - name: Commit corrected v19
