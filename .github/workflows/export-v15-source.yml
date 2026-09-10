@@ -23,16 +23,27 @@ jobs:
           python - <<'PY'
           import base64, gzip
           from pathlib import Path
-          parts=sorted(Path('docs/site').glob('v15b64-*.txt'))
-          if not parts:
-              raise SystemExit('No v15 payload fragments found')
+          names=[
+            'v15b64-001.txt','v15b64-002.txt','v15b64-003.txt','v15b64-004.txt','v15b64-005.txt','v15b64-006.txt',
+            'v15b64-007a.txt','v15b64-007b.txt','v15b64-007c.txt','v15b64-008.txt',
+            'v15b64-009a.txt','v15b64-009b.txt','v15b64-009c.txt','v15b64-010.txt',
+            'v15b64-011a.txt','v15b64-011b.txt','v15b64-011c.txt',
+            'v15b64-012a.txt','v15b64-012b.txt','v15b64-012c.txt',
+            'v15b64-013a.txt','v15b64-013b.txt','v15b64-013c.txt',
+            'v15b64-014a.txt','v15b64-014b.txt','v15b64-014c.txt',
+            'v15b64-015a.txt','v15b64-015b.txt','v15b64-015c.txt','v15b64-016a.txt'
+          ]
+          parts=[Path('docs/site')/n for n in names]
+          missing=[str(p) for p in parts if not p.exists()]
+          if missing:
+              raise SystemExit('Missing authoritative v15 fragments: '+', '.join(missing))
           packed=''.join(p.read_text(encoding='utf-8').strip() for p in parts)
           raw=base64.b64decode(packed, validate=True)
           html=gzip.decompress(raw)
           out=Path('.scratch/v15.html')
           out.parent.mkdir(parents=True, exist_ok=True)
           out.write_bytes(html)
-          print(f'Reconstructed {len(html)} bytes from {len(parts)} fragments')
+          print(f'Reconstructed {len(html)} bytes from {len(parts)} authoritative fragments')
           PY
 
       - name: Commit readable source
