@@ -35,7 +35,6 @@ function renderMemberPicker(host,selection,onChange,{title='Members',subtitle='A
 }
 const TERMS=[
  [/Actual WOM snapshot/g,'Closest WOM snapshot in time'],
- [/Temple catalogue/gi,'Collection Log'],
  [/Temple snapshot/g,'Collection Log snapshot'],
  [/Temple recent items/g,'Collection Log recent unlocks via Temple'],
  [/Temple recent unlocks/g,'Collection Log recent unlocks via Temple'],
