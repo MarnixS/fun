@@ -1,0 +1,76 @@
+name: Publish United Gimps v18
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.v18payload/READY'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: united-gimps-v18-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct v18 site
+        shell: bash
+        run: |
+          python - <<'PY'
+          import base64, io, tarfile
+          from pathlib import Path
+
+          root=Path('.v18payload')
+          parts=sorted(root.glob('part-*.txt'))
+          if len(parts)!=8:
+              raise SystemExit(f'Expected 8 v18 payload parts, found {len(parts)}')
+          packed=''.join(p.read_text(encoding='utf-8').strip() for p in parts)
+          raw=base64.b64decode(packed)
+          with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as tf:
+              tf.extractall('.')
+          print('Extracted',len(raw),'compressed bytes')
+          PY
+
+      - name: Restore exact player portraits
+        shell: bash
+        run: |
+          python - <<'PY'
+          import base64
+          from pathlib import Path
+          out=Path('docs/img');out.mkdir(parents=True,exist_ok=True)
+          images={
+          'dikste.webp':'UklGRiQFAABXRUJQVlA4IBgFAABwMgCdASrwAEABPp1OoEwlqC2iJXa42bATiWdu3V9rYu1yfP2PfHGmO3SSRUu+eRdN5tdAKB6tnyLaxzk0WxyHLxylkMgMr1BV/E+sjsYlMAx5RUhUNUYCT+Cy0fjW5bV/C0hQbkZj1fH7shKXFGiX/thBBsAQPrFk9gBo/ySmq9RUtcH/G2jJdHtHJSclrmLuj500mr9AqXkTvdiksc4pdVN3sJqRaRye14TTWtGJO89F8wKIX3+v38FeYzJXmrWfir2CLmu/rAeOnkRlS7gh0SoEFWEp2vmZN+av0Ze9T9YGD+qqRNCcdm+wTaLhwjEpNoNyW24Sd2ymLI6Ffe42B4MUkbsjqCyt9kP9msXSSBxQ8fWYr6HX4VCX0YL5sbr0Mi4vuwJbkIWm0sYlS74lFa2VfdSOt03fGw5UuBe56RpmSf29SIMr5+nO4NQAb9HJQD/FAN/Y/9dSQjppXKviFfGPs74uUPaYLqecYcVKGP7e2cPf8qmgKHKmDTDzINXBCbzWrsciORCgvj6dOIWwrIxJXx+4Pn3uhyfAAP7vvd9UUwm0gN53Aw8eoQsEj08v6/qMVES32eSCwwHc2E06dTTk1L9MQDHT8WQXa3+3HHRoxtjg3J+ucX/Xsda6jk1/3XSLm4KP6Ey0wPSA26VL5kG6ZvE8ttfdujw5pMCPhYj+ds3mPyBNF0Jw4L/24Jthct/4j14n2EG1jMs9THhwJkkdp8Uzxmlxh5hpURmQ2LbMM098zWEwkgF6NqadmNXxCNFdeXW84qXVgETSyTY5vTpXAcpzxSzbwxjC9xPCCDGcPOgDAmM5Srw8VG9xFCqGneechtQwTl7HxRkMNv0VDXXvv7A2KtRnOAZHHyupM9X+jkJxLle0Vehe9okt6p9K/T/w3+3ozLCMc/LubnRf0Cn6YXhZpX90DlcD0ixlJTMsvF5Sz4ixXXgV9rjker+n5f5TOxmHicuBc/iOymyaMRxOnAW/WG/TVrTsC7lQP97Y0lUDUXKTpKTnTZlsrvkhMOGHC+rKpHlen7OMdOi/Pq3/ATujiqZtfzKb/Zti/geqfDW2sI4lmiG9K49HyE5qOg6UmAZVemECiQ3te2rhMGqkFCM002WH9wlA6vdMlff+YyLH8uY5zScSyP+qSUiRoCeT8C1y6zhuwNZMZXaMfbYdFnGPy3yNlNDFYpEgTGtsSrkdEbhbKwith6V+I988HsJuds3BJf52alx6QIT57OY0pWg6Tswb1cR4TVWdzU1dF61fbL8xTAQskKsRfLpurDbLiPV8H7Eakb/FXc15RSi6GSW98Vl5U0Mc/EEqR/1f+ln9/2rAp+OMzp1u97ZjBKPL9FD/GbDP1Il0/Ae5TrkvSmyJjgCeFY/Sn9twr9XwK3SQTsSdLaPOT2kJ8076Z2GHwCtpVYkcT2l4VAIKIUs1qbvkBv2YTAW0JEaFVROhLGIxT8UDfKS0hgWBHX3MZPlmwfyiD2NnerBwjAPcrjQNTY0XXx9TPWeJVih2vthJwPeoxKLxxo3IZJ4yzhU0qQDjlsAfoAK2KmhvioTx05WcrgcxWdSzgFw2PCINdBwoHoDsrSyvrj08hkC9viTDS5VFM/oWRpSWZ6rhZdcjH4vAdNuAKHPwrCYMDkhZvADAkVUVvslqua1cq78zdpDHM7wwOZbF+hSTp42GDp/DjKKmtLKwZi95msNrPbzPocoBrwUWJe5QQY2uwAQFmfLVLBgvbnAAAA==',
+          'bigdog.webp':'UklGRjgFAABXRUJQVlA4ICwFAABQMgCdASrwAEABPp1Mok0lpCMoovCY6RATiWdu4Wjw9/frk6/QBB399wXuC9wXuC8TPLE/svBRVnWiehbnLE5cbGZa7cG7dSv7SKwqyEEvAxAo1mMIT5em08XZIA+K8C8gBB6t02AkMbsfW1enkz++WbxBvLLVXeyziKAi9NhfHB4zvh9VCO+5dBQ5dj5SH6WPye8lIu4LyJaSCB0lijXY7D8zR3bV1md+Utj3TN++lQxcJZkIvftRomuJHpF1sA8YCKZAPpasLCW9cWR8tjNJIV56OHq403Ty2S1WXZ7+Mu1AEIXiVL9nzYgHer1gR32sk3lolvtZVIbzEGCaceQFm5/rdWptqMPORD1kXtJ4LEk6kvYLdsQrNS2NUT0MAD80sy1RPQ4hvU8wD2FQvdwYgTj7yKP4Z6uOTiSpsKFt9r+J67oBguRxpFQaCwvjk7BCXKISQiFhXJFEPGIBZdQu9JBG9ULr+lyu9fQeMQD0ueHV/ny3bEkl9yoK4yeZckIW9JG3gnI23l1oExCNjy7gvjqSrrtwmS+3swAA/vm8Z9yfpdeg3DIC7vSaY/5xZi52MfNaZ6K7JlcJSSBxboDKGmTFQKcPNDpmVZ0FYpRe+VqLQUq7DjgI6EHrvB6pemGKJ9AvxmbO6vSrONsF8JGyk9V2TIAIMgAEwAAS1P+AegMVfGoTwrd9IBUYofxKLl2ARONPn6FJuHSvgwagAmMZaZDu+LecISodnz982cLyFcPeshHb1qEr3uzYgWANInG6CWxhcqL9Yd4LwCER8LOgymqtTrfREqfpskLctPWfP0R56AH+xfaFE9972seocgxIvQdcQTcaiVT16PIFkL374kHVtRRZ5RGdH9laeAkNsNQrU3Tq+nUPxUYHutboOpY3HEeGEeWzb7/Tx1bziB+90olQniYd51gxEhtL9YkStYq+wvY9eF2PTGS8mnm635Nb//khip4qqAaBN1mtVhSzsW33ZH4fdPzBQRZCnFUO+klaB0gwbLxVbg+s9dTzI7IdcJFlSqOBPAVyql3b2kgNudRpTWTWfD5cgA+UmbYC8Ws6eD/c3D4csA/mX5NXcrlMZ3xn1ilO7OrE/0cY1mIKsABF0fLlp2AJOyeX41RiLcRuhwiH0lFkQmz1GmtHRTeaO1X6qwIGPJcSGMq+aUDa5qWdiNTZayJTZnt5hQGjMQzXtbnZ06jllmoCBZltSjJpvH2z9y8UcJmMK1O4qwyhtpucB2BJdO7HT0gV2m1bWSqFzcx4Y9xZKzrNIK8JCS/jaauQ4yshdWIQPjuhZSBzKg+c30RgjcVCNRSss0KIgjBKsSKU8SZp98Wqs0h65frTKZmj0oF2U6lUbYTb+XMZOND7NsY8tO/0QQjAeg0JGOd8977y9j3lYQXyCS9Ir1lyA+lhDyEvaC4DRbQcr4D+i+3a7eUnUkzlfIAABhaBZG3s2nncabk2QuXIA9BfSnHui/mMOGNelerNX0V4EsYyJIqGNiqBzvwFkXXp+L7jA3Z9hCAIid4BHaJfwDb4whCAx/P0Ffx08kcwDG3HIYGDg3GvhBQq25mAc0HtHxVwtLg+GB4uEvIoKIB5t+MyEdvq1vSaRJ6/cNhjQ2OVMw14Wk1xKQ3kpmLVTiZgSPdZzDVfk6r+xhLPaQESFfD2vDwrqRWy+kkqS6FMmJifDMvCq1Vj5/YJNA9bdpaC0u6fRzrubiUMOo7XJwcqmjgP7ZJtALSml1dGm+LsuknxaZgoREakE6/df9YLmAAA',
+          'lijpste.webp':'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'}
+          for name,data in images.items():
+              (out/name).write_bytes(base64.b64decode(data))
+              print('Wrote',name,(out/name).stat().st_size,'bytes')
+          PY
+
+      - name: Remove staging and legacy payloads
+        shell: bash
+        run: |
+          rm -f docs/img/.keep docs/img/README.txt docs/img/bigdog.webp.b64.tmp docs/img/lijpste.webp.b64.tmp
+          rm -rf docs/site docs/site-a.b64
+          rm -rf .v18payload
+
+      - name: Commit v18
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A docs .v18payload
+          if git diff --cached --quiet; then
+            echo 'v18 already published.'
+            exit 0
+          fi
+          git commit -m 'Publish United Gimps v18'
+          git push
