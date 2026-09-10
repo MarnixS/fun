@@ -1,104 +1,128 @@
 #!/usr/bin/env python3
-import json, time, urllib.parse, urllib.request
+import json,time,urllib.parse,urllib.request
 from urllib.error import HTTPError
 from pathlib import Path
 
 ROOT=Path('docs/data'); ROOT.mkdir(parents=True,exist_ok=True)
-PLAYERS={'dikste':'Dikste','big dog aura':'Big Dog Aura','lijpste':'Lijpste','lompste':'Lompste','dikste jr':'Dikste Jr'}
+PLAYERS={'dikste':'Dikste','big dog aura':'Big Dog Aura','lijpste':'Lijpste','poep aura':'Poep Aura','lompste':'Lompste'}
+CORE=['dikste','big dog aura','lijpste']
 UA='United-Gimps-Group-Ironman-Tracker/19.0 (github.com/MarnixS/fun)'
 
-def get(url,method='GET',data=None,attempts=5,delay=0.0):
+def get(url,method='GET',data=None,attempts=5,delay=0):
     err=None
     for i in range(attempts):
         try:
-            req=urllib.request.Request(url,method=method,headers={'Accept':'application/json','Content-Type':'application/json','User-Agent':UA},data=data)
+            req=urllib.request.Request(url,method=method,data=data,headers={'Accept':'application/json','Content-Type':'application/json','User-Agent':UA})
             with urllib.request.urlopen(req,timeout=35) as r: out=json.load(r)
             if delay: time.sleep(delay)
             return out
         except HTTPError as e:
             err=e
             if i==attempts-1: raise
-            retry=e.headers.get('Retry-After') if e.headers else None
-            try: wait=max(float(retry),2.0)
-            except Exception: wait=min(30.0,2.5*(2**i))
-            if e.code==429: wait=max(wait,8.0)
-            print(f'HTTP {e.code}; retrying in {wait:.1f}s: {url.split("?")[0]}')
-            time.sleep(wait)
+            try: wait=max(float(e.headers.get('Retry-After') or 0),2.0)
+            except Exception: wait=2.0
+            if e.code==429: wait=max(wait,min(30,8*(i+1)))
+            else: wait=max(wait,min(20,2**i))
+            print(f'HTTP {e.code}, retry in {wait:.1f}s: {url.split("?")[0]}');time.sleep(wait)
         except Exception as e:
             err=e
             if i==attempts-1: raise
-            time.sleep(min(20.0,2**i))
+            time.sleep(min(20,2**i))
     raise err
 
-def read(path,default):
-    try:return json.loads(Path(path).read_text(encoding='utf-8'))
-    except Exception:return default
+def load(name):
+    try:return json.loads((ROOT/name).read_text(encoding='utf-8'))
+    except Exception:return {}
 
-def stable(x,stamp):
-    y=dict(x);y.pop(stamp,None);return y
+def valid_temple(x):
+    if not isinstance(x,dict): return False
+    if x.get('error') or x.get('errors'): return False
+    d=x.get('data',x)
+    if not isinstance(d,dict): return False
+    # Valid logs expose items directly or somewhere inside their structured data.
+    if isinstance(d.get('items'),(list,dict)): return True
+    def has_items(n,depth=0):
+        if depth>5 or not isinstance(n,dict): return False
+        if isinstance(n.get('items'),(list,dict)): return True
+        return any(has_items(v,depth+1) for v in n.values() if isinstance(v,dict))
+    return has_items(d)
 
-old_temple=read(ROOT/'temple-clog.json',{})
-old_wom=read(ROOT/'wom-cache.json',{})
+def stable(doc,stamp):
+    if not isinstance(doc,dict): return doc
+    x=dict(doc);x.pop(stamp,None);return x
 
-# Preserve every last-known-good player payload. A transient 429 must never erase a member.
-temple={'source':'TempleOSRS','fetchedAt':int(time.time()*1000),'groupId':old_temple.get('groupId'),'catalogue':old_temple.get('catalogue',{'items':[]}), 'players':dict(old_temple.get('players') or {}), 'recent':list(old_temple.get('recent') or [])}
-recent=[]
-for key,rsn in PLAYERS.items():
-    q=urllib.parse.urlencode({'player':rsn,'categories':'all','includenames':'1','onlyitems':'1','dateformat':'unix'})
+oldw=load('wom-cache.json'); oldt=load('temple-clog.json')
+oldprofiles=dict(oldw.get('profiles') or oldw.get('players') or {})
+oldgains=oldw.get('gains') or {}
+profiles=dict(oldprofiles)
+gains={p:dict(oldgains.get(p) or {}) for p in ('week','month','year')}
+
+# WOM: all five current profiles; historical/deep gain defaults remain core three.
+for key,name in PLAYERS.items():
     try:
-        temple['players'][key]=get('https://templeosrs.com/api/collection-log/player_collection_log.php?'+q,attempts=6,delay=3.0)
-        print('Fetched TempleOSRS',rsn)
-    except Exception as e:
-        if key in temple['players']:
-            print('Temple player fetch failed; preserved previous cache for',rsn,e)
+        try:get('https://api.wiseoldman.net/v2/players/'+urllib.parse.quote(name),method='POST',data=b'{}',attempts=2,delay=1.1)
+        except Exception as e: print('WOM update warning:',name,repr(e))
+        profiles[key]=get('https://api.wiseoldman.net/v2/players/'+urllib.parse.quote(name),attempts=4,delay=1.1)
+        print('WOM profile:',name)
+    except Exception as e: print('WOM profile failed; preserving previous if present:',name,repr(e))
+for period in ('week','month','year'):
+    for key in CORE:
+        name=PLAYERS[key]
+        try:
+            gains[period][key]=get('https://api.wiseoldman.net/v2/players/'+urllib.parse.quote(name)+'/gained?period='+period,attempts=3,delay=1.1)
+            print('WOM gain:',name,period)
+        except Exception as e: print('WOM gain failed; preserving previous:',name,period,repr(e))
+
+wom={'source':'Wise Old Man','fetchedAt':int(time.time()*1000),'profiles':profiles,'gains':gains}
+
+# Temple: attempt every group member. Missing/invalid response means unknown, never zero.
+# Once Lompste syncs Temple, the next successful refresh automatically adds him.
+temple=dict(oldt.get('players') or {})
+for key,name in PLAYERS.items():
+    q=urllib.parse.urlencode({'player':name,'categories':'all','includenames':'1','includemissingitems':'1','onlyitems':'1','dateformat':'unix'})
+    try:
+        payload=get('https://templeosrs.com/api/collection-log/player_collection_log.php?'+q,attempts=5,delay=1.5)
+        if valid_temple(payload):
+            temple[key]=payload; print('Temple Clog:',name)
         else:
-            print('Temple player fetch failed; no previous cache for',rsn,e)
+            # If this account has never had a valid log, it stays absent/unsynced.
+            # If it used to be valid, preserve last known good data.
+            print('Temple response not a valid synced log; preserving previous if present:',name)
+    except Exception as e: print('Temple Clog failed; preserving previous if present:',name,repr(e))
+
+try:
+    cp=get('https://templeosrs.com/api/collection-log/items.php',attempts=4,delay=1.0)
+    catalog=cp.get('data',cp) if isinstance(cp,dict) else cp
+    if not isinstance(catalog,(list,dict)) or not catalog: raise ValueError('empty catalog')
+except Exception as e:
+    print('Temple catalog failed; preserving previous:',repr(e));catalog=oldt.get('catalog') or oldt.get('catalogue') or []
+
+recent=[]
+for key,name in PLAYERS.items():
+    q=urllib.parse.urlencode({'player':name,'count':100})
     try:
-        rq=urllib.parse.urlencode({'player':rsn,'count':40})
-        r=get('https://templeosrs.com/api/collection-log/player_recent_items.php?'+rq,attempts=3,delay=1.5)
-        rows=r.get('data',r) if isinstance(r,dict) else r
-        if isinstance(rows,dict): rows=list(rows.values())
-        for x in rows or []:
-            if isinstance(x,dict):
-                z=dict(x);z.setdefault('player',rsn);recent.append(z)
-    except Exception as e:
-        print('Recent-items fetch failed for',rsn,e)
+        p=get('https://templeosrs.com/api/collection-log/player_recent_items.php?'+q,attempts=3,delay=.8)
+        d=p.get('data',p) if isinstance(p,dict) else p
+        rows=list(d.values()) if isinstance(d,dict) else (d if isinstance(d,list) else [])
+        for row in rows:
+            if isinstance(row,dict):
+                z=dict(row);z.setdefault('player',name);z.setdefault('player_name_with_capitalization',name);recent.append(z)
+        print('Temple recent:',name,len(rows))
+    except Exception as e: print('Temple recent failed:',name,repr(e))
 
 def rtime(x):
     try:return int(x.get('date_unix') or x.get('date') or x.get('created_at') or 0)
     except Exception:return 0
-if recent:
-    recent.sort(key=rtime,reverse=True);temple['recent']=recent[:100]
+if recent: recent.sort(key=rtime,reverse=True)
+else: recent=list(oldt.get('recent') or [])
 
-# WOM current profiles are required; gains/snapshots are best-effort and preserve prior history on throttling.
-wom={'source':'Wise Old Man','savedAt':int(time.time()*1000),'players':dict(old_wom.get('players') or {}),'gains':{'week':dict((old_wom.get('gains') or {}).get('week') or {}),'month':dict((old_wom.get('gains') or {}).get('month') or {}),'year':dict((old_wom.get('gains') or {}).get('year') or {})},'snapshots':dict(old_wom.get('snapshots') or {})}
-def wom_get(path): return get('https://api.wiseoldman.net/v2'+path,delay=1.35,attempts=4)
-def wom_update(rsn): return get('https://api.wiseoldman.net/v2/players/'+urllib.parse.quote(rsn),method='POST',data=b'{}',delay=1.35,attempts=3)
-for key,rsn in PLAYERS.items():
-    try:
-        try:wom['players'][key]=wom_update(rsn)
-        except Exception as e:
-            print('WOM update failed; trying read',rsn,e);wom['players'][key]=wom_get('/players/'+urllib.parse.quote(rsn))
-        print('Fetched WOM profile',rsn)
-    except Exception as e:
-        if key in wom['players']: print('WOM profile fetch failed; preserved previous cache for',rsn,e)
-        else: print('WOM profile unavailable with no previous cache for',rsn,e)
-for period in ('week','month','year'):
-    for key,rsn in PLAYERS.items():
-        try:wom['gains'][period][key]=wom_get('/players/'+urllib.parse.quote(rsn)+'/gained?period='+period)
-        except Exception as e: print('WOM gains failed; preserved previous value',period,rsn,e)
-for key,rsn in PLAYERS.items():
-    try:
-        rows=wom_get('/players/'+urllib.parse.quote(rsn)+'/snapshots?period=year&limit=50&offset=0')
-        if isinstance(rows,list): rows.sort(key=lambda x:x.get('createdAt',''))
-        wom['snapshots'][key]=rows
-    except Exception as e: print('WOM snapshots failed; preserved previous value',rsn,e)
+temple_doc={'source':'TempleOSRS','fetchedAt':int(time.time()*1000),'players':temple,'catalog':catalog,'recent':recent[:200],'membersWithClog':sum(1 for k in PLAYERS if valid_temple(temple.get(k))),'groupSize':5}
 
 changed=False
-if stable(temple,'fetchedAt')!=stable(old_temple,'fetchedAt'):
-    (ROOT/'temple-clog.json').write_text(json.dumps(temple,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8');changed=True
-if stable(wom,'savedAt')!=stable(old_wom,'savedAt'):
+if stable(wom,'fetchedAt')!=stable(oldw,'fetchedAt'):
     (ROOT/'wom-cache.json').write_text(json.dumps(wom,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8');changed=True
-print('Temple cached members:',sorted(temple['players']))
-print('WOM cached members:',sorted(wom['players']))
+if stable(temple_doc,'fetchedAt')!=stable(oldt,'fetchedAt'):
+    (ROOT/'temple-clog.json').write_text(json.dumps(temple_doc,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8');changed=True
+print('WOM profiles:',sorted(profiles))
+print('Temple synced:',[PLAYERS[k] for k in PLAYERS if valid_temple(temple.get(k))])
 print('Shared cache changed:',changed)
