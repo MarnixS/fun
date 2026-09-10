@@ -17,11 +17,279 @@ jobs:
   validate-backfill:
     if: contains(github.event.head_commit.message, '[run v21 audit]')
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
         with:
           ref: v21-bugfix
           fetch-depth: 0
-      - name: Placeholder
-        run: echo 'Final audit workflow will be armed after the source pass.'
+
+      - name: Finalize terminology, navigation and refresh behavior
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p=Path('docs/assets/app.js')
+          s=p.read_text(encoding='utf-8')
+          repl={
+            'Temple catalogue':'Collection Log',
+            'Actual WOM snapshot':'Closest WOM snapshot in time',
+            'Supporting cast':'Additional group members',
+            'supporting cast':'additional group members',
+            "role:'Supporting cast'":"role:'Additional group member'",
+            'findNearestSnapshot(p,target,true)':'findNearestSnapshot(p,target,false)',
+            'Using saved WOM snapshots first. If the saved history is not close enough, this explicit Time Machine request may ask WOM for a historical datapoint.':'Using WOM snapshot history saved in this repository. No new WOM request is made by Time Machine.',
+            'Refreshing Temple…':'Refreshing Collection Log…',
+            'Temple Collection Log':'Collection Log via Temple',
+            'Temple recent collection':'Collection Log recent unlock via Temple'
+          }
+          for a,b in repl.items(): s=s.replace(a,b)
+          p.write_text(s,encoding='utf-8')
+
+          cp=Path('docs/assets/v21-clog.js')
+          cs=cp.read_text(encoding='utf-8')
+          if "window.addEventListener('ug:data-updated'" not in cs:
+              listener="window.addEventListener('ug:data-updated',async e=>{if(e.detail?.key!==U.TKEY)return;doc=await loadClog();model=build();ensurePicker();populate();renderAll()});\n"
+              cs=cs.replace('async function init(){',listener+'async function init(){')
+              cp.write_text(cs,encoding='utf-8')
+
+          pages=['index.html','gim.html','hiscores.html','progress.html','history.html','time-machine.html','chronicle.html']
+          labels=[
+            ('index.html','Overview','O',None),
+            ('gim.html','Collection Log','G','GIM'),
+            ('hiscores.html','Hiscores','H',None),
+            ('progress.html','XP & Progress','XP',None),
+            ('history.html','History','T',None),
+            ('time-machine.html','Time Machine','⧖',None),
+            ('chronicle.html','Chronicle','✦',None),
+          ]
+          for fn in pages:
+              hp=Path('docs')/fn
+              h=hp.read_text(encoding='utf-8')
+              links=[]
+              for i,(href,label,rune,badge) in enumerate(labels):
+                  active='active' if href==fn else ''
+                  group='nav-group-start' if i==4 else ''
+                  aria=' aria-current="page"' if href==fn else ''
+                  bd=f'<span class="nav-badge">{badge}</span>' if badge else ''
+                  links.append(f'<a class="nav-link {active} {group}" href="{href}"{aria}><span class="nav-rune">{rune}</span><span>{label}</span>{bd}</a>')
+              nav='<nav class="main-nav"><div class="wrap nav-inner"><a class="nav-brand" href="index.html" aria-label="United Gimps overview"><img src="img/gim-crest.svg" alt=""></a>'+''.join(links)+'</div></nav>'
+              h=re.sub(r'<nav class="main-nav">.*?</nav>',nav,h,count=1,flags=re.S)
+              if 'assets/v21-nav.js' not in h:
+                  h=h.replace('</body>','<script defer src="assets/v21-nav.js" data-v21-nav></script></body>')
+              h=h.replace('Temple snapshot','Collection Log snapshot')
+              hp.write_text(h,encoding='utf-8')
+
+          gp=Path('docs/gim.html')
+          g=gp.read_text(encoding='utf-8')
+          g=re.sub(r'<select id="clogMember".*?</select>','<div id="clogMemberPicker" aria-label="Collection Log member filter"></div>',g,count=1,flags=re.S)
+          gp.write_text(g,encoding='utf-8')
+
+          hp=Path('docs/hiscores.html')
+          h=hp.read_text(encoding='utf-8')
+          h=h.replace('The table keeps the core-three comparison compact, but clicking any skill opens a five-player WOM history graph with every member that has data.','Use the member menu to add or remove any of the five accounts. Clicking a skill opens its saved WOM timeline or a current bar comparison for exactly the selected members.')
+          h=h.replace('Level + XP · core-three table, five-player graph drill-down.','Level + XP · selected members · click a skill for timeline or bars.')
+          h=h.replace('<strong>Boss KC</strong><span>Core-three table.</span>','<strong>Boss KC</strong><span>Selected members · click a boss for timeline or bars.</span>')
+          h=h.replace('Current saved WOM activity scores for the core three. This restores the old minigame/activity comparison instead of silently dropping it in the redesign.','Current saved WOM activity scores for the selected members. The same additive member filter applies here too.')
+          h=h.replace('<strong>Activities & minigames</strong><span>Current score · core-three comparison.</span>','<strong>Activities & minigames</strong><span>Current score · selected members.</span>')
+          hp.write_text(h,encoding='utf-8')
+
+          cp=Path('docs/chronicle.html')
+          c=cp.read_text(encoding='utf-8').replace('Refresh stats Chronicle via WOM','Reload stats Chronicle via WOM')
+          cp.write_text(c,encoding='utf-8')
+          PY
+
+      - name: Static source audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in docs/assets/app.js docs/assets/v21-common.js docs/assets/v21-chartlib.js docs/assets/v21-progress.js docs/assets/v21-clog.js docs/assets/v21-nav.js; do node --check "$f"; done
+          python -m py_compile scripts/refresh_shared_data.py
+          ! grep -Rqi 'dikste jr' docs scripts
+          ! grep -Rqi 'Temple catalogue' docs scripts
+          ! grep -q 'findNearestSnapshot(p,target,true)' docs/assets/app.js
+          grep -q 'Closest WOM snapshot in time' docs/assets/app.js
+          grep -q 'id="clogMemberPicker"' docs/gim.html
+          grep -q 'Duplicates / dupes' docs/gim.html
+          grep -q 'Reload stats Chronicle via WOM' docs/chronicle.html
+          python - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+          import re
+          pages=['index.html','gim.html','hiscores.html','progress.html','history.html','time-machine.html','chronicle.html']
+          expected=['Overview','Collection Log','Hiscores','XP & Progress','History','Time Machine','Chronicle']
+          class P(HTMLParser):
+              def __init__(self): super().__init__(); self.ids=[]; self.refs=[]
+              def handle_starttag(self,tag,attrs):
+                  a=dict(attrs)
+                  if a.get('id'): self.ids.append(a['id'])
+                  for k in ('src','href'):
+                      v=a.get(k,'')
+                      if v and not (v.startswith(('http:','https:','#','mailto:','javascript:'))): self.refs.append(v.split('?')[0])
+          for fn in pages:
+              text=(Path('docs')/fn).read_text()
+              assert text.count('assets/v21-nav.js')==1, (fn,'nav script')
+              labels=re.findall(r'<a class="nav-link[^>]*>.*?<span>([^<>]+)</span>(?:<span class="nav-badge">.*?</span>)?</a>',text,re.S)
+              assert labels==expected,(fn,labels)
+              p=P(); p.feed(text)
+              dup={x for x in p.ids if p.ids.count(x)>1}
+              assert not dup,(fn,'duplicate ids',dup)
+              for ref in p.refs:
+                  target=(Path('docs')/ref).resolve()
+                  assert target.exists(),(fn,'missing local ref',ref)
+          print('HTML/navigation audit passed')
+          PY
+
+      - name: Backfill and persist all available WOM history plus saved Collection Log
+        shell: bash
+        run: python scripts/refresh_shared_data.py
+
+      - name: Validate saved data deeply
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          expected={'dikste','big dog aura','lijpste','poep aura','lompste'}
+          w=json.loads(Path('docs/data/wom-cache.json').read_text())
+          t=json.loads(Path('docs/data/temple-clog.json').read_text())
+          assert set(w.get('profiles',{}))==expected,set(w.get('profiles',{}))
+          counts={k:len(w.get('snapshots',{}).get(k) or []) for k in expected}
+          assert all(v>=2 for v in counts.values()),counts
+          assert sum(counts.values())>=100,counts
+          for k,arr in w.get('snapshots',{}).items():
+              ts=[x.get('createdAt') for x in arr if x.get('createdAt')]
+              assert len(ts)==len(set(ts)),(k,'duplicate timestamps')
+              assert all(x.get('data') for x in arr),(k,'snapshot without data')
+          core=['dikste','big dog aura','lijpste']
+          assert all(min(x['createdAt'] for x in w['snapshots'][k])<'2026-01-15' for k in core),{k:min(x['createdAt'] for x in w['snapshots'][k]) for k in core}
+          assert set(t.get('players',{})).issubset(expected)
+          assert t.get('groupSize')==5
+          assert int(t.get('membersWithClog') or 0)>=4,t.get('membersWithClog')
+          def positives(node):
+              if isinstance(node,list): return sum(positives(x) for x in node)
+              if not isinstance(node,dict): return 0
+              if 'id' in node: return int((node.get('count') or node.get('quantity') or (1 if node.get('obtained') else 0))>0)
+              return sum(positives(v) for v in node.values())
+          for k,p in t.get('players',{}).items():
+              d=p.get('data',p)
+              assert positives(d.get('items',{}))>=20,(k,'too few positive Collection Log items')
+          print('WOM snapshot counts:',counts)
+          print('WOM history ranges:',{k:(w['snapshots'][k][0]['createdAt'],w['snapshots'][k][-1]['createdAt']) for k in expected})
+          print('Collection Logs synced:',t.get('membersWithClog'))
+          PY
+
+      - name: Browser interaction smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -q selenium
+          python -m http.server 8123 --directory docs >/tmp/ug-http.log 2>&1 &
+          server=$!
+          trap 'kill $server || true' EXIT
+          sleep 2
+          python - <<'PY'
+          import json,time
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.support.ui import WebDriverWait, Select
+          from selenium.webdriver.support import expected_conditions as EC
+          from selenium.webdriver.common.keys import Keys
+
+          o=Options(); o.add_argument('--headless=new'); o.add_argument('--no-sandbox'); o.add_argument('--disable-gpu'); o.add_argument('--window-size=1440,1100')
+          o.set_capability('goog:loggingPrefs',{'browser':'ALL','performance':'ALL'})
+          d=webdriver.Chrome(options=o); w=WebDriverWait(d,15); base='http://127.0.0.1:8123/'
+          nav_expected=['Overview','Collection Log','Hiscores','XP & Progress','History','Time Machine','Chronicle']
+          bad=[]
+          def severe():
+              for x in d.get_log('browser'):
+                  m=x.get('message','')
+                  if x.get('level')=='SEVERE' and any(q in m for q in ('Uncaught','TypeError','ReferenceError','SyntaxError')): bad.append(m)
+          for fn in ['index.html','gim.html','hiscores.html','progress.html','history.html','time-machine.html','chronicle.html']:
+              d.get(base+fn); w.until(EC.presence_of_element_located((By.CSS_SELECTOR,'main.wrap'))); time.sleep(.6)
+              labels=[x.text.strip().replace('\nGIM','') for x in d.find_elements(By.CSS_SELECTOR,'.main-nav .nav-link')]
+              assert labels==nav_expected,(fn,labels)
+              assert 'Temple catalogue' not in d.find_element(By.TAG_NAME,'body').text
+              severe()
+
+          d.get(base+'index.html'); w.until(EC.presence_of_element_located((By.CSS_SELECTOR,'.side-card')))
+          for el in d.find_elements(By.CSS_SELECTOR,'.side-card'):
+              assert float(d.execute_script('return getComputedStyle(arguments[0]).opacity',el))>=.99
+
+          d.get(base+'progress.html'); w.until(EC.presence_of_element_located((By.ID,'statsMemberPicker'))); w.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#xpChart svg')))
+          checks=d.find_elements(By.CSS_SELECTOR,'#statsMemberPicker input[type=checkbox]'); assert len(checks)==5 and sum(x.is_selected() for x in checks)==3
+          d.execute_script("document.querySelector('#statsMemberPicker details').open=true; document.querySelector('#statsMemberPicker [data-v21-preset=all]').click()")
+          time.sleep(.5); assert sum(x.is_selected() for x in d.find_elements(By.CSS_SELECTOR,'#statsMemberPicker input[type=checkbox]'))==5
+          assert len(d.find_elements(By.CSS_SELECTOR,'#skillGainTable thead th'))==6
+          assert len(d.find_elements(By.CSS_SELECTOR,'#bossGainTable thead th'))==6
+          d.find_element(By.CSS_SELECTOR,'[data-v21-chart-view="bars"]').click(); time.sleep(.4)
+          assert len(d.find_elements(By.CSS_SELECTOR,'#xpChart svg rect'))>=5
+          ss=Select(d.find_element(By.ID,'skillSelect')); assert len(ss.options)>5; ss.select_by_index(min(4,len(ss.options)-1)); time.sleep(.3); assert d.find_elements(By.CSS_SELECTOR,'#skillChart svg')
+          bs=Select(d.find_element(By.ID,'bossSelect')); assert len(bs.options)>0; bs.select_by_index(0); time.sleep(.3); assert d.find_elements(By.CSS_SELECTOR,'#bossChart svg')
+          severe()
+
+          d.get(base+'hiscores.html'); w.until(EC.presence_of_element_located((By.ID,'statsMemberPicker'))); time.sleep(.5)
+          d.execute_script("document.querySelector('#statsMemberPicker details').open=true; document.querySelector('#statsMemberPicker [data-v21-preset=all]').click()")
+          time.sleep(.5); assert len(d.find_elements(By.CSS_SELECTOR,'#currentSkillsTable thead th'))==6; assert len(d.find_elements(By.CSS_SELECTOR,'#bossTable thead th'))==6
+          d.find_element(By.CSS_SELECTOR,'[data-v21-skill]').click(); w.until(lambda x:x.find_element(By.ID,'v21MetricModal').get_attribute('aria-hidden')=='false'); assert d.find_elements(By.CSS_SELECTOR,'#v21ModalChart svg')
+          d.find_element(By.CSS_SELECTOR,'[data-v21-modal-view="bars"]').click(); time.sleep(.3); assert len(d.find_elements(By.CSS_SELECTOR,'#v21ModalChart svg rect'))>=5
+          d.find_element(By.CSS_SELECTOR,'#v21MetricModal .modal-close').click(); w.until(lambda x:x.find_element(By.ID,'v21MetricModal').get_attribute('aria-hidden')=='true')
+          d.find_element(By.CSS_SELECTOR,'[data-v21-boss]').click(); w.until(lambda x:x.find_element(By.ID,'v21MetricModal').get_attribute('aria-hidden')=='false'); d.find_element(By.TAG_NAME,'body').send_keys(Keys.ESCAPE); w.until(lambda x:x.find_element(By.ID,'v21MetricModal').get_attribute('aria-hidden')=='true')
+          severe()
+
+          d.get(base+'gim.html'); w.until(EC.presence_of_element_located((By.ID,'clogMemberPicker'))); w.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#clogItemTable tbody tr'))); time.sleep(.6)
+          assert len(d.find_elements(By.CSS_SELECTOR,'#clogMemberPicker input[type=checkbox]'))==5
+          assert sum(x.is_selected() for x in d.find_elements(By.CSS_SELECTOR,'#clogMemberPicker input[type=checkbox]'))==5
+          assert len(d.find_elements(By.CSS_SELECTOR,'#clogItemTable thead th'))==9
+          poep=d.find_element(By.CSS_SELECTOR,'#clogMemberPicker input[value="poep aura"]'); d.execute_script('arguments[0].click()',poep); time.sleep(.5)
+          assert 'Poep Aura' not in [x.text for x in d.find_elements(By.CSS_SELECTOR,'#clogItemTable thead th')]
+          d.find_element(By.CSS_SELECTOR,'[data-gim-tab="contribution"]').click(); w.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#clogContributionPie svg'))); assert d.find_elements(By.CSS_SELECTOR,'#clogContributionBars svg')
+          d.find_element(By.CSS_SELECTOR,'[data-gim-tab="overlap"]').click(); w.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#clogOverlapBars svg')))
+          d.execute_script("document.querySelector('#clogMemberPicker details').open=true; document.querySelectorAll('#clogMemberPicker input').forEach(x=>{if(x.value!=='dikste'&&x.checked)x.click()})")
+          time.sleep(.5); d.find_element(By.CSS_SELECTOR,'[data-gim-tab="contribution"]').click(); time.sleep(.4); assert d.find_elements(By.CSS_SELECTOR,'#clogContributionPie svg circle')
+          d.execute_script("document.querySelector('#clogMemberPicker details').open=true; document.querySelectorAll('#clogMemberPicker input').forEach(x=>{const want=x.value==='lompste'; if(x.checked!==want)x.click()})")
+          time.sleep(.6); assert 'unknown' in d.find_element(By.ID,'clogItemTable').text.lower()
+          severe()
+
+          d.get(base+'time-machine.html'); w.until(EC.presence_of_element_located((By.ID,'timeGo'))); d.get_log('performance')
+          d.execute_script("document.querySelector('#timeDate').value='2026-01-01'"); d.find_element(By.ID,'timeGo').click(); w.until(lambda x:'Closest WOM snapshot in time' in x.find_element(By.TAG_NAME,'body').text); time.sleep(.5)
+          req=[]
+          for e in d.get_log('performance'):
+              try:
+                  m=json.loads(e['message'])['message']
+                  if m['method']=='Network.requestWillBeSent': req.append(m['params']['request']['url'])
+              except Exception: pass
+          assert not [u for u in req if 'wiseoldman.net' in u], [u for u in req if 'wiseoldman.net' in u]
+          severe()
+
+          d.get(base+'chronicle.html'); w.until(EC.presence_of_element_located((By.ID,'chronicle'))); time.sleep(.8)
+          assert d.find_element(By.ID,'chronicleRefresh').text.strip()=='Reload stats Chronicle via WOM'
+          events=d.find_elements(By.CSS_SELECTOR,'.chronicle-event'); assert len(events)>=10,len(events)
+          txt=' '.join(e.text for e in events); assert 'Dikste' in txt and 'Big Dog Aura' in txt
+          severe()
+
+          d.get(base+'history.html'); w.until(EC.presence_of_element_located((By.ID,'activityEras'))); time.sleep(.7); assert d.find_elements(By.CSS_SELECTOR,'.era-segment')
+          severe(); d.quit()
+          assert not bad,bad
+          print('Full browser interaction smoke test passed')
+          PY
+
+      - name: Commit validated generated source and history to branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs scripts
+          if git diff --cached --quiet; then
+            echo 'No generated changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Persist fully audited v21 site and WOM history'
+          git fetch origin v21-bugfix
+          git rebase origin/v21-bugfix
+          git push origin HEAD:v21-bugfix
