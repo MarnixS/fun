@@ -2,10 +2,6 @@ name: Refresh United Gimps shared data
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/temple-cache.yml'
-      - 'scripts/refresh_shared_data.py'
 
 permissions:
   contents: write
