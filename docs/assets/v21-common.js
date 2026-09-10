@@ -20,12 +20,27 @@ async function loadWom(){let shared=null;try{shared=await staticJSON('data/wom-c
 async function loadClog(){let shared=null;try{shared=await staticJSON('data/temple-clog.json')}catch(e){console.warn('v21 Collection Log cache',e)}const local=localJSON(TKEY),st=+(shared?.fetchedAt||0),lt=+(local?.fetchedAt||local?.savedAt||0);return lt>st&&local?.players?local:(shared?.players?shared:local)||{players:{}}}
 function snapData(w,key){return w?.profiles?.[key]?.latestSnapshot?.data||w?.profiles?.[key]?.latest_snapshot?.data||null}
 function player(key){return PLAYERS.find(p=>p.key===key)}
-function replaceTextNode(n){if(!n||n.nodeType!==Node.TEXT_NODE)return;let s=n.nodeValue||'',z=s;z=z.replace(/Actual WOM snapshot/g,'Closest WOM snapshot in time').replace(/Temple catalogue/g,'Collection Log').replace(/Supporting cast/g,'Additional group members').replace(/supporting cast/g,'additional group members');if(z!==s)n.nodeValue=z}
+const TERMS=[
+ [/Actual WOM snapshot/g,'Closest WOM snapshot in time'],
+ [/Temple catalogue/gi,'Collection Log'],
+ [/Temple snapshot/g,'Collection Log snapshot'],
+ [/Temple recent items/g,'Collection Log recent unlocks via Temple'],
+ [/Temple recent unlocks/g,'Collection Log recent unlocks via Temple'],
+ [/WOM \+ Temple stay saved until you refresh/g,'WOM + Collection Log stay saved until you refresh'],
+ [/WOM \+ Temple/g,'WOM + Collection Log'],
+ [/Temple refresh finished/g,'Collection Log refresh finished'],
+ [/shared saved Temple snapshot restored/g,'shared saved Collection Log snapshot restored'],
+ [/Supporting cast/g,'Additional group members'],
+ [/supporting cast/g,'additional group members']
+];
+function replaceTextNode(n){if(!n||n.nodeType!==Node.TEXT_NODE)return;let s=n.nodeValue||'',z=s;for(const [a,b] of TERMS)z=z.replace(a,b);if(z!==s)n.nodeValue=z}
 function normalizeVisibleTerminology(root=document){const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode()))replaceTextNode(n)}
 function installObserver(){normalizeVisibleTerminology();const o=new MutationObserver(ms=>{for(const m of ms){for(const n of m.addedNodes){if(n.nodeType===Node.TEXT_NODE)replaceTextNode(n);else if(n.nodeType===Node.ELEMENT_NODE)normalizeVisibleTerminology(n)}}});o.observe(document.documentElement,{childList:true,subtree:true})}
 function closeGraphModal(el){const m=el?.closest?.('.modal')||$('.modal');if(m)m.hidden=true}
 document.addEventListener('click',e=>{const close=e.target.closest?.('.modal-close,[data-modal-close]');if(close){e.preventDefault();e.stopImmediatePropagation();closeGraphModal(close)}},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeGraphModal($('.modal'))},true);
+function loadNav(){if(document.querySelector('script[data-v21-nav]'))return;const s=document.createElement('script');s.src='assets/v21-nav.js';s.dataset.v21Nav='1';document.head.append(s)}
 window.UGV21={PLAYERS,PERIODS,$,$$,fmt,fmt1,compact,nice,loadWom,loadClog,snapData,player,WKEY,TKEY};
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installObserver);else installObserver();
+function init(){installObserver();loadNav()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
