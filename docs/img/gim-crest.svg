@@ -1,1 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 92" role="img" aria-label="United Gimps crest"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f0d487"/><stop offset=".48" stop-color="#b58a45"/><stop offset="1" stop-color="#6f4d24"/></linearGradient></defs><path d="M40 3 70 13v30c0 21-12 36-30 46C22 79 10 64 10 43V13z" fill="#17100a" stroke="#25180d" stroke-width="8"/><path d="M40 5 68 15v28c0 19-10 33-28 43C22 76 12 62 12 43V15z" fill="#2b2014" stroke="url(#g)" stroke-width="3"/><path d="M22 31h36M25 55h30" stroke="#8e6f3d" stroke-width="2" opacity=".8"/><circle cx="25" cy="43" r="6" fill="#b8acc4" stroke="#120d08" stroke-width="2"/><circle cx="40" cy="34" r="6" fill="#e2b75f" stroke="#120d08" stroke-width="2"/><circle cx="55" cy="43" r="6" fill="#d563ff" stroke="#120d08" stroke-width="2"/><path d="M29 40 36 36M44 36l7 4M31 47h18" stroke="#d6b86a" stroke-width="3"/><text x="40" y="69" text-anchor="middle" fill="#efd68d" font-family="Georgia,serif" font-weight="900" font-size="17">UG</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 72" role="img" aria-label="United Gimps crest">
+<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d7b96a"/><stop offset="1" stop-color="#80602b"/></linearGradient></defs>
+<path d="M7 7h50v35c0 12-9 20-25 27C16 62 7 54 7 42Z" fill="#20170e" stroke="#b18b45" stroke-width="3"/>
+<path d="M13 13h38v28c0 8-6 14-19 20-13-6-19-12-19-20Z" fill="#382817" stroke="#604824"/>
+<circle cx="32" cy="28" r="12" fill="#17110b" stroke="url(#g)" stroke-width="2"/>
+<path d="M25 36V21h5v10h4V21h5v15h-4v-3h-6v3Z" fill="url(#g)"/>
+<path d="m18 12 5-8 4 8m10 0 4-8 5 8" fill="none" stroke="#d6b86a" stroke-width="2"/>
+</svg>
