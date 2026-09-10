@@ -44,11 +44,12 @@ const shimCode=`(function(){
  };
 })();`;
 const shim='<script id="ug-temple-same-origin-cache">'+shimCode+'<'+'/script>';
-html=html.replace('</head>',shim+'</head>');
+html=html.replace('</head>',shim+'<link rel="stylesheet" href="v19.css?v=19"></head>');
 html=html.replace(/live TempleOSRS/g,'TempleOSRS server cache');
 html=html.replace(/Refresh Temple Clog/g,'Reload Temple Clog');
 html=html.replace(/Fetching all three Collection Logs from TempleOSRS…/g,'Reloading the latest TempleOSRS server cache…');
 html=html.replace(/TempleOSRS refresh complete\./g,'TempleOSRS cache reload complete.');
+html=html.replace('</body>','<script src="v19.js?v=19"><'+'/script></body>');
 document.open();document.write(html);document.close()
 }catch(e){
  document.getElementById('boot').innerHTML='<div><b>Site failed to load.</b><br><small>'+String(e).replace(/[<&]/g,'')+'</small></div>';
