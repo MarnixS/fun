@@ -1,1 +1,0 @@
-v18 image assets are committed through the Git tree in the release commit.
