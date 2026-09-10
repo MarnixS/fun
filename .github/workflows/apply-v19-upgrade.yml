@@ -1,0 +1,66 @@
+name: Apply United Gimps v19 upgrade
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-v19-upgrade.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch loader and five-man shared data
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          # Expand the authoritative server-side data refresh to all five GIM accounts.
+          p=Path('.github/workflows/temple-cache.yml')
+          s=p.read_text(encoding='utf-8')
+          old="PLAYERS = {'dikste':'Dikste','big dog aura':'Big Dog Aura','lijpste':'Lijpste'}"
+          new="PLAYERS = {'dikste':'Dikste','big dog aura':'Big Dog Aura','lijpste':'Lijpste','lompste':'Lompste','dikste jr':'Dikste Jr'}"
+          if old in s:
+              s=s.replace(old,new)
+          elif new not in s:
+              raise SystemExit('Could not locate Temple/WOM PLAYERS definition')
+          p.write_text(s,encoding='utf-8')
+
+          # Keep the proven v15 core package; load the maintainable v19 CSS/JS layer into it.
+          p=Path('docs/index.html')
+          s=p.read_text(encoding='utf-8')
+          old_head="html=html.replace('</head>',shim+'</head>');"
+          new_head="html=html.replace('</head>',shim+'<link rel=\"stylesheet\" href=\"v19.css?v=19\"></head>');"
+          if old_head in s:
+              s=s.replace(old_head,new_head)
+          elif 'v19.css?v=19' not in s:
+              raise SystemExit('Could not locate loader head injection')
+          old_write="document.open();document.write(html);document.close()"
+          new_write="html=html.replace('</body>','<script src=\"v19.js?v=19\"><'+'/script></body>');\ndocument.open();document.write(html);document.close()"
+          if old_write in s:
+              s=s.replace(old_write,new_write)
+          elif 'v19.js?v=19' not in s:
+              raise SystemExit('Could not locate loader document.write')
+          p.write_text(s,encoding='utf-8')
+
+          # Remove only the temporary readable-source export; leave old payloads untouched until v19 is verified live.
+          import shutil
+          shutil.rmtree('.scratch',ignore_errors=True)
+          Path('.github/workflows/export-v15-source.yml').unlink(missing_ok=True)
+          Path('.github/workflows/apply-v19-upgrade.yml').unlink(missing_ok=True)
+          PY
+      - name: Commit v19 wiring
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Wire United Gimps v19 five-man tracker'
+          git push
