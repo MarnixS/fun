@@ -62,11 +62,17 @@ def valid_temple(x):
 
 
 def merge_snapshots(old, new):
+    """Merge WOM snapshots by timestamp.
+
+    WOM can return the sentinel id -1 on many historical snapshots, so id is
+    not a safe deduplication key. createdAt is the stable identity we need for
+    chart/history purposes.
+    """
     by = {}
     for s in list(old or []) + list(new or []):
-        if not isinstance(s, dict) or not s.get('createdAt'):
+        if not isinstance(s, dict) or not s.get('createdAt') or not s.get('data'):
             continue
-        key = str(s.get('id') or s.get('createdAt'))
+        key = str(s['createdAt'])
         by[key] = s
     arr = list(by.values())
     arr.sort(key=lambda x: str(x.get('createdAt') or ''))
@@ -74,7 +80,7 @@ def merge_snapshots(old, new):
 
 
 def fetch_all_snapshots(name):
-    """Fetch every WOM snapshot available for a player, respecting 50-result pagination."""
+    """Fetch every WOM snapshot available for a player, respecting pagination."""
     out, offset, limit = [], 0, 50
     while True:
         q = urllib.parse.urlencode({'limit': limit, 'offset': offset})
