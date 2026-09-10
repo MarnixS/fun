@@ -28,14 +28,14 @@ jobs:
           import base64, io, tarfile
           from pathlib import Path
           root=Path('.v18payload')
-          parts=sorted(root.glob('part-*.txt'))
-          if not parts:
-              raise SystemExit('No site payload parts found')
+          parts=sorted(root.glob('chunk-*.txt'))
+          if len(parts) != 20:
+              raise SystemExit(f'Expected 20 verified v19 chunks, found {len(parts)}')
           packed=''.join(p.read_text(encoding='utf-8').strip() for p in parts)
-          raw=base64.b64decode(packed)
+          raw=base64.b64decode(packed, validate=True)
           with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as tf:
               tf.extractall('.')
-          print('Extracted',len(raw),'compressed bytes from',len(parts),'parts')
+          print('Extracted',len(raw),'compressed bytes from',len(parts),'chunks')
           PY
 
       - name: Remove staging and legacy payloads
