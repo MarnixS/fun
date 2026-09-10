@@ -1,0 +1,49 @@
+name: Export readable v15 source
+
+on:
+  push:
+    paths:
+      - '.github/workflows/export-v15-source.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct v15 HTML
+        shell: bash
+        run: |
+          python - <<'PY'
+          import base64, gzip
+          from pathlib import Path
+          parts=sorted(Path('docs/site').glob('v15b64-*.txt'))
+          if not parts:
+              raise SystemExit('No v15 payload fragments found')
+          packed=''.join(p.read_text(encoding='utf-8').strip() for p in parts)
+          raw=base64.b64decode(packed, validate=True)
+          html=gzip.decompress(raw)
+          out=Path('.scratch/v15.html')
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_bytes(html)
+          print(f'Reconstructed {len(html)} bytes from {len(parts)} fragments')
+          PY
+
+      - name: Commit readable source
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .scratch/v15.html
+          if git diff --cached --quiet; then
+            echo 'Readable v15 source already current.'
+            exit 0
+          fi
+          git commit -m 'Export readable v15 source for v19 rebuild'
+          git push
