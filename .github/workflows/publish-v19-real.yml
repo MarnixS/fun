@@ -41,7 +41,7 @@ jobs:
           packed=''.join(p.read_text(encoding='utf-8').strip() for p in parts)
           raw=base64.b64decode(packed, validate=True)
           sha=hashlib.sha256(raw).hexdigest()
-          expected='190db676b5e732538aea5b0b16506844c5a35de4b1b03cc579c378cedd0f2d16'
+          expected='3dbd7c3362ba24cade660ff135b156b3d02284a5676f203eeb7da8b0d7b8090a'
           if sha!=expected:
               raise SystemExit(f'Payload checksum mismatch: {sha}')
           print(f'Authoritative v19 payload verified: {len(raw)} bytes, sha256={sha}')
@@ -54,7 +54,6 @@ jobs:
               shutil.copy2(tmp/name,docs/name)
           shutil.copy2(tmp/'assets/app.js',docs/'assets/app.js')
           shutil.copy2(tmp/'assets/site.css',docs/'assets/site.css')
-          # Remove the accidental continuous-scroll overlay and obsolete compressed loader payload.
           for p in [docs/'v19.js',docs/'v19.css',docs/'site-a.b64']:
               p.unlink(missing_ok=True)
           shutil.rmtree(docs/'site',ignore_errors=True)
