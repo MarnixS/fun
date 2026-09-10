@@ -1,0 +1,141 @@
+name: Publish United Gimps v20
+
+on:
+  push:
+    paths:
+      - '.github/workflows/publish-v20.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: united-gimps-v20-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reconstruct and validate v20
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .v20payload-final/part-*.txt | base64 -d > /tmp/v20-deploy.tar.gz
+          echo '63e93ab2023c7fc4610fcf1f239de5dc57ab34ed6af39445479d782519bd08b5  /tmp/v20-deploy.tar.gz' | sha256sum -c -
+          rm -rf /tmp/v20 && mkdir -p /tmp/v20
+          tar -xzf /tmp/v20-deploy.tar.gz -C /tmp/v20
+          node --check /tmp/v20/docs/assets/app.js
+          python -m py_compile /tmp/v20/scripts/refresh_shared_data.py
+          python - <<'PY'
+          from pathlib import Path
+          root=Path('/tmp/v20/docs')
+          pages=['index.html','gim.html','hiscores.html','progress.html','time-machine.html','chronicle.html','history.html']
+          for p in pages:
+              t=(root/p).read_text(encoding='utf-8')
+              assert 'assets/site.css' in t and 'assets/app.js' in t, p
+          app=(root/'assets/app.js').read_text(encoding='utf-8')
+          for token in ["{key:'dikste'","{key:'lompste'","{key:'big dog aura'","{key:'poep aura'","{key:'lijpste'",'balancedHighlights','renderActivityEras','collectionModel','Shared & overlap','Item value','Categories','Recent unlocks','Recovery','loadTempleSaved','loadWomSaved']:
+              assert token in app, token
+          assert "filter(k=>k!=='lompste')" not in app
+          gim=(root/'gim.html').read_text(encoding='utf-8')
+          for token in ['Collection Log','Contribution','Shared & overlap','Item value','Categories','Recent unlocks','Recovery']:
+              assert token in gim, token
+          chron=(root/'chronicle.html').read_text(encoding='utf-8')
+          assert 'Refresh stats Chronicle via WOM' in chron
+          print('v20 source checks passed')
+          PY
+      - name: Preserve and extract exact portraits from verified v19
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp docs/assets/app.js /tmp/v19-app.js
+          python - <<'PY'
+          from pathlib import Path
+          import re, base64
+          src=Path('/tmp/v19-app.js').read_text(encoding='utf-8')
+          out=Path('/tmp/v20/docs/img'); out.mkdir(parents=True,exist_ok=True)
+          mapping={'dikste':'dikste.webp','big dog aura':'bigdog.webp','lijpste':'lijpste.webp','poep aura':'poep-aura.png','lompste':'lompste.png'}
+          for key,fn in mapping.items():
+              m=re.search(r"\{key:'"+re.escape(key)+r"'.*?portrait:'data:image/[^;]+;base64,([^']+)'",src,re.S)
+              if not m: raise SystemExit('portrait missing: '+key)
+              data=base64.b64decode(m.group(1),validate=True)
+              (out/fn).write_bytes(data)
+              print(key,fn,len(data))
+          Path('/tmp/v20/docs/assets/portrait-source.txt').write_text(src,encoding='utf-8')
+          PY
+          cp -f docs/img/united-gimps-banner.webp /tmp/v20/docs/img/united-gimps-banner.webp
+          cp -f docs/img/gim-crest.svg /tmp/v20/docs/img/gim-crest.svg
+      - name: Install v20 and run one deliberate shared-data refresh
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp -a /tmp/v20/docs/. docs/
+          cp -f /tmp/v20/scripts/refresh_shared_data.py scripts/refresh_shared_data.py
+          python scripts/refresh_shared_data.py
+      - name: Make future shared refreshes manual-only and clean obsolete staging
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > .github/workflows/temple-cache.yml <<'YAML'
+          name: Refresh United Gimps shared data
+
+          on:
+            workflow_dispatch:
+
+          permissions:
+            contents: write
+
+          concurrency:
+            group: united-gimps-shared-data
+            cancel-in-progress: false
+
+          jobs:
+            refresh:
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v4
+                  with:
+                    fetch-depth: 0
+                - name: Refresh TempleOSRS and WOM caches for all five members
+                  run: python scripts/refresh_shared_data.py
+                - name: Commit shared cache when changed
+                  shell: bash
+                  run: |
+                    if [ -z "$(git status --porcelain -- docs/data/temple-clog.json docs/data/wom-cache.json)" ]; then
+                      echo 'No cache change to commit.'
+                      exit 0
+                    fi
+                    git config user.name 'github-actions[bot]'
+                    git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+                    git add docs/data/temple-clog.json docs/data/wom-cache.json
+                    git commit -m 'Refresh United Gimps five-man shared data'
+                    git fetch origin main
+                    git rebase origin/main
+                    git push origin HEAD:main
+          YAML
+          rm -rf .v18payload .v19payload .v20payload .v20payload-final docs/site
+          rm -f docs/v19.css docs/v19.js docs/img/*.b64.tmp docs/img/.keep docs/img/README.txt
+          rm -f .github/workflows/deploy-v18.yml .github/workflows/extract-v18-banner.yml .github/workflows/publish-v19-final.yml .github/workflows/publish-v19-real.yml .github/workflows/validate-v19.yml
+      - name: Final validation and publish commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check docs/assets/app.js
+          python -m py_compile scripts/refresh_shared_data.py
+          test -s docs/img/dikste.webp
+          test -s docs/img/bigdog.webp
+          test -s docs/img/lijpste.webp
+          test -s docs/img/poep-aura.png
+          test -s docs/img/lompste.png
+          test -s docs/data/wom-cache.json
+          test -s docs/data/temple-clog.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Publish United Gimps v20 restored site'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
