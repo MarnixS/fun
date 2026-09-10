@@ -1,9 +1,13 @@
-name: Refresh TempleOSRS cache
+name: Refresh United Gimps shared data
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '*/5 * * * *'
+    inputs:
+      force:
+        description: 'Ignore the 10-minute courtesy cooldown'
+        required: false
+        default: false
+        type: boolean
   push:
     paths:
       - '.github/workflows/temple-cache.yml'
@@ -12,8 +16,12 @@ permissions:
   contents: write
 
 concurrency:
-  group: temple-cache
+  group: united-gimps-shared-data
   cancel-in-progress: false
+
+env:
+  TEMPLE_GROUP_ID: ${{ vars.TEMPLE_GROUP_ID }}
+  FORCE_REFRESH: ${{ inputs.force || 'false' }}
 
 jobs:
   refresh:
@@ -21,78 +29,234 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch TempleOSRS collection logs
+      - name: Refresh TempleOSRS and WOM caches
         shell: bash
         run: |
           python - <<'PY'
           import json, os, time, urllib.parse, urllib.request
+          from pathlib import Path
 
-          players = {
-              'dikste': 'Dikste',
-              'big dog aura': 'Big Dog Aura',
-              'lijpste': 'Lijpste',
-          }
-          out = {}
-          for key, name in players.items():
-              q = urllib.parse.urlencode({
-                  'player': name,
-                  'categories': 'all',
-                  'includenames': '1',
-                  'onlyitems': '1',
-                  'dateformat': 'unix',
-              })
-              url = 'https://templeosrs.com/api/collection-log/player_collection_log.php?' + q
-              for attempt in range(4):
+          ROOT = Path('docs/data')
+          ROOT.mkdir(parents=True, exist_ok=True)
+          PLAYERS = {'dikste':'Dikste','big dog aura':'Big Dog Aura','lijpste':'Lijpste'}
+          UA = 'United-Gimps-Group-Ironman-Tracker/2.0 (github.com/MarnixS/fun)'
+          FORCE = os.environ.get('FORCE_REFRESH','false').lower() == 'true'
+          COOLDOWN = 10 * 60 * 1000
+
+          def read_json(path):
+              try: return json.loads(Path(path).read_text(encoding='utf-8'))
+              except Exception: return None
+
+          old_temple = read_json(ROOT/'temple-clog.json')
+          old_wom = read_json(ROOT/'wom-cache.json')
+          last = max(int((old_temple or {}).get('fetchedAt') or 0), int((old_wom or {}).get('savedAt') or 0))
+          if not FORCE and old_temple and old_wom and last and int(time.time()*1000)-last < COOLDOWN:
+              print('Courtesy cooldown active: shared data was refreshed less than 10 minutes ago. No upstream calls made.')
+              raise SystemExit(0)
+
+          def get(url, timeout=30, attempts=4, delay=0):
+              err = None
+              for attempt in range(attempts):
                   try:
-                      req = urllib.request.Request(url, headers={
-                          'Accept': 'application/json',
-                          'User-Agent': 'United-Gimps-GitHub-Pages/1.0',
-                      })
-                      with urllib.request.urlopen(req, timeout=25) as r:
-                          payload = json.load(r)
-                      if not isinstance(payload, dict) or not isinstance(payload.get('data'), dict):
-                          raise RuntimeError(f'{name}: unexpected Temple response')
-                      out[key] = payload
-                      break
-                  except Exception:
-                      if attempt == 3:
-                          raise
-                      time.sleep(2 ** attempt)
-              print(f'Fetched {name}')
+                      req = urllib.request.Request(url, headers={'Accept':'application/json','User-Agent':UA})
+                      with urllib.request.urlopen(req, timeout=timeout) as r:
+                          data = json.load(r)
+                      if delay: time.sleep(delay)
+                      return data
+                  except Exception as e:
+                      err=e
+                      if attempt == attempts-1: raise
+                      time.sleep(2**attempt)
+              raise err
 
-          path = 'docs/data/temple-clog.json'
-          os.makedirs(os.path.dirname(path), exist_ok=True)
-          old = None
-          try:
-              with open(path, 'r', encoding='utf-8') as f:
-                  old = json.load(f)
-          except Exception:
-              pass
+          # ---------- TempleOSRS ----------
+          def walk_items(node, out, include_zero=True):
+              if isinstance(node, list):
+                  for v in node: walk_items(v,out,include_zero)
+                  return
+              if not isinstance(node, dict): return
+              if 'id' in node:
+                  try: iid=int(node['id'])
+                  except Exception: iid=None
+                  if iid:
+                      try: count=max(0,int(node.get('count',node.get('quantity',0)) or 0))
+                      except Exception: count=0
+                      if include_zero or count>0:
+                          out.append({'id':iid,'name':str(node.get('name') or node.get('item_name') or f'Item {iid}'),'count':count,'date':node.get('date') or node.get('date_unix')})
+                      return
+              for k,v in node.items():
+                  if isinstance(v,(dict,list)): walk_items(v,out,include_zero)
+                  elif str(k).isdigit():
+                      try: count=max(0,int(v or 0))
+                      except Exception: continue
+                      if include_zero or count>0: out.append({'id':int(k),'name':f'Item {k}','count':count})
 
-          # Avoid a new Git commit every five minutes when no Collection Log data changed.
-          if isinstance(old, dict) and old.get('players') == out:
-              print('Temple data unchanged; keeping existing cache file.')
+          fallback = read_json(ROOT/'clog-fallback.json') or {'catalog':{}}
+          fallback_map={}
+          for group,pages in (fallback.get('catalog') or {}).items():
+              for page,arr in (pages or {}).items():
+                  for it in arr or []:
+                      try: fallback_map[int(it[0])]={'group':group,'category':page,'name':str(it[1])}
+                      except Exception: pass
+
+          # Temple's current item/category maps are authoritative for the catalogue. A full-player
+          # missing-items response is retained as a safe fallback if Temple changes those map shapes.
+          item_doc=get('https://templeosrs.com/api/collection-log/items.php')
+          category_doc=get('https://templeosrs.com/api/collection-log/categories.php')
+
+          def collect_item_names(node, out):
+              if isinstance(node, dict):
+                  if 'id' in node and ('name' in node or 'item_name' in node):
+                      try: out[int(node['id'])]=str(node.get('name') or node.get('item_name'))
+                      except Exception: pass
+                  for k,v in node.items():
+                      if str(k).isdigit() and isinstance(v,str): out[int(k)]=v
+                      elif isinstance(v,(dict,list)): collect_item_names(v,out)
+              elif isinstance(node,list):
+                  for v in node: collect_item_names(v,out)
+
+          temple_names={}; collect_item_names(item_doc.get('data',item_doc) if isinstance(item_doc,dict) else item_doc,temple_names)
+
+          def numeric_ids(node):
+              out=[]
+              if isinstance(node,dict):
+                  if 'id' in node:
+                      try: out.append(int(node['id']))
+                      except Exception: pass
+                  for k,v in node.items():
+                      if str(k).isdigit(): out.append(int(k))
+                      if isinstance(v,(dict,list)): out.extend(numeric_ids(v))
+              elif isinstance(node,list):
+                  for v in node:
+                      if isinstance(v,(int,float)) or (isinstance(v,str) and v.isdigit()): out.append(int(v))
+                      elif isinstance(v,(dict,list)): out.extend(numeric_ids(v))
+              return out
+
+          category_map={}
+          def walk_categories(node,path=()):
+              if isinstance(node,dict):
+                  for k,v in node.items():
+                      if str(k).lower() in ('data','items','categories'): walk_categories(v,path)
+                      elif not str(k).isdigit():
+                          ids=set(numeric_ids(v))
+                          clean=str(k).replace('_',' ').strip()
+                          if ids and clean:
+                              group=(path[0] if path else clean).replace('_',' ').title()
+                              category=clean.title()
+                              for iid in ids: category_map.setdefault(iid,{'group':group,'category':category})
+                          if isinstance(v,(dict,list)): walk_categories(v,path+(str(k),))
+              elif isinstance(node,list):
+                  for v in node:
+                      if isinstance(v,(dict,list)): walk_categories(v,path)
+          walk_categories(category_doc.get('data',category_doc) if isinstance(category_doc,dict) else category_doc)
+
+          if len(temple_names) < 500:
+              q=urllib.parse.urlencode({'player':'Dikste','categories':'all','includenames':'1','includemissingitems':'1','onlyitems':'1','dateformat':'unix'})
+              full=get('https://templeosrs.com/api/collection-log/player_collection_log.php?'+q)
+              cat_items=[]; walk_items((full.get('data') or {}).get('items',full.get('data') or {}),cat_items,True)
+              for it in cat_items:
+                  temple_names.setdefault(it['id'],it.get('name') or f"Item {it['id']}")
+
+          catalogue=[]
+          for iid,name in sorted(temple_names.items()):
+              fb=fallback_map.get(iid,{})
+              cm=category_map.get(iid,{})
+              catalogue.append({'id':iid,'name':name or fb.get('name') or f'Item {iid}','group':cm.get('group') or fb.get('group','Other'),'category':cm.get('category') or fb.get('category','TempleOSRS current catalogue')})
+          name_map={x['id']:x['name'] for x in catalogue}
+          print(f'Temple catalogue: {len(catalogue)} items; category map covered {len(category_map)} IDs')
+
+          temple_players={}
+          recent=[]
+          group_id=(os.environ.get('TEMPLE_GROUP_ID') or '').strip()
+          if group_id:
+              gq=urllib.parse.urlencode({'group':group_id,'categories':'all','includecount':'1','dateformat':'unix'})
+              gj=get('https://templeosrs.com/api/collection-log/group_collection_log.php?'+gq)
+              gd=gj.get('data') or {}
+              members=gd.get('members') or {}
+              for key,rsn in PLAYERS.items():
+                  src=None
+                  for _,m in members.items():
+                      if str((m or {}).get('player','')).lower()==rsn.lower() or str((m or {}).get('player_name_with_capitalization','')).lower()==rsn.lower(): src=m;break
+                  if not src: continue
+                  items=src.get('items') or src.get('collections') or {}
+                  item_rows=[]
+                  if isinstance(items,dict):
+                      for iid,c in items.items():
+                          if str(iid).isdigit(): item_rows.append({'id':int(iid),'name':name_map.get(int(iid),f'Item {iid}'),'count':int(c or 0)})
+                  elif isinstance(items,list):
+                      for iid in items:
+                          if str(iid).isdigit(): item_rows.append({'id':int(iid),'name':name_map.get(int(iid),f'Item {iid}'),'count':1})
+                  temple_players[key]={'data':{'player':rsn,'player_name_with_capitalization':src.get('player_name_with_capitalization',rsn),'last_checked':src.get('last_checked'),'last_changed':src.get('last_changed'),'total_collections_available':gd.get('total_collections_available',len(catalogue)),'items':item_rows}}
+              rj=get('https://templeosrs.com/api/collection-log/group_recent_items.php?'+urllib.parse.urlencode({'group':group_id,'count':100}))
+              rdata=rj.get('data') or []
+              if isinstance(rdata,dict): rdata=list(rdata.values())
+              for r in rdata or []:
+                  if isinstance(r,dict): recent.append(r)
+              print(f'Temple group endpoint enabled: group {group_id}')
           else:
-              doc = {
-                  'source': 'TempleOSRS',
-                  'fetchedAt': int(time.time() * 1000),
-                  'players': out,
-              }
-              with open(path, 'w', encoding='utf-8') as f:
-                  json.dump(doc, f, ensure_ascii=False, separators=(',', ':'))
-                  f.write('\n')
-              print('Temple cache updated.')
+              for key,rsn in PLAYERS.items():
+                  q=urllib.parse.urlencode({'player':rsn,'categories':'all','includenames':'1','onlyitems':'1','dateformat':'unix'})
+                  temple_players[key]=get('https://templeosrs.com/api/collection-log/player_collection_log.php?'+q)
+                  rq=urllib.parse.urlencode({'player':rsn,'count':40})
+                  rj=get('https://templeosrs.com/api/collection-log/player_recent_items.php?'+rq)
+                  rdata=rj.get('data') or []
+                  if isinstance(rdata,dict): rdata=list(rdata.values())
+                  for r in rdata or []:
+                      if isinstance(r,dict):
+                          x=dict(r); x.setdefault('player',rsn); recent.append(x)
+                  print('Fetched Temple',rsn)
+
+          def recent_time(x):
+              try:return int(x.get('date_unix') or x.get('date') or 0)
+              except:return 0
+          recent.sort(key=recent_time, reverse=True)
+          temple_doc={'source':'TempleOSRS','fetchedAt':int(time.time()*1000),'groupId':int(group_id) if group_id.isdigit() else None,'catalogue':{'items':catalogue},'players':temple_players,'recent':recent[:100]}
+
+          # ---------- Wise Old Man ----------
+          wom={'source':'Wise Old Man','savedAt':int(time.time()*1000),'players':{},'gains':{'week':{},'month':{},'year':{}},'snapshots':{}}
+          def wom_get(path):
+              return get('https://api.wiseoldman.net/v2'+path, attempts=3, delay=1.1)
+          def wom_update(rsn):
+              url='https://api.wiseoldman.net/v2/players/'+urllib.parse.quote(rsn)
+              req=urllib.request.Request(url,method='POST',headers={'Accept':'application/json','Content-Type':'application/json','User-Agent':UA},data=b'{}')
+              with urllib.request.urlopen(req,timeout=30) as r: data=json.load(r)
+              time.sleep(1.1)
+              return data
+          for key,rsn in PLAYERS.items():
+              wom['players'][key]=wom_update(rsn)
+              print('Updated WOM profile',rsn)
+          for period in ('week','month','year'):
+              for key,rsn in PLAYERS.items():
+                  wom['gains'][period][key]=wom_get('/players/'+urllib.parse.quote(rsn)+'/gained?period='+period)
+                  print('Fetched WOM',period,rsn)
+          for key,rsn in PLAYERS.items():
+              wom['snapshots'][key]=wom_get('/players/'+urllib.parse.quote(rsn)+'/snapshots?period=year&limit=50&offset=0')
+              wom['snapshots'][key].sort(key=lambda x:x.get('createdAt',''))
+              print('Fetched WOM snapshots',rsn)
+
+          def stable_temple(d):
+              x=dict(d);x.pop('fetchedAt',None);return x
+          def stable_wom(d):
+              x=dict(d);x.pop('savedAt',None);return x
+          changed=False
+          if stable_temple(temple_doc)!=stable_temple(old_temple or {}):
+              (ROOT/'temple-clog.json').write_text(json.dumps(temple_doc,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8');changed=True
+          else: print('Temple data unchanged.')
+          if stable_wom(wom)!=stable_wom(old_wom or {}):
+              (ROOT/'wom-cache.json').write_text(json.dumps(wom,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8');changed=True
+          else: print('WOM data unchanged.')
+          if not changed: print('No shared cache files changed.')
           PY
 
-      - name: Commit cache when changed
+      - name: Commit shared cache when changed
         shell: bash
         run: |
-          if [ -z "$(git status --porcelain -- docs/data/temple-clog.json)" ]; then
+          if [ -z "$(git status --porcelain -- docs/data/temple-clog.json docs/data/wom-cache.json)" ]; then
             echo 'No cache change to commit.'
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/data/temple-clog.json
-          git commit -m 'Refresh TempleOSRS collection log cache'
+          git add docs/data/temple-clog.json docs/data/wom-cache.json
+          git commit -m 'Refresh United Gimps shared data'
           git push
