@@ -7,6 +7,7 @@ const PLAYERS=[
  {key:'poep aura',name:'Poep Aura',color:'#d77878'},
  {key:'lompste',name:'Lompste',color:'#d3b35d'}
 ];
+const CORE_KEYS=['dikste','big dog aura','lijpste'];
 const PERIODS={7:'1 week',30:'1 month',90:'3 months',180:'6 months',365:'1 year'};
 const WKEY='ug-v20-wom-cache',TKEY='ug-v20-temple-cache';
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -20,6 +21,18 @@ async function loadWom(){let shared=null;try{shared=await staticJSON('data/wom-c
 async function loadClog(){let shared=null;try{shared=await staticJSON('data/temple-clog.json')}catch(e){console.warn('v21 Collection Log cache',e)}const local=localJSON(TKEY),st=+(shared?.fetchedAt||0),lt=+(local?.fetchedAt||local?.savedAt||0);return lt>st&&local?.players?local:(shared?.players?shared:local)||{players:{}}}
 function snapData(w,key){return w?.profiles?.[key]?.latestSnapshot?.data||w?.profiles?.[key]?.latest_snapshot?.data||null}
 function player(key){return PLAYERS.find(p=>p.key===key)}
+function cleanSelection(sel,fallback=CORE_KEYS){const ok=new Set(PLAYERS.map(p=>p.key)),out=new Set([...(sel||[])].filter(k=>ok.has(k)));if(!out.size)fallback.forEach(k=>out.add(k));return out}
+function memberSummary(sel){const a=PLAYERS.filter(p=>sel.has(p.key));return a.length===PLAYERS.length?'All five':a.length===1?a[0].name:`${a.length} members`}
+function renderMemberPicker(host,selection,onChange,{title='Members',subtitle='Add or remove members',fallback=CORE_KEYS,availability=null}={}){
+ if(typeof host==='string')host=$(host);if(!host)return;
+ const sel=cleanSelection(selection,fallback),apply=next=>{const n=cleanSelection(next,fallback);onChange(new Set(n));renderMemberPicker(host,n,onChange,{title,subtitle,fallback,availability})};
+ host.classList.add('v21-member-picker');
+ host.innerHTML=`<details><summary><span><b>${title}</b><small>${memberSummary(sel)} · click to edit</small></span><i aria-hidden="true">⌄</i></summary><div class="v21-member-pop"><div class="v21-member-actions"><button type="button" data-v21-preset="all">All five</button><button type="button" data-v21-preset="core">Core three</button></div><div class="v21-member-list">${PLAYERS.map(p=>{const known=availability?availability.has(p.key):true;return `<label style="--pc:${p.color}"><input type="checkbox" value="${p.key}" ${sel.has(p.key)?'checked':''}><i></i><span>${p.name}</span>${known?'':'<em>no synced data</em>'}</label>`}).join('')}</div><div class="v21-member-help">${subtitle}</div></div></details>`;
+ const d=$('details',host);$$('input[type="checkbox"]',host).forEach(c=>c.onchange=()=>{const n=new Set($$('input:checked',host).map(x=>x.value));if(!n.size){c.checked=true;return}apply(n)});
+ $('[data-v21-preset="all"]',host).onclick=()=>apply(new Set(PLAYERS.map(p=>p.key)));
+ $('[data-v21-preset="core"]',host).onclick=()=>apply(new Set(CORE_KEYS));
+ d.addEventListener('toggle',()=>{if(!d.open)return;setTimeout(()=>{const close=e=>{if(!host.contains(e.target)){d.open=false;document.removeEventListener('pointerdown',close,true)}};document.addEventListener('pointerdown',close,true)},0)});
+}
 const TERMS=[
  [/Actual WOM snapshot/g,'Closest WOM snapshot in time'],
  [/Temple catalogue/gi,'Collection Log'],
@@ -36,11 +49,12 @@ const TERMS=[
 function replaceTextNode(n){if(!n||n.nodeType!==Node.TEXT_NODE)return;let s=n.nodeValue||'',z=s;for(const [a,b] of TERMS)z=z.replace(a,b);if(z!==s)n.nodeValue=z}
 function normalizeVisibleTerminology(root=document){const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode()))replaceTextNode(n)}
 function installObserver(){normalizeVisibleTerminology();const o=new MutationObserver(ms=>{for(const m of ms){for(const n of m.addedNodes){if(n.nodeType===Node.TEXT_NODE)replaceTextNode(n);else if(n.nodeType===Node.ELEMENT_NODE)normalizeVisibleTerminology(n)}}});o.observe(document.documentElement,{childList:true,subtree:true})}
-function closeGraphModal(el){const m=el?.closest?.('.modal')||$('.modal');if(m)m.hidden=true}
+function closeGraphModal(el){const m=el?.closest?.('.modal')||$('.modal:not([hidden])');if(m){m.hidden=true;m.style.display='none';m.setAttribute('aria-hidden','true')}}
+function showGraphModal(m){if(!m)return;m.hidden=false;m.style.display='flex';m.setAttribute('aria-hidden','false')}
 document.addEventListener('click',e=>{const close=e.target.closest?.('.modal-close,[data-modal-close]');if(close){e.preventDefault();e.stopImmediatePropagation();closeGraphModal(close)}},true);
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeGraphModal($('.modal'))},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeGraphModal($('.modal:not([hidden])'))},true);
 function loadNav(){if(document.querySelector('script[data-v21-nav]'))return;const s=document.createElement('script');s.src='assets/v21-nav.js';s.dataset.v21Nav='1';document.head.append(s)}
-window.UGV21={PLAYERS,PERIODS,$,$$,fmt,fmt1,compact,nice,loadWom,loadClog,snapData,player,WKEY,TKEY};
+window.UGV21={PLAYERS,CORE_KEYS,PERIODS,$,$$,fmt,fmt1,compact,nice,loadWom,loadClog,snapData,player,WKEY,TKEY,cleanSelection,renderMemberPicker,closeGraphModal,showGraphModal};
 function init(){installObserver();loadNav()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
