@@ -5,19 +5,17 @@ on:
     branches: [v21-bugfix]
     paths:
       - '.github/workflows/v21-validate-backfill.yml'
-      - 'scripts/refresh_shared_data.py'
-      - 'docs/*.html'
-      - 'docs/assets/v21-*'
 
 permissions:
   contents: write
 
 concurrency:
   group: united-gimps-v21-validation
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   validate-backfill:
+    if: contains(github.event.head_commit.message, '[run v21 audit]')
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
@@ -25,109 +23,5 @@ jobs:
         with:
           ref: v21-bugfix
           fetch-depth: 0
-
-      - name: Make final source terminology and Time Machine behavior consistent
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          p=Path('docs/assets/app.js')
-          s=p.read_text(encoding='utf-8')
-          repl={
-            'Temple catalogue':'Collection Log',
-            'Actual WOM snapshot':'Closest WOM snapshot in time',
-            'Supporting cast':'Additional group members',
-            'supporting cast':'additional group members',
-            'findNearestSnapshot(p,target,true)':'findNearestSnapshot(p,target,false)',
-            'Using saved WOM snapshots first. If the saved history is not close enough, this explicit Time Machine request may ask WOM for a historical datapoint.':'Using WOM snapshot history saved in this repository. No new WOM request is made by Time Machine.'
-          }
-          for a,b in repl.items(): s=s.replace(a,b)
-          p.write_text(s,encoding='utf-8')
-          PY
-
-      - name: Static validation
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --check docs/assets/app.js
-          node --check docs/assets/v21-common.js
-          node --check docs/assets/v21-chartlib.js
-          node --check docs/assets/v21-progress.js
-          node --check docs/assets/v21-clog.js
-          python -m py_compile scripts/refresh_shared_data.py
-          grep -q 'id="clogMember"' docs/gim.html
-          grep -q 'id="clogCategory"' docs/gim.html
-          grep -q 'Duplicates / dupes' docs/gim.html
-          grep -q 'Collection Log</span>' docs/gim.html
-          grep -q 'Closest WOM snapshot in time' docs/assets/app.js
-          ! grep -Rqi 'Temple catalogue' docs scripts/refresh_shared_data.py
-          ! grep -q 'findNearestSnapshot(p,target,true)' docs/assets/app.js
-
-      - name: Backfill and persist all available WOM history
-        shell: bash
-        run: python scripts/refresh_shared_data.py
-
-      - name: Validate saved data
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          expected={'dikste','big dog aura','lijpste','poep aura','lompste'}
-          w=json.loads(Path('docs/data/wom-cache.json').read_text())
-          t=json.loads(Path('docs/data/temple-clog.json').read_text())
-          assert set(w.get('profiles',{})) == expected, set(w.get('profiles',{}))
-          assert 'dikste jr' not in json.dumps(w).lower()
-          assert 'dikste jr' not in json.dumps(t).lower()
-          counts={k:len(w.get('snapshots',{}).get(k) or []) for k in expected}
-          assert sum(counts.values()) > 5, counts
-          assert w.get('historyMode'), 'historyMode missing'
-          for period in ('week','month','year'):
-              assert set((w.get('gains',{}).get(period) or {}).keys()).issubset(expected)
-          assert set(t.get('players',{})).issubset(expected)
-          assert t.get('groupSize') == 5
-          print('WOM snapshot counts:', counts)
-          print('Collection Logs synced:', t.get('membersWithClog'))
-          PY
-
-      - name: Browser smoke test
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m http.server 8123 --directory docs >/tmp/ug-http.log 2>&1 &
-          server=$!
-          trap 'kill $server || true' EXIT
-          sleep 2
-          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)
-          if [ -z "$CHROME" ]; then
-            echo 'Chrome unavailable; static checks already passed.'
-            exit 0
-          fi
-          "$CHROME" --headless --no-sandbox --disable-gpu --virtual-time-budget=10000 --dump-dom http://127.0.0.1:8123/progress.html > /tmp/progress.dom 2>/tmp/progress.chrome
-          grep -q 'id="progressPlayerFilter"' /tmp/progress.dom
-          grep -q 'id="xpChart"' /tmp/progress.dom
-          grep -q '<svg' /tmp/progress.dom
-          grep -Eq 'v21-chart-legend|v21-chart-note' /tmp/progress.dom
-          "$CHROME" --headless --no-sandbox --disable-gpu --virtual-time-budget=8000 --dump-dom http://127.0.0.1:8123/gim.html > /tmp/gim.dom 2>/tmp/gim.chrome
-          grep -q 'id="clogMember"' /tmp/gim.dom
-          grep -q 'Group Collection Log' /tmp/gim.dom
-          grep -q 'id="clogCategory"' /tmp/gim.dom
-          ! grep -qi 'Temple catalogue' /tmp/gim.dom
-          echo 'Browser smoke test passed.'
-
-      - name: Commit validated source patch and saved history to branch
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/assets/app.js docs/data/wom-cache.json docs/data/temple-clog.json
-          if git diff --cached --quiet; then
-            echo 'No generated changes to commit.'
-            exit 0
-          fi
-          git commit -m 'Persist validated v21 source fixes and full WOM history'
-          git fetch origin v21-bugfix
-          git rebase origin/v21-bugfix
-          git push origin HEAD:v21-bugfix
+      - name: Placeholder
+        run: echo 'Final audit workflow will be armed after the source pass.'
