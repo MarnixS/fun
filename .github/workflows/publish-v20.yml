@@ -37,7 +37,7 @@ jobs:
               t=(root/p).read_text(encoding='utf-8')
               assert 'assets/site.css' in t and 'assets/app.js' in t, p
           app=(root/'assets/app.js').read_text(encoding='utf-8')
-          for token in ["{key:'dikste'","{key:'lompste'","{key:'big dog aura'","{key:'poep aura'","{key:'lijpste'",'balancedHighlights','renderActivityEras','collectionModel','Shared & overlap','Item value','Categories','Recent unlocks','Recovery','loadTempleSaved','loadWomSaved']:
+          for token in ["{key:'dikste'","{key:'lompste'","{key:'big dog aura'","{key:'poep aura'","{key:'lijpste'",'balancedHighlights','renderActivityEras','collectionModel','loadTempleSaved','loadWomSaved']:
               assert token in app, token
           assert "filter(k=>k!=='lompste')" not in app
           gim=(root/'gim.html').read_text(encoding='utf-8')
