@@ -28,9 +28,9 @@ jobs:
           import base64, io, tarfile
           from pathlib import Path
           root=Path('.v18payload')
-          parts=sorted(root.glob('chunk-*.txt'))
-          if len(parts) != 33:
-              raise SystemExit(f'Expected 33 verified v19 chunks, found {len(parts)}')
+          parts=sorted(root.glob('safe-*.txt'))
+          if len(parts) != 65:
+              raise SystemExit(f'Expected 65 verified v19 chunks, found {len(parts)}')
           packed=''.join(p.read_text(encoding='utf-8').strip() for p in parts)
           raw=base64.b64decode(packed, validate=True)
           with tarfile.open(fileobj=io.BytesIO(raw),mode='r:gz') as tf:
