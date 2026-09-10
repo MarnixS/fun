@@ -1,4 +1,4 @@
-name: Validate v21 and backfill WOM history
+name: Validate v21 final site
 
 on:
   push:
@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate-backfill:
+  audit:
     if: contains(github.event.head_commit.message, '[run v21 audit]')
     runs-on: ubuntu-latest
     timeout-minutes: 55
@@ -23,71 +23,18 @@ jobs:
           ref: v21-bugfix
           fetch-depth: 0
 
-      - name: Finalize staged source
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          import re
-          p=Path('docs/assets/app.js'); s=p.read_text()
-          for a,b in {
-            'Temple catalogue':'Collection Log',
-            'Actual WOM snapshot':'Closest WOM snapshot in time',
-            'Supporting cast':'Additional group members',
-            'supporting cast':'additional group members',
-            "role:'Supporting cast'":"role:'Additional group member'",
-            'findNearestSnapshot(p,target,true)':'findNearestSnapshot(p,target,false)',
-            'Using saved WOM snapshots first. If the saved history is not close enough, this explicit Time Machine request may ask WOM for a historical datapoint.':'Using WOM snapshot history saved in this repository. No new WOM request is made by Time Machine.',
-            'Refreshing Temple…':'Refreshing Collection Log…',
-            'Temple Collection Log':'Collection Log via Temple',
-            'Temple recent collection':'Collection Log recent unlock via Temple'
-          }.items(): s=s.replace(a,b)
-          p.write_text(s)
-
-          c=Path('docs/assets/v21-common.js'); s=c.read_text()
-          s=s.replace(" [/Temple catalogue/gi,'Collection Log'],\n",'')
-          c.write_text(s)
-
-          c=Path('docs/assets/v21-clog.js'); s=c.read_text()
-          if "window.addEventListener('ug:data-updated'" not in s:
-              s=s.replace('async function init(){',"window.addEventListener('ug:data-updated',async e=>{if(e.detail?.key!==U.TKEY)return;doc=await loadClog();model=build();ensurePicker();populate();renderAll()});\nasync function init(){")
-          c.write_text(s)
-
-          pages=['index.html','gim.html','hiscores.html','progress.html','history.html','time-machine.html','chronicle.html']
-          labels=[('index.html','Overview','O',None),('gim.html','Collection Log','G','GIM'),('hiscores.html','Hiscores','H',None),('progress.html','XP & Progress','XP',None),('history.html','History','T',None),('time-machine.html','Time Machine','⧖',None),('chronicle.html','Chronicle','✦',None)]
-          for fn in pages:
-              q=Path('docs')/fn; h=q.read_text()
-              links=[]
-              for i,(href,label,rune,badge) in enumerate(labels):
-                  active='active' if href==fn else ''; group='nav-group-start' if i==4 else ''; aria=' aria-current="page"' if href==fn else ''; bd=f'<span class="nav-badge">{badge}</span>' if badge else ''
-                  links.append(f'<a class="nav-link {active} {group}" href="{href}"{aria}><span class="nav-rune">{rune}</span><span>{label}</span>{bd}</a>')
-              nav='<nav class="main-nav"><div class="wrap nav-inner"><a class="nav-brand" href="index.html" aria-label="United Gimps overview"><img src="img/gim-crest.svg" alt=""></a>'+''.join(links)+'</div></nav>'
-              h=re.sub(r'<nav class="main-nav">.*?</nav>',nav,h,count=1,flags=re.S).replace('Temple snapshot','Collection Log snapshot')
-              if 'assets/v21-nav.js' not in h: h=h.replace('</body>','<script defer src="assets/v21-nav.js" data-v21-nav></script></body>')
-              q.write_text(h)
-          q=Path('docs/gim.html'); h=q.read_text(); h=re.sub(r'<select id="clogMember".*?</select>','<div id="clogMemberPicker" aria-label="Collection Log member filter"></div>',h,count=1,flags=re.S); q.write_text(h)
-          q=Path('docs/chronicle.html'); q.write_text(q.read_text().replace('Refresh stats Chronicle via WOM','Reload stats Chronicle via WOM'))
-          q=Path('docs/hiscores.html'); h=q.read_text();
-          for a,b in {
-            'The table keeps the core-three comparison compact, but clicking any skill opens a five-player WOM history graph with every member that has data.':'Use the member menu to add or remove any of the five accounts. Clicking a skill opens its saved WOM timeline or a current bar comparison for exactly the selected members.',
-            'Level + XP · core-three table, five-player graph drill-down.':'Level + XP · selected members · click a skill for timeline or bars.',
-            '<strong>Boss KC</strong><span>Core-three table.</span>':'<strong>Boss KC</strong><span>Selected members · click a boss for timeline or bars.</span>',
-            'Current saved WOM activity scores for the core three. This restores the old minigame/activity comparison instead of silently dropping it in the redesign.':'Current saved WOM activity scores for the selected members. The same additive member filter applies here too.',
-            '<strong>Activities & minigames</strong><span>Current score · core-three comparison.</span>':'<strong>Activities & minigames</strong><span>Current score · selected members.</span>'
-          }.items(): h=h.replace(a,b)
-          q.write_text(h)
-          PY
+      - name: Finalize source
+        run: python scripts/finalize_v21.py
 
       - name: Static audit
         shell: bash
         run: |
           set -euo pipefail
           for f in docs/assets/app.js docs/assets/v21-common.js docs/assets/v21-chartlib.js docs/assets/v21-progress.js docs/assets/v21-clog.js docs/assets/v21-nav.js; do node --check "$f"; done
-          python -m py_compile scripts/refresh_shared_data.py
+          python -m py_compile scripts/refresh_shared_data.py scripts/finalize_v21.py scripts/audit_v21_browser.py
           if grep -Rqi 'dikste jr' docs scripts; then echo 'stale fake member found'; exit 1; fi
           if grep -Rqi 'Temple catalogue' docs scripts; then echo 'forbidden Collection Log wording found'; exit 1; fi
-          if grep -q 'findNearestSnapshot(p,target,true)' docs/assets/app.js; then echo 'Time Machine still makes WOM requests'; exit 1; fi
+          if grep -q 'findNearestSnapshot(p,target,true)' docs/assets/app.js; then echo 'Time Machine still makes WOM network requests'; exit 1; fi
           grep -q 'Closest WOM snapshot in time' docs/assets/app.js
           grep -q 'id="clogMemberPicker"' docs/gim.html
           grep -q 'Reload stats Chronicle via WOM' docs/chronicle.html
@@ -99,7 +46,8 @@ jobs:
           class P(HTMLParser):
               def __init__(self): super().__init__(); self.ids=[]; self.refs=[]
               def handle_starttag(self,tag,attrs):
-                  a=dict(attrs); self.ids += [a['id']] if a.get('id') else []
+                  a=dict(attrs)
+                  if a.get('id'): self.ids.append(a['id'])
                   for k in ('src','href'):
                       v=a.get(k,'')
                       if v and not v.startswith(('http:','https:','#','mailto:','javascript:')): self.refs.append(v.split('?')[0])
@@ -107,75 +55,45 @@ jobs:
               t=(Path('docs')/fn).read_text(); labels=re.findall(r'<a class="nav-link[^>]*><span class="nav-rune">[^<]*</span><span>([^<]+)</span>',t)
               assert labels==expected,(fn,labels); assert t.count('assets/v21-nav.js')==1,(fn,'nav script')
               p=P(); p.feed(t); assert len(p.ids)==len(set(p.ids)),(fn,'duplicate ids')
-              for ref in p.refs: assert (Path('docs')/ref).exists(),(fn,ref)
-          print('static HTML audit passed')
+              for ref in p.refs: assert (Path('docs')/ref).exists(),(fn,'missing',ref)
+          print('STATIC AUDIT PASSED')
           PY
 
       - name: Backfill all WOM history and refresh saved Collection Log once
         run: python scripts/refresh_shared_data.py
 
-      - name: Deep data audit
-        shell: bash
+      - name: Deep saved-data audit
         run: |
-          set -euo pipefail
           python - <<'PY'
           import json
           from pathlib import Path
           E={'dikste','big dog aura','lijpste','poep aura','lompste'}; w=json.loads(Path('docs/data/wom-cache.json').read_text()); t=json.loads(Path('docs/data/temple-clog.json').read_text())
           assert set(w['profiles'])==E; counts={k:len(w.get('snapshots',{}).get(k,[])) for k in E}; assert sum(counts.values())>=100 and all(v>=2 for v in counts.values()),counts
           for k,a in w['snapshots'].items():
-              ts=[x['createdAt'] for x in a]; assert len(ts)==len(set(ts)),(k,'duplicate times'); assert all(x.get('data') for x in a)
+              ts=[x['createdAt'] for x in a]; assert len(ts)==len(set(ts)),(k,'duplicate timestamps'); assert all(x.get('data') for x in a)
           for k in ['dikste','big dog aura','lijpste']: assert w['snapshots'][k][0]['createdAt']<'2026-01-15',(k,w['snapshots'][k][0]['createdAt'])
-          assert set(t.get('players',{})).issubset(E) and t.get('groupSize')==5 and int(t.get('membersWithClog',0))>=4
-          print('snapshot counts',counts); print('ranges',{k:(w['snapshots'][k][0]['createdAt'],w['snapshots'][k][-1]['createdAt']) for k in E}); print('clogs',t['membersWithClog'])
+          assert set(t.get('players',{})).issubset(E); assert t.get('groupSize')==5; assert int(t.get('membersWithClog',0))>=4
+          print('WOM snapshots',counts); print('ranges',{k:(w['snapshots'][k][0]['createdAt'],w['snapshots'][k][-1]['createdAt']) for k in E}); print('Collection Logs',t['membersWithClog'])
           PY
 
-      - name: Browser interaction audit
+      - name: Full browser interaction audit
         shell: bash
         run: |
           set -euo pipefail
           python -m pip install -q selenium
-          python -m http.server 8123 --directory docs >/tmp/http.log 2>&1 & server=$!; trap 'kill $server || true' EXIT; sleep 2
-          python - <<'PY'
-          import json,time
-          from selenium import webdriver
-          from selenium.webdriver.chrome.options import Options
-          from selenium.webdriver.common.by import By
-          from selenium.webdriver.support.ui import WebDriverWait,Select
-          from selenium.webdriver.support import expected_conditions as EC
-          from selenium.webdriver.common.keys import Keys
-          o=Options(); o.add_argument('--headless=new'); o.add_argument('--no-sandbox'); o.add_argument('--disable-gpu'); o.add_argument('--window-size=1440,1100'); o.set_capability('goog:loggingPrefs',{'browser':'ALL','performance':'ALL'})
-          d=webdriver.Chrome(options=o); w=WebDriverWait(d,20); B='http://127.0.0.1:8123/'; expected=['Overview','Collection Log','Hiscores','XP & Progress','History','Time Machine','Chronicle']; errors=[]
-          def wait(sel): return w.until(EC.presence_of_element_located((By.CSS_SELECTOR,sel)))
-          def js(s): return d.execute_script(s)
-          def severe():
-              for x in d.get_log('browser'):
-                  if x.get('level')=='SEVERE' and any(q in x.get('message','') for q in ('Uncaught','TypeError','ReferenceError','SyntaxError')): errors.append(x['message'])
-          for fn in ['index.html','gim.html','hiscores.html','progress.html','history.html','time-machine.html','chronicle.html']:
-              d.get(B+fn); wait('main.wrap'); time.sleep(.5); labels=js("return [...document.querySelectorAll('.main-nav .nav-link')].map(a=>a.querySelectorAll('span')[1].textContent.trim())"); assert labels==expected,(fn,labels); assert 'Temple catalogue' not in d.find_element(By.TAG_NAME,'body').text; severe()
-          d.get(B+'index.html'); wait('.side-card'); assert all(float(js('return getComputedStyle(arguments[0]).opacity',x))>=.99 for x in d.find_elements(By.CSS_SELECTOR,'.side-card'))
-          d.get(B+'progress.html'); wait('#statsMemberPicker'); wait('#xpChart svg'); assert sum(x.is_selected() for x in d.find_elements(By.CSS_SELECTOR,'#statsMemberPicker input'))==3; js("document.querySelector('#statsMemberPicker details').open=true;document.querySelector('#statsMemberPicker [data-v21-preset=all]').click()"); time.sleep(.5); assert sum(x.is_selected() for x in d.find_elements(By.CSS_SELECTOR,'#statsMemberPicker input'))==5; assert len(d.find_elements(By.CSS_SELECTOR,'#skillGainTable thead th'))==6; assert len(d.find_elements(By.CSS_SELECTOR,'#bossGainTable thead th'))==6; d.find_element(By.CSS_SELECTOR,'[data-v21-chart-view="bars"]').click(); time.sleep(.4); assert len(d.find_elements(By.CSS_SELECTOR,'#xpChart svg rect'))>=5; Select(d.find_element(By.ID,'skillSelect')).select_by_index(2); Select(d.find_element(By.ID,'bossSelect')).select_by_index(0); time.sleep(.4); assert d.find_elements(By.CSS_SELECTOR,'#skillChart svg') and d.find_elements(By.CSS_SELECTOR,'#bossChart svg'); severe()
-          d.get(B+'hiscores.html'); wait('#statsMemberPicker'); js("document.querySelector('#statsMemberPicker details').open=true;document.querySelector('#statsMemberPicker [data-v21-preset=all]').click()"); time.sleep(.5); assert len(d.find_elements(By.CSS_SELECTOR,'#currentSkillsTable thead th'))==6 and len(d.find_elements(By.CSS_SELECTOR,'#bossTable thead th'))==6 and len(d.find_elements(By.CSS_SELECTOR,'#activityTable thead th'))==6; d.find_element(By.CSS_SELECTOR,'[data-v21-skill]').click(); wait('#v21MetricModal[aria-hidden="false"]'); assert d.find_elements(By.CSS_SELECTOR,'#v21ModalChart svg'); d.find_element(By.CSS_SELECTOR,'[data-v21-modal-view="bars"]').click(); time.sleep(.3); assert len(d.find_elements(By.CSS_SELECTOR,'#v21ModalChart svg rect'))>=5; d.find_element(By.CSS_SELECTOR,'#v21MetricModal .modal-close').click(); w.until(lambda x:x.find_element(By.ID,'v21MetricModal').get_attribute('aria-hidden')=='true'); d.find_element(By.CSS_SELECTOR,'[data-v21-boss]').click(); wait('#v21MetricModal[aria-hidden="false"]'); d.find_element(By.TAG_NAME,'body').send_keys(Keys.ESCAPE); w.until(lambda x:x.find_element(By.ID,'v21MetricModal').get_attribute('aria-hidden')=='true'); severe()
-          d.get(B+'gim.html'); wait('#clogMemberPicker'); wait('#clogItemTable tbody tr'); time.sleep(.5); assert len(d.find_elements(By.CSS_SELECTOR,'#clogMemberPicker input'))==5 and sum(x.is_selected() for x in d.find_elements(By.CSS_SELECTOR,'#clogMemberPicker input'))==5; assert len(d.find_elements(By.CSS_SELECTOR,'#clogItemTable thead th'))==9; js("document.querySelector('#clogMemberPicker details').open=true;document.querySelector('#clogMemberPicker input[value=\"poep aura\"]').click()"); time.sleep(.4); assert 'Poep Aura' not in [x.text for x in d.find_elements(By.CSS_SELECTOR,'#clogItemTable thead th')]; d.find_element(By.CSS_SELECTOR,'[data-gim-tab="contribution"]').click(); wait('#clogContributionPie svg'); assert d.find_elements(By.CSS_SELECTOR,'#clogContributionBars svg'); d.find_element(By.CSS_SELECTOR,'[data-gim-tab="overlap"]').click(); wait('#clogOverlapBars svg');
-          js("let h=document.querySelector('#clogMemberPicker'),d=h.querySelector('details');d.open=true;h.querySelector('[data-v21-preset=core]').click()"); time.sleep(.3); js("let h=document.querySelector('#clogMemberPicker');h.querySelectorAll('input').forEach(x=>{if(x.value!=='dikste'&&x.checked)x.click()})"); time.sleep(.5); d.find_element(By.CSS_SELECTOR,'[data-gim-tab="contribution"]').click(); time.sleep(.4); assert d.find_elements(By.CSS_SELECTOR,'#clogContributionPie svg circle');
-          js("let h=document.querySelector('#clogMemberPicker');h.querySelector('[data-v21-preset=all]').click()"); time.sleep(.3); js("let h=document.querySelector('#clogMemberPicker');h.querySelectorAll('input').forEach(x=>{if(x.value!=='lompste'&&x.checked)x.click()})"); time.sleep(.5); assert 'unknown' in d.find_element(By.ID,'clogItemTable').text.lower(); severe()
-          d.get(B+'time-machine.html'); wait('#timeGo'); d.get_log('performance'); js("document.querySelector('#timeDate').value='2026-01-01'"); d.find_element(By.ID,'timeGo').click(); w.until(lambda x:'Closest WOM snapshot in time' in x.find_element(By.TAG_NAME,'body').text); time.sleep(.4); req=[]
-          for e in d.get_log('performance'):
-              try:
-                  m=json.loads(e['message'])['message'];
-                  if m['method']=='Network.requestWillBeSent': req.append(m['params']['request']['url'])
-              except: pass
-          assert not [u for u in req if 'wiseoldman.net' in u],[u for u in req if 'wiseoldman.net' in u]; severe()
-          d.get(B+'chronicle.html'); wait('#chronicle'); time.sleep(.7); assert d.find_element(By.ID,'chronicleRefresh').text.strip()=='Reload stats Chronicle via WOM'; ev=d.find_elements(By.CSS_SELECTOR,'.chronicle-event'); assert len(ev)>=10,len(ev); txt=' '.join(x.text for x in ev); assert 'Dikste' in txt and 'Big Dog Aura' in txt; severe()
-          d.get(B+'history.html'); wait('#activityEras'); time.sleep(.7); assert d.find_elements(By.CSS_SELECTOR,'.era-segment'); severe(); d.quit(); assert not errors,errors; print('browser interaction audit passed')
-          PY
+          python -m http.server 8123 --directory docs >/tmp/http.log 2>&1 &
+          server=$!; trap 'kill $server || true' EXIT; sleep 2
+          python scripts/audit_v21_browser.py
 
-      - name: Persist audited source and history on branch
+      - name: Persist audited site and saved history
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs scripts
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs scripts/refresh_shared_data.py
           if git diff --cached --quiet; then echo 'No generated changes'; exit 0; fi
-          git commit -m 'Persist fully audited v21 site and WOM history'
-          git fetch origin v21-bugfix; git rebase origin/v21-bugfix; git push origin HEAD:v21-bugfix
+          git commit -m 'Persist fully audited v21 site and complete WOM history'
+          git fetch origin v21-bugfix
+          git rebase origin/v21-bugfix
+          git push origin HEAD:v21-bugfix
