@@ -53,8 +53,9 @@ function closeGraphModal(el){const m=el?.closest?.('.modal')||$('.modal:not([hid
 function showGraphModal(m){if(!m)return;m.hidden=false;m.style.display='flex';m.setAttribute('aria-hidden','false')}
 document.addEventListener('click',e=>{const close=e.target.closest?.('.modal-close,[data-modal-close]');if(close){e.preventDefault();e.stopImmediatePropagation();closeGraphModal(close)}},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeGraphModal($('.modal:not([hidden])'))},true);
+function installDataNotifications(){if(window.__ugDataNotifyInstalled)return;window.__ugDataNotifyInstalled=true;const proto=Storage.prototype,orig=proto.setItem;proto.setItem=function(k,v){orig.call(this,k,v);if(this===localStorage&&(k===WKEY||k===TKEY))window.dispatchEvent(new CustomEvent('ug:data-updated',{detail:{key:k}}))}}
 function loadNav(){if(document.querySelector('script[data-v21-nav]'))return;const s=document.createElement('script');s.src='assets/v21-nav.js';s.dataset.v21Nav='1';document.head.append(s)}
 window.UGV21={PLAYERS,CORE_KEYS,PERIODS,$,$$,fmt,fmt1,compact,nice,loadWom,loadClog,snapData,player,WKEY,TKEY,cleanSelection,renderMemberPicker,closeGraphModal,showGraphModal};
-function init(){installObserver();loadNav()}
+function init(){installObserver();installDataNotifications();loadNav()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
