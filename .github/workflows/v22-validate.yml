@@ -1,0 +1,51 @@
+name: Validate v22 Collection Log and goals
+
+on:
+  push:
+    branches: [v22-clog-goals]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: united-gimps-v22-validation
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v22-clog-goals
+
+      - name: Static validation
+        run: |
+          set -euo pipefail
+          node --check docs/assets/v21-clog.js
+          node --check docs/assets/v21-nav.js
+          node --check docs/assets/v22-ui.js
+          python -m py_compile scripts/audit_v22_browser.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          g=json.loads(Path('docs/data/goals.json').read_text())
+          expected={'dikste','big dog aura','lijpste','poep aura','lompste'}
+          assert set(g['goals'])==expected
+          c=Path('docs/assets/v21-clog.js').read_text()
+          for s in ['Obtained by all selected','Obtained by any selected','Custom ownership rules','rule-${p.key}']:
+              assert s in c,s
+          u=Path('docs/assets/v22-ui.js').read_text()
+          assert 'Unique to group' in u and 'Shared' in u and 'Set or update a goal' in u
+          assert Path('docs/developer.html').exists()
+          print('V22 STATIC AUDIT PASSED')
+          PY
+
+      - name: Browser interaction and accessibility audit
+        run: |
+          set -euo pipefail
+          python -m pip install -q selenium axe-selenium-python
+          python -m http.server 8123 --directory docs >/tmp/v22-http.log 2>&1 &
+          server=$!; trap 'kill $server || true' EXIT; sleep 2
+          python scripts/audit_v22_browser.py
