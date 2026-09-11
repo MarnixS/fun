@@ -33,7 +33,6 @@ p.write_text(s,encoding='utf-8')
 # Same persistent additive member filter for XP, skills, boss KC and Hiscores.
 p=DOCS/'assets/v21-progress.js'; s=p.read_text(encoding='utf-8')
 s=s.replace("renderMemberPicker(host,selected,n=>{selected=n;renderStatsPicker();pageName==='progress'?refreshProgress():renderHiscores()}","renderMemberPicker(host,selected,n=>{selected=n;pageName==='progress'?refreshProgress():renderHiscores()}")
-s=s.replace("renderMemberPicker($('#v21ModalMembers',m),modalSelected,n=>{modalSelected=n;renderModal()}","renderMemberPicker($('#v21ModalMembers',m),modalSelected,n=>{modalSelected=n;renderModal()}")
 p.write_text(s,encoding='utf-8')
 
 pages=['index.html','gim.html','hiscores.html','progress.html','history.html','time-machine.html','chronicle.html']
@@ -43,7 +42,7 @@ for fn in pages:
     links=[]
     for i,(href,label,rune,badge) in enumerate(labels):
         active='active' if href==fn else ''; group='nav-group-start' if i==4 else ''
-        aria=' aria-current="page"' if href==fn else ''; bd=f'<span class="nav-badge">{badge}</span>' if badge else ''
+        aria=' aria-current="page"' if href==fn else ''; bd=f'<span class="nav-badge" aria-hidden="true">{badge}</span>' if badge else ''
         links.append(f'<a class="nav-link {active} {group}" href="{href}"{aria}><span class="nav-rune" aria-hidden="true">{rune}</span><span>{label}</span>{bd}</a>')
     nav='<nav class="main-nav" aria-label="Primary"><div class="wrap nav-inner"><a class="nav-brand" href="index.html" aria-label="United Gimps overview"><img src="img/gim-crest.svg" alt=""></a>'+''.join(links)+'</div></nav>'
     h=re.sub(r'<nav class="main-nav"[^>]*>.*?</nav>',nav,h,count=1,flags=re.S).replace('Temple snapshot','Collection Log snapshot')
@@ -52,6 +51,7 @@ for fn in pages:
 
 p=DOCS/'gim.html'; h=p.read_text(encoding='utf-8')
 h=re.sub(r'<select id="clogMember".*?</select>','<div id="clogMemberPicker" aria-label="Collection Log member filter"></div>',h,count=1,flags=re.S)
+h=h.replace('Start with the status quo. Switch between the group or any individual member, filter by category and obtained/missing/shared/dupes, then use the deeper contribution, overlap and value views when you want them. Recent unlocks stay separate.','Start with the current Collection Log. Add or remove any combination of the five usernames, then filter by category and obtained/missing/shared/dupes. The same selected members carry into contribution, overlap, value, categories and recent unlocks.')
 p.write_text(h,encoding='utf-8')
 
 p=DOCS/'chronicle.html'; p.write_text(p.read_text(encoding='utf-8').replace('Refresh stats Chronicle via WOM','Reload stats Chronicle via WOM'),encoding='utf-8')
