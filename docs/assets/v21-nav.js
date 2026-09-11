@@ -1,5 +1,16 @@
 (()=>{
 'use strict';
+try{
+ const k='ug-v20-temple-cache',x=JSON.parse(localStorage.getItem(k)||'null');
+ if(x?.source==='TempleOSRS browser refresh'){
+  localStorage.removeItem(k);
+  if(!sessionStorage.getItem('ug-v24-temple-cache-cleaned')){
+   sessionStorage.setItem('ug-v24-temple-cache-cleaned','1');
+   location.reload();
+   return;
+  }
+ }
+}catch{}
 const order=[
  ['index.html','Overview','O'],
  ['gim.html','Collection Log','G','GIM'],
