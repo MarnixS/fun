@@ -17,6 +17,6 @@ async function renderPlayerGoals(){if(document.body.dataset.page!=='chronicle')r
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function enhanceDeveloper(){if(document.body.dataset.page!=='developer')return;const link=$('#developerRefreshLink');if(link)link.href='https://github.com/MarnixS/fun/actions/workflows/temple-cache.yml'}
 function observeDynamicUi(){const o=new MutationObserver(()=>{simplifyMemberFilters();removeOwnerControls();hardenSavedClogReload()});o.observe(document.documentElement,{childList:true,subtree:true})}
-async function init(){simplifyMemberFilters();removeOwnerControls();hardenSavedClogReload();stabilizeClogRenderer();enhanceDeveloper();observeDynamicUi();await Promise.all([renderOverviewClog(),renderPlayerGoals()]);setTimeout(()=>{simplifyMemberFilters();removeOwnerControls();hardenSavedClogReload();stabilizeClogRenderer();renderOverviewClog();renderPlayerGoals()},1000)}
+async function init(){simplifyMemberFilters();removeOwnerControls();hardenSavedClogReload();stabilizeClogRenderer();enhanceDeveloper();observeDynamicUi();await Promise.all([renderOverviewClog(),renderPlayerGoals()]);setTimeout(()=>{simplifyMemberFilters();removeOwnerControls();hardenSavedClogReload();stabilizeClogRenderer();renderOverviewClog()},1000)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
