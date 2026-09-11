@@ -41,7 +41,7 @@ jobs:
           ISSUE_UPDATED: ${{ github.event.issue.updated_at }}
         run: |
           python - <<'PY'
-          import json, os, re
+          import json, os
           from datetime import date
           from pathlib import Path
           title=os.environ.get('ISSUE_TITLE',''); body=os.environ.get('ISSUE_BODY','')
@@ -51,8 +51,11 @@ jobs:
           key=players.get(player.lower())
           if not key: raise SystemExit(f'Unknown player: {player}')
           def field(name):
-              m=re.search(rf'(?mi)^{re.escape(name)}:\s*(.*?)\s*$',body)
-              return m.group(1).strip() if m else ''
+              prefix=f'{name}:'
+              for line in body.splitlines():
+                  if line.lower().startswith(prefix.lower()):
+                      return line[len(prefix):].strip()
+              return ''
           goal=field('Goal'); target=field('Target')
           if not goal: raise SystemExit('Goal is required')
           if len(goal)>140: raise SystemExit('Goal must be 140 characters or fewer')
