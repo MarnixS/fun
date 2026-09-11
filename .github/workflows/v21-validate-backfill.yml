@@ -1,3 +1,4 @@
+# Final deploy gate: source, saved data, accessibility and browser interactions.
 name: Validate v21 final site
 
 on:
