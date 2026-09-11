@@ -36,7 +36,8 @@ def set_members(host,wanted):
     for _ in range(10):
         cur=selected(host)
         if cur==wanted:return
-        toggle=next((k for k in cur if k not in wanted),None) or next((k for k in wanted if k not in cur),None)
+        # Add a desired member before removing the final undesired one. The UI intentionally refuses an empty selection.
+        toggle=next((k for k in wanted if k not in cur),None) or next((k for k in cur if k not in wanted),None)
         assert toggle,(host,cur,wanted)
         el=d.find_element(By.CSS_SELECTOR,f'#{host} input[value="{toggle}"]'); js('arguments[0].click()',el); time.sleep(.15)
     raise AssertionError((host,selected(host),wanted))
