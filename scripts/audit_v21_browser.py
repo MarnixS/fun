@@ -22,6 +22,10 @@ d=webdriver.Chrome(options=opt); w=WebDriverWait(d,20); errors=[]
 
 def wait(css): return w.until(EC.presence_of_element_located((By.CSS_SELECTOR,css)))
 def js(code,*args): return d.execute_script(code,*args)
+def activate(css):
+    el=d.find_element(By.CSS_SELECTOR,css)
+    js("arguments[0].scrollIntoView({block:'center',inline:'nearest'}); arguments[0].click();",el)
+    return el
 def severe():
     for x in d.get_log('browser'):
         m=x.get('message','')
@@ -45,7 +49,11 @@ def axe_serious():
     if Axe is None:return
     axe=Axe(d); axe.inject(); result=axe.run(options={'runOnly':{'type':'tag','values':['wcag2a','wcag2aa','wcag21a','wcag21aa']}})
     bad=[v for v in result.get('violations',[]) if v.get('impact') in ('serious','critical')]
-    assert not bad,[(v.get('id'),v.get('impact'),v.get('help'),len(v.get('nodes',[]))) for v in bad]
+    if bad:
+        details=[]
+        for v in bad:
+            details.append((v.get('id'),v.get('impact'),v.get('help'),[(n.get('target'),n.get('html'),n.get('failureSummary')) for n in v.get('nodes',[])[:8]]))
+        raise AssertionError(details)
 
 def assert_page_shell(fn):
     d.get(BASE+fn); wait('main.wrap'); time.sleep(.45)
@@ -59,10 +67,8 @@ def assert_page_shell(fn):
     assert_named_controls(); severe(); axe_serious()
 
 try:
-    # Every page: navigation, current location, terminology, named controls and WCAG A/AA serious issues.
     for fn in PAGES: assert_page_shell(fn)
 
-    # Poep Aura/Lompste are full-strength visually, not faded.
     d.get(BASE+'index.html'); wait('.side-card'); time.sleep(.3)
     cards=d.find_elements(By.CSS_SELECTOR,'.side-card'); assert len(cards)>=2
     for el in cards:
@@ -72,16 +78,15 @@ try:
     # XP & Progress: visible additive username filter, keyboard toggling, selected tables, lines and bars.
     d.get(BASE+'progress.html'); wait('#statsMemberPicker fieldset'); wait('#xpChart svg'); time.sleep(.4)
     assert selected('statsMemberPicker')==CORE
-    labels=d.find_elements(By.CSS_SELECTOR,'#statsMemberPicker .v21-member-list label'); assert len(labels)==5
-    assert all(x.is_displayed() for x in labels)
-    poep=d.find_element(By.CSS_SELECTOR,'#statsMemberPicker input[value="poep aura"]'); poep.click(); time.sleep(.2); assert 'poep aura' in selected('statsMemberPicker')
+    labels=d.find_elements(By.CSS_SELECTOR,'#statsMemberPicker .v21-member-list label'); assert len(labels)==5 and all(x.is_displayed() for x in labels)
+    poep=d.find_element(By.CSS_SELECTOR,'#statsMemberPicker input[value="poep aura"]'); js("arguments[0].scrollIntoView({block:'center'})",poep); poep.click(); time.sleep(.2); assert 'poep aura' in selected('statsMemberPicker')
     poep.send_keys(Keys.SPACE); time.sleep(.2); assert 'poep aura' not in selected('statsMemberPicker')
     set_members('statsMemberPicker',ALL); time.sleep(.4)
     assert len(d.find_elements(By.CSS_SELECTOR,'#skillGainTable thead th'))==6
     assert len(d.find_elements(By.CSS_SELECTOR,'#bossGainTable thead th'))==6
     graph=d.find_element(By.CSS_SELECTOR,'#xpChart svg'); assert 'Dikste' in (graph.get_attribute('aria-label') or '')
     assert d.find_elements(By.CSS_SELECTOR,'#xpChart svg path') or d.find_elements(By.CSS_SELECTOR,'#xpChart svg rect')
-    d.find_element(By.CSS_SELECTOR,'[data-v21-chart-view="bars"]').click(); time.sleep(.35)
+    activate('[data-v21-chart-view="bars"]'); time.sleep(.35)
     assert len(d.find_elements(By.CSS_SELECTOR,'#xpChart svg rect'))>=5
     assert 'Dikste' in (d.find_element(By.CSS_SELECTOR,'#xpChart svg').get_attribute('aria-label') or '')
     ss=Select(d.find_element(By.ID,'skillSelect')); assert len(ss.options)>5; ss.select_by_index(2)
@@ -92,41 +97,41 @@ try:
     assert len(d.find_elements(By.CSS_SELECTOR,'#bossGainTable thead th'))==3
     severe()
 
-    # Hiscores: same additive filter drives skills, bosses, activities and accessible graph dialogs.
+    # Hiscores: the same additive filter drives tables and graph dialogs.
     d.get(BASE+'hiscores.html'); wait('#statsMemberPicker fieldset'); time.sleep(.4)
     set_members('statsMemberPicker',ALL); time.sleep(.4)
     assert len(d.find_elements(By.CSS_SELECTOR,'#currentSkillsTable thead th'))==6
     assert len(d.find_elements(By.CSS_SELECTOR,'#bossTable thead th'))==6
     assert len(d.find_elements(By.CSS_SELECTOR,'#activityTable thead th'))==6
-    invoker=d.find_element(By.CSS_SELECTOR,'[data-v21-skill]'); invoker.click(); wait('#v21MetricModal[aria-hidden="false"]'); time.sleep(.2)
+    invoker=activate('[data-v21-skill]'); wait('#v21MetricModal[aria-hidden="false"]'); time.sleep(.2)
     modal=d.find_element(By.ID,'v21MetricModal'); assert modal.get_attribute('role')=='dialog' and modal.get_attribute('aria-modal')=='true'
     assert d.switch_to.active_element.get_attribute('class') and 'modal-close' in d.switch_to.active_element.get_attribute('class')
     assert len(d.find_elements(By.CSS_SELECTOR,'#v21ModalMembers input'))==5
     assert d.find_elements(By.CSS_SELECTOR,'#v21ModalChart svg')
-    d.find_element(By.CSS_SELECTOR,'[data-v21-modal-view="bars"]').click(); time.sleep(.3)
+    activate('[data-v21-modal-view="bars"]'); time.sleep(.3)
     assert len(d.find_elements(By.CSS_SELECTOR,'#v21ModalChart svg rect'))>=5
-    d.find_element(By.CSS_SELECTOR,'#v21MetricModal .modal-close').click(); w.until(lambda x:x.find_element(By.ID,'v21MetricModal').get_attribute('aria-hidden')=='true')
+    close=d.find_element(By.CSS_SELECTOR,'#v21MetricModal .modal-close'); js("arguments[0].scrollIntoView({block:'center'})",close); close.click(); w.until(lambda x:x.find_element(By.ID,'v21MetricModal').get_attribute('aria-hidden')=='true')
     assert d.switch_to.active_element.get_attribute('data-v21-skill') is not None
-    boss=d.find_element(By.CSS_SELECTOR,'[data-v21-boss]'); boss.click(); wait('#v21MetricModal[aria-hidden="false"]'); d.find_element(By.TAG_NAME,'body').send_keys(Keys.ESCAPE); w.until(lambda x:x.find_element(By.ID,'v21MetricModal').get_attribute('aria-hidden')=='true')
+    activate('[data-v21-boss]'); wait('#v21MetricModal[aria-hidden="false"]'); d.switch_to.active_element.send_keys(Keys.ESCAPE); w.until(lambda x:x.find_element(By.ID,'v21MetricModal').get_attribute('aria-hidden')=='true')
     severe()
 
-    # Collection Log: the usernames themselves are visible additive filters and drive every view.
+    # Collection Log: usernames are visible independent additive filters and drive every analysis view.
     d.get(BASE+'gim.html'); wait('#clogMemberPicker fieldset'); wait('#clogItemTable tbody tr'); time.sleep(.6)
     assert selected('clogMemberPicker')==ALL
     assert len(d.find_elements(By.CSS_SELECTOR,'#clogMemberPicker .v21-member-list label'))==5
     assert len(d.find_elements(By.CSS_SELECTOR,'#clogItemTable thead th'))==9
     set_members('clogMemberPicker',{'dikste','big dog aura','lijpste','lompste'}); time.sleep(.4)
     assert 'Poep Aura' not in [x.text for x in d.find_elements(By.CSS_SELECTOR,'#clogItemTable thead th')]
-    d.find_element(By.CSS_SELECTOR,'[data-gim-tab="contribution"]').click(); wait('#clogContributionPie svg'); assert d.find_elements(By.CSS_SELECTOR,'#clogContributionBars svg')
+    activate('[data-gim-tab="contribution"]'); wait('#clogContributionPie svg'); assert d.find_elements(By.CSS_SELECTOR,'#clogContributionBars svg')
     assert 'percent' in (d.find_element(By.CSS_SELECTOR,'#clogContributionPie svg').get_attribute('aria-label') or '')
-    d.find_element(By.CSS_SELECTOR,'[data-gim-tab="overlap"]').click(); wait('#clogOverlapBars svg')
-    set_members('clogMemberPicker',{'dikste'}); d.find_element(By.CSS_SELECTOR,'[data-gim-tab="contribution"]').click(); time.sleep(.4); assert d.find_elements(By.CSS_SELECTOR,'#clogContributionPie svg circle')
+    activate('[data-gim-tab="overlap"]'); wait('#clogOverlapBars svg')
+    set_members('clogMemberPicker',{'dikste'}); activate('[data-gim-tab="contribution"]'); time.sleep(.4); assert d.find_elements(By.CSS_SELECTOR,'#clogContributionPie svg circle')
     set_members('clogMemberPicker',{'lompste'}); time.sleep(.5); assert 'unknown' in d.find_element(By.ID,'clogItemTable').text.lower()
     assert d.find_element(By.ID,'clogCategory'); assert Select(d.find_element(By.ID,'clogStatus')).options[-1].get_attribute('value')=='dupes'; assert any(o.get_attribute('value')=='value' for o in Select(d.find_element(By.ID,'clogSort')).options)
     assert_named_controls(); severe()
 
-    # Time Machine uses repository snapshots only after backfill.
-    d.get(BASE+'time-machine.html'); wait('#timeGo'); d.get_log('performance'); js("document.querySelector('#timeDate').value='2026-01-01'"); d.find_element(By.ID,'timeGo').click(); w.until(lambda x:'Closest WOM snapshot in time' in x.find_element(By.TAG_NAME,'body').text); time.sleep(.4)
+    # Time Machine uses saved repository snapshots only.
+    d.get(BASE+'time-machine.html'); wait('#timeGo'); d.get_log('performance'); js("document.querySelector('#timeDate').value='2026-01-01'"); activate('#timeGo'); w.until(lambda x:'Closest WOM snapshot in time' in x.find_element(By.TAG_NAME,'body').text); time.sleep(.4)
     req=[]
     for e in d.get_log('performance'):
         try:
@@ -137,7 +142,6 @@ try:
     assert '01 Jan 2026' in d.find_element(By.TAG_NAME,'body').text
     severe()
 
-    # Chronicle and History populate from saved data.
     d.get(BASE+'chronicle.html'); wait('#chronicle'); time.sleep(.7)
     assert d.find_element(By.ID,'chronicleRefresh').text.strip()=='Reload stats Chronicle via WOM'
     events=d.find_elements(By.CSS_SELECTOR,'.chronicle-event'); assert len(events)>=10,len(events)
