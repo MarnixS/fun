@@ -62,10 +62,11 @@ function enhanceAccessibility(root=document){
  if(document.body&&!$('.v21-skip-link'))document.body.insertAdjacentHTML('afterbegin','<a class="v21-skip-link" href="#main-content">Skip to main content</a>');
  const nav=root.matches?.('.main-nav')?root:$('.main-nav',root);if(nav&&!nav.hasAttribute('aria-label'))nav.setAttribute('aria-label','Primary');
  $$('.table-scroll',root).forEach((x,i)=>{if(!x.hasAttribute('tabindex'))x.tabIndex=0;if(!x.hasAttribute('role'))x.setAttribute('role','region');if(!x.hasAttribute('aria-label')){const cap=x.closest('.table-card')?.querySelector('.table-caption strong')?.textContent?.trim();x.setAttribute('aria-label',cap?`${cap} table, horizontally scrollable`:`Data table ${i+1}, horizontally scrollable`)}});
- const search=root.querySelector?.('#clogSearch');if(search&&!search.hasAttribute('aria-label'))search.setAttribute('aria-label','Search Collection Log items');
+ const labels={clogSearch:'Search Collection Log items',clogCategory:'Collection Log category',clogStatus:'Collection Log item status',clogSort:'Sort Collection Log items',clogImportTarget:'Collection Log import member',skillSelect:'Skill to graph',bossSelect:'Boss to graph',timeDate:'Time Machine date'};
+ for(const [id,label] of Object.entries(labels)){const el=$(`#${id}`);if(el&&!el.hasAttribute('aria-label')&&!el.labels?.length)el.setAttribute('aria-label',label)}
  const subs=$$('.collection-shell>.subnav',root);subs.forEach(bar=>{bar.setAttribute('role','tablist');bar.setAttribute('aria-label','Collection Log views');$$('[data-gim-tab]',bar).forEach(b=>{b.setAttribute('role','tab');b.setAttribute('aria-selected',b.classList.contains('active')?'true':'false')})});
  $$('[data-gim-panel]',root).forEach(p=>{p.setAttribute('role','tabpanel');if(!p.hasAttribute('tabindex'))p.tabIndex=0});
- $$('.seg button,.modal-periods button,[data-gim-tab]',root).forEach(b=>{if(b.classList.contains('active'))b.setAttribute('aria-pressed','true');else b.setAttribute('aria-pressed','false')});
+ $$('.seg button,.modal-periods button,[data-gim-tab]',root).forEach(b=>{b.setAttribute('aria-pressed',b.classList.contains('active')?'true':'false')});
  const modal=root.matches?.('.modal')?root:$('.modal',root);if(modal){modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');if($('#v21ModalTitle',modal))modal.setAttribute('aria-labelledby','v21ModalTitle')}
 }
 document.addEventListener('click',e=>{if(e.target.closest?.('.seg button,.modal-periods button,[data-gim-tab]'))requestAnimationFrame(()=>enhanceAccessibility(document))});
