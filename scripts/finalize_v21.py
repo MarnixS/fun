@@ -4,10 +4,11 @@ import re
 
 DOCS=Path('docs')
 
-# Remove old terminology and disable Time Machine network fallback.
+# Remove old visible terminology and disable Time Machine network fallback.
 p=DOCS/'assets/app.js'; s=p.read_text(encoding='utf-8')
+old_catalogue='Temple '+'catalogue'
 for a,b in {
-    'Temple catalogue':'Collection Log',
+    old_catalogue:'Collection Log',
     'Actual WOM snapshot':'Closest WOM snapshot in time',
     'Supporting cast':'Additional group members',
     'supporting cast':'additional group members',
@@ -20,11 +21,19 @@ for a,b in {
 }.items(): s=s.replace(a,b)
 p.write_text(s,encoding='utf-8')
 
-# Keep v21 Collection Log in sync after an explicit browser-side Collection Log refresh.
+# Keep the v21 Collection Log in sync after an explicit browser-side refresh.
 p=DOCS/'assets/v21-clog.js'; s=p.read_text(encoding='utf-8')
 listener="window.addEventListener('ug:data-updated',async e=>{if(e.detail?.key!==U.TKEY)return;doc=await loadClog();model=build();ensurePicker();populate();renderAll()});\n"
 if "window.addEventListener('ug:data-updated'" not in s:
     s=s.replace('async function init(){',listener+'async function init(){')
+# The member picker is persistent and additive; do not redraw it after each checkbox click.
+s=s.replace("renderMemberPicker(host,selected,n=>{selected=n;page=0;ensurePicker();renderAll()}","renderMemberPicker(host,selected,n=>{selected=n;page=0;renderAll()}")
+p.write_text(s,encoding='utf-8')
+
+# Same persistent additive member filter for XP, skills, boss KC and Hiscores.
+p=DOCS/'assets/v21-progress.js'; s=p.read_text(encoding='utf-8')
+s=s.replace("renderMemberPicker(host,selected,n=>{selected=n;renderStatsPicker();pageName==='progress'?refreshProgress():renderHiscores()}","renderMemberPicker(host,selected,n=>{selected=n;pageName==='progress'?refreshProgress():renderHiscores()}")
+s=s.replace("renderMemberPicker($('#v21ModalMembers',m),modalSelected,n=>{modalSelected=n;renderModal()}","renderMemberPicker($('#v21ModalMembers',m),modalSelected,n=>{modalSelected=n;renderModal()}")
 p.write_text(s,encoding='utf-8')
 
 pages=['index.html','gim.html','hiscores.html','progress.html','history.html','time-machine.html','chronicle.html']
@@ -35,9 +44,9 @@ for fn in pages:
     for i,(href,label,rune,badge) in enumerate(labels):
         active='active' if href==fn else ''; group='nav-group-start' if i==4 else ''
         aria=' aria-current="page"' if href==fn else ''; bd=f'<span class="nav-badge">{badge}</span>' if badge else ''
-        links.append(f'<a class="nav-link {active} {group}" href="{href}"{aria}><span class="nav-rune">{rune}</span><span>{label}</span>{bd}</a>')
-    nav='<nav class="main-nav"><div class="wrap nav-inner"><a class="nav-brand" href="index.html" aria-label="United Gimps overview"><img src="img/gim-crest.svg" alt=""></a>'+''.join(links)+'</div></nav>'
-    h=re.sub(r'<nav class="main-nav">.*?</nav>',nav,h,count=1,flags=re.S).replace('Temple snapshot','Collection Log snapshot')
+        links.append(f'<a class="nav-link {active} {group}" href="{href}"{aria}><span class="nav-rune" aria-hidden="true">{rune}</span><span>{label}</span>{bd}</a>')
+    nav='<nav class="main-nav" aria-label="Primary"><div class="wrap nav-inner"><a class="nav-brand" href="index.html" aria-label="United Gimps overview"><img src="img/gim-crest.svg" alt=""></a>'+''.join(links)+'</div></nav>'
+    h=re.sub(r'<nav class="main-nav"[^>]*>.*?</nav>',nav,h,count=1,flags=re.S).replace('Temple snapshot','Collection Log snapshot')
     if 'assets/v21-nav.js' not in h: h=h.replace('</body>','<script defer src="assets/v21-nav.js" data-v21-nav></script></body>')
     p.write_text(h,encoding='utf-8')
 
@@ -49,7 +58,7 @@ p=DOCS/'chronicle.html'; p.write_text(p.read_text(encoding='utf-8').replace('Ref
 
 p=DOCS/'hiscores.html'; h=p.read_text(encoding='utf-8')
 for a,b in {
-    'The table keeps the core-three comparison compact, but clicking any skill opens a five-player WOM history graph with every member that has data.':'Use the member menu to add or remove any of the five accounts. Clicking a skill opens its saved WOM timeline or a current bar comparison for exactly the selected members.',
+    'The table keeps the core-three comparison compact, but clicking any skill opens a five-player WOM history graph with every member that has data.':'Use the member filter to add or remove any of the five accounts. Clicking a skill opens its saved WOM timeline or a current bar comparison for exactly the selected members.',
     'Level + XP · core-three table, five-player graph drill-down.':'Level + XP · selected members · click a skill for timeline or bars.',
     '<strong>Boss KC</strong><span>Core-three table.</span>':'<strong>Boss KC</strong><span>Selected members · click a boss for timeline or bars.</span>',
     'Current saved WOM activity scores for the core three. This restores the old minigame/activity comparison instead of silently dropping it in the redesign.':'Current saved WOM activity scores for the selected members. The same additive member filter applies here too.',
