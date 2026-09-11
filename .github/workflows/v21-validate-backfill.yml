@@ -1,4 +1,4 @@
-# Final deploy gate: source, saved data, accessibility and browser interactions. Revision 2.
+# Final deploy gate: source, saved data, accessibility and browser interactions. Revision 3.
 name: Validate v21 final site
 
 on:
@@ -59,6 +59,9 @@ jobs:
               t=(Path('docs')/fn).read_text(); labels=re.findall(r'<a class="nav-link[^>]*><span class="nav-rune"[^>]*>[^<]*</span><span>([^<]+)</span>',t)
               assert labels==expected,(fn,labels); assert t.count('assets/v21-nav.js')==1,(fn,'nav script')
               assert 'aria-label="Primary"' in t,(fn,'primary nav label')
+              assert 'noindex' not in t.lower(),(fn,'still blocked from indexing')
+              assert '<meta name="robots" content="index,follow">' in t,(fn,'robots public metadata')
+              assert '<meta name="googlebot" content="index,follow">' in t,(fn,'googlebot public metadata')
               p=P(); p.feed(t); assert len(p.ids)==len(set(p.ids)),(fn,'duplicate ids')
               for ref in p.refs: assert (Path('docs')/ref).exists(),(fn,'missing',ref)
           print('STATIC AUDIT PASSED')
@@ -98,7 +101,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add docs scripts/refresh_shared_data.py
           if git diff --cached --quiet; then echo 'No generated changes'; exit 0; fi
-          git commit -m 'Persist fully audited v21 site and complete WOM history'
+          git commit -m 'Persist fully audited public v21 site and complete WOM history'
           git fetch origin v21-bugfix
           git rebase origin/v21-bugfix
           git push origin HEAD:v21-bugfix
