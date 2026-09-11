@@ -38,6 +38,8 @@ pages=['index.html','gim.html','hiscores.html','progress.html','history.html','t
 labels=[('index.html','Overview','O',None),('gim.html','Collection Log','G','GIM'),('hiscores.html','Hiscores','H',None),('progress.html','XP & Progress','XP',None),('history.html','History','T',None),('time-machine.html','Time Machine','⧖',None),('chronicle.html','Chronicle','✦',None)]
 for fn in pages:
     p=DOCS/fn; h=p.read_text(encoding='utf-8')
+    # The site is public: explicitly allow indexing instead of carrying the old unlisted-site directives.
+    h=h.replace('noindex,nofollow,noarchive,nosnippet,noimageindex','index,follow')
     links=[]
     for i,(href,label,rune,badge) in enumerate(labels):
         active='active' if href==fn else ''; group='nav-group-start' if i==4 else ''
