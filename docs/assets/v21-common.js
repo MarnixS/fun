@@ -22,16 +22,19 @@ async function loadClog(){let shared=null;try{shared=await staticJSON('data/temp
 function snapData(w,key){return w?.profiles?.[key]?.latestSnapshot?.data||w?.profiles?.[key]?.latest_snapshot?.data||null}
 function player(key){return PLAYERS.find(p=>p.key===key)}
 function cleanSelection(sel,fallback=CORE_KEYS){const ok=new Set(PLAYERS.map(p=>p.key)),out=new Set([...(sel||[])].filter(k=>ok.has(k)));if(!out.size)fallback.forEach(k=>out.add(k));return out}
-function memberSummary(sel){const a=PLAYERS.filter(p=>sel.has(p.key));return a.length===PLAYERS.length?'All five':a.length===1?a[0].name:`${a.length} members`}
+function memberSummary(sel){const a=PLAYERS.filter(p=>sel.has(p.key));return a.length===PLAYERS.length?'All five selected':a.length===1?`${a[0].name} selected`:`${a.length} members selected`}
+let pickerSeq=0;
 function renderMemberPicker(host,selection,onChange,{title='Members',subtitle='Add or remove members',fallback=CORE_KEYS,availability=null}={}){
  if(typeof host==='string')host=$(host);if(!host)return;
- const sel=cleanSelection(selection,fallback),apply=next=>{const n=cleanSelection(next,fallback);onChange(new Set(n));renderMemberPicker(host,n,onChange,{title,subtitle,fallback,availability})};
+ const sel=cleanSelection(selection,fallback),base=(host.id||`v21-members-${++pickerSeq}`).replace(/[^a-z0-9_-]/gi,'-'),helpId=`${base}-help`,statusId=`${base}-status`;
  host.classList.add('v21-member-picker');
- host.innerHTML=`<details><summary><span><b>${title}</b><small>${memberSummary(sel)} · click to edit</small></span><i aria-hidden="true">⌄</i></summary><div class="v21-member-pop"><div class="v21-member-actions"><button type="button" data-v21-preset="all">All five</button><button type="button" data-v21-preset="core">Core three</button></div><div class="v21-member-list">${PLAYERS.map(p=>{const known=availability?availability.has(p.key):true;return `<label style="--pc:${p.color}"><input type="checkbox" value="${p.key}" ${sel.has(p.key)?'checked':''}><i></i><span>${p.name}</span>${known?'':'<em>no synced data</em>'}</label>`}).join('')}</div><div class="v21-member-help">${subtitle}</div></div></details>`;
- const d=$('details',host);$$('input[type="checkbox"]',host).forEach(c=>c.onchange=()=>{const n=new Set($$('input:checked',host).map(x=>x.value));if(!n.size){c.checked=true;return}apply(n)});
- $('[data-v21-preset="all"]',host).onclick=()=>apply(new Set(PLAYERS.map(p=>p.key)));
- $('[data-v21-preset="core"]',host).onclick=()=>apply(new Set(CORE_KEYS));
- d.addEventListener('toggle',()=>{if(!d.open)return;setTimeout(()=>{const close=e=>{if(!host.contains(e.target)){d.open=false;document.removeEventListener('pointerdown',close,true)}};document.addEventListener('pointerdown',close,true)},0)});
+ host.innerHTML=`<fieldset class="v21-member-fieldset"><legend>${title}</legend><div class="v21-member-head"><span id="${statusId}" class="v21-member-status" aria-live="polite">${memberSummary(sel)}</span><div class="v21-member-actions"><button type="button" data-v21-preset="all">All five</button><button type="button" data-v21-preset="core">Core three</button></div></div><div class="v21-member-list" role="group" aria-label="${title}">${PLAYERS.map(p=>{const known=availability?availability.has(p.key):true;return `<label style="--pc:${p.color}"><input type="checkbox" value="${p.key}" ${sel.has(p.key)?'checked':''} aria-describedby="${helpId}"><i aria-hidden="true"></i><span>${p.name}</span>${known?'':'<em>no Collection Log data yet</em>'}</label>`}).join('')}</div><div id="${helpId}" class="v21-member-help">${subtitle} Each username is an independent additive filter.</div></fieldset>`;
+ const status=$(`#${statusId}`,host),checks=$$('input[type="checkbox"]',host);
+ const commit=next=>{if(!next.size){if(status)status.textContent='Keep at least one member selected';return false}if(status)status.textContent=memberSummary(next);onChange(new Set(next));return true};
+ checks.forEach(c=>c.onchange=()=>{const n=new Set(checks.filter(x=>x.checked).map(x=>x.value));if(!n.size){c.checked=true;const restored=new Set([c.value]);if(status)status.textContent='At least one member must stay selected';onChange(restored);return}commit(n)});
+ const preset=keys=>{const next=new Set(keys);checks.forEach(c=>c.checked=next.has(c.value));commit(next)};
+ $('[data-v21-preset="all"]',host).onclick=()=>preset(PLAYERS.map(p=>p.key));
+ $('[data-v21-preset="core"]',host).onclick=()=>preset(CORE_KEYS);
 }
 const TERMS=[
  [/Actual WOM snapshot/g,'Closest WOM snapshot in time'],
@@ -47,14 +50,28 @@ const TERMS=[
 ];
 function replaceTextNode(n){if(!n||n.nodeType!==Node.TEXT_NODE)return;let s=n.nodeValue||'',z=s;for(const [a,b] of TERMS)z=z.replace(a,b);if(z!==s)n.nodeValue=z}
 function normalizeVisibleTerminology(root=document){const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode()))replaceTextNode(n)}
-function installObserver(){normalizeVisibleTerminology();const o=new MutationObserver(ms=>{for(const m of ms){for(const n of m.addedNodes){if(n.nodeType===Node.TEXT_NODE)replaceTextNode(n);else if(n.nodeType===Node.ELEMENT_NODE)normalizeVisibleTerminology(n)}}});o.observe(document.documentElement,{childList:true,subtree:true})}
-function closeGraphModal(el){const m=el?.closest?.('.modal')||$('.modal:not([hidden])');if(m){m.hidden=true;m.style.display='none';m.setAttribute('aria-hidden','true')}}
-function showGraphModal(m){if(!m)return;m.hidden=false;m.style.display='flex';m.setAttribute('aria-hidden','false')}
-document.addEventListener('click',e=>{const close=e.target.closest?.('.modal-close,[data-modal-close]');if(close){e.preventDefault();e.stopImmediatePropagation();closeGraphModal(close)}},true);
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeGraphModal($('.modal:not([hidden])'))},true);
+function installObserver(){normalizeVisibleTerminology();const o=new MutationObserver(ms=>{for(const m of ms){for(const n of m.addedNodes){if(n.nodeType===Node.TEXT_NODE)replaceTextNode(n);else if(n.nodeType===Node.ELEMENT_NODE){normalizeVisibleTerminology(n);enhanceAccessibility(n)}}}});o.observe(document.documentElement,{childList:true,subtree:true})}
+let modalReturnFocus=null;
+function focusables(root){return $$('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])',root).filter(x=>!x.hidden&&x.getAttribute('aria-hidden')!=='true')}
+function closeGraphModal(el){const m=el?.closest?.('.modal')||$('.modal:not([hidden])');if(m){m.hidden=true;m.style.display='none';m.setAttribute('aria-hidden','true');if(modalReturnFocus?.isConnected)modalReturnFocus.focus();modalReturnFocus=null}}
+function showGraphModal(m){if(!m)return;modalReturnFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;m.hidden=false;m.style.display='flex';m.setAttribute('aria-hidden','false');m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');if($('#v21ModalTitle',m))m.setAttribute('aria-labelledby','v21ModalTitle');requestAnimationFrame(()=>$('.modal-close',m)?.focus())}
+document.addEventListener('click',e=>{const close=e.target.closest?.('.modal-close,[data-modal-close]');if(close){e.preventDefault();e.stopImmediatePropagation();closeGraphModal(close)}else if(e.target.classList?.contains('modal'))closeGraphModal(e.target)},true);
+document.addEventListener('keydown',e=>{const m=$('.modal:not([hidden])');if(!m)return;if(e.key==='Escape'){e.preventDefault();closeGraphModal(m);return}if(e.key==='Tab'){const a=focusables(m);if(!a.length)return;const first=a[0],last=a[a.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}},true);
+function enhanceAccessibility(root=document){
+ const main=root.matches?.('main')?root:$('main',root)||$('main');if(main&&!main.id)main.id='main-content';
+ if(document.body&&!$('.v21-skip-link'))document.body.insertAdjacentHTML('afterbegin','<a class="v21-skip-link" href="#main-content">Skip to main content</a>');
+ const nav=root.matches?.('.main-nav')?root:$('.main-nav',root);if(nav&&!nav.hasAttribute('aria-label'))nav.setAttribute('aria-label','Primary');
+ $$('.table-scroll',root).forEach((x,i)=>{if(!x.hasAttribute('tabindex'))x.tabIndex=0;if(!x.hasAttribute('role'))x.setAttribute('role','region');if(!x.hasAttribute('aria-label')){const cap=x.closest('.table-card')?.querySelector('.table-caption strong')?.textContent?.trim();x.setAttribute('aria-label',cap?`${cap} table, horizontally scrollable`:`Data table ${i+1}, horizontally scrollable`)}});
+ const search=root.querySelector?.('#clogSearch');if(search&&!search.hasAttribute('aria-label'))search.setAttribute('aria-label','Search Collection Log items');
+ const subs=$$('.collection-shell>.subnav',root);subs.forEach(bar=>{bar.setAttribute('role','tablist');bar.setAttribute('aria-label','Collection Log views');$$('[data-gim-tab]',bar).forEach(b=>{b.setAttribute('role','tab');b.setAttribute('aria-selected',b.classList.contains('active')?'true':'false')})});
+ $$('[data-gim-panel]',root).forEach(p=>{p.setAttribute('role','tabpanel');if(!p.hasAttribute('tabindex'))p.tabIndex=0});
+ $$('.seg button,.modal-periods button,[data-gim-tab]',root).forEach(b=>{if(b.classList.contains('active'))b.setAttribute('aria-pressed','true');else b.setAttribute('aria-pressed','false')});
+ const modal=root.matches?.('.modal')?root:$('.modal',root);if(modal){modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');if($('#v21ModalTitle',modal))modal.setAttribute('aria-labelledby','v21ModalTitle')}
+}
+document.addEventListener('click',e=>{if(e.target.closest?.('.seg button,.modal-periods button,[data-gim-tab]'))requestAnimationFrame(()=>enhanceAccessibility(document))});
 function installDataNotifications(){if(window.__ugDataNotifyInstalled)return;window.__ugDataNotifyInstalled=true;const proto=Storage.prototype,orig=proto.setItem;proto.setItem=function(k,v){orig.call(this,k,v);if(this===localStorage&&(k===WKEY||k===TKEY))window.dispatchEvent(new CustomEvent('ug:data-updated',{detail:{key:k}}))}}
 function loadNav(){if(document.querySelector('script[data-v21-nav]'))return;const s=document.createElement('script');s.src='assets/v21-nav.js';s.dataset.v21Nav='1';document.head.append(s)}
-window.UGV21={PLAYERS,CORE_KEYS,PERIODS,$,$$,fmt,fmt1,compact,nice,loadWom,loadClog,snapData,player,WKEY,TKEY,cleanSelection,renderMemberPicker,closeGraphModal,showGraphModal};
-function init(){installObserver();installDataNotifications();loadNav()}
+window.UGV21={PLAYERS,CORE_KEYS,PERIODS,$,$$,fmt,fmt1,compact,nice,loadWom,loadClog,snapData,player,WKEY,TKEY,cleanSelection,renderMemberPicker,closeGraphModal,showGraphModal,enhanceAccessibility};
+function init(){installObserver();installDataNotifications();loadNav();enhanceAccessibility(document)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
