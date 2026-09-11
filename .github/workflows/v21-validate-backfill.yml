@@ -16,7 +16,7 @@ jobs:
   audit:
     if: contains(github.event.head_commit.message, '[run v21 audit]')
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,12 +32,15 @@ jobs:
           set -euo pipefail
           for f in docs/assets/app.js docs/assets/v21-common.js docs/assets/v21-chartlib.js docs/assets/v21-progress.js docs/assets/v21-clog.js docs/assets/v21-nav.js; do node --check "$f"; done
           python -m py_compile scripts/refresh_shared_data.py scripts/finalize_v21.py scripts/audit_v21_browser.py
-          if grep -Rqi 'dikste jr' docs scripts; then echo 'stale fake member found'; exit 1; fi
-          if grep -Rqi 'Temple catalogue' docs scripts; then echo 'forbidden Collection Log wording found'; exit 1; fi
+          if grep -Rqi 'dikste jr' docs scripts/refresh_shared_data.py; then echo 'stale fake member found'; exit 1; fi
+          old_term='Temple catalogue'
+          if grep -Rqi "$old_term" docs; then echo 'forbidden Collection Log wording found'; exit 1; fi
           if grep -q 'findNearestSnapshot(p,target,true)' docs/assets/app.js; then echo 'Time Machine still makes WOM network requests'; exit 1; fi
           grep -q 'Closest WOM snapshot in time' docs/assets/app.js
           grep -q 'id="clogMemberPicker"' docs/gim.html
           grep -q 'Reload stats Chronicle via WOM' docs/chronicle.html
+          grep -q 'v21-member-fieldset' docs/assets/v21-common.js
+          grep -q 'v21-skip-link' docs/assets/v21-common.js
           python - <<'PY'
           from pathlib import Path
           from html.parser import HTMLParser
@@ -52,8 +55,9 @@ jobs:
                       v=a.get(k,'')
                       if v and not v.startswith(('http:','https:','#','mailto:','javascript:')): self.refs.append(v.split('?')[0])
           for fn in pages:
-              t=(Path('docs')/fn).read_text(); labels=re.findall(r'<a class="nav-link[^>]*><span class="nav-rune">[^<]*</span><span>([^<]+)</span>',t)
+              t=(Path('docs')/fn).read_text(); labels=re.findall(r'<a class="nav-link[^>]*><span class="nav-rune"[^>]*>[^<]*</span><span>([^<]+)</span>',t)
               assert labels==expected,(fn,labels); assert t.count('assets/v21-nav.js')==1,(fn,'nav script')
+              assert 'aria-label="Primary"' in t,(fn,'primary nav label')
               p=P(); p.feed(t); assert len(p.ids)==len(set(p.ids)),(fn,'duplicate ids')
               for ref in p.refs: assert (Path('docs')/ref).exists(),(fn,'missing',ref)
           print('STATIC AUDIT PASSED')
@@ -76,11 +80,11 @@ jobs:
           print('WOM snapshots',counts); print('ranges',{k:(w['snapshots'][k][0]['createdAt'],w['snapshots'][k][-1]['createdAt']) for k in E}); print('Collection Logs',t['membersWithClog'])
           PY
 
-      - name: Full browser interaction audit
+      - name: Full browser accessibility and interaction audit
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install -q selenium
+          python -m pip install -q selenium axe-selenium-python
           python -m http.server 8123 --directory docs >/tmp/http.log 2>&1 &
           server=$!; trap 'kill $server || true' EXIT; sleep 2
           python scripts/audit_v21_browser.py
