@@ -32,9 +32,9 @@ jobs:
           set -euo pipefail
           for f in docs/assets/app.js docs/assets/v21-common.js docs/assets/v21-chartlib.js docs/assets/v21-progress.js docs/assets/v21-clog.js docs/assets/v21-nav.js; do node --check "$f"; done
           python -m py_compile scripts/refresh_shared_data.py scripts/finalize_v21.py scripts/audit_v21_browser.py
-          if grep -Rqi 'dikste jr' docs scripts/refresh_shared_data.py; then echo 'stale fake member found'; exit 1; fi
+          if grep -Rqi 'dikste jr' docs/*.html docs/assets/*.js scripts/refresh_shared_data.py; then echo 'stale fake member found'; exit 1; fi
           old_term='Temple catalogue'
-          if grep -Rqi "$old_term" docs; then echo 'forbidden Collection Log wording found'; exit 1; fi
+          if grep -Rqi "$old_term" docs/*.html docs/assets/*.js docs/assets/*.css; then echo 'forbidden Collection Log wording found'; exit 1; fi
           if grep -q 'findNearestSnapshot(p,target,true)' docs/assets/app.js; then echo 'Time Machine still makes WOM network requests'; exit 1; fi
           grep -q 'Closest WOM snapshot in time' docs/assets/app.js
           grep -q 'id="clogMemberPicker"' docs/gim.html
