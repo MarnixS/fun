@@ -1,4 +1,4 @@
-# Final deploy gate: source, saved data, accessibility and browser interactions. Revision 3.
+# Final deploy gate: source, saved data, accessibility and browser interactions. Revision 4.
 name: Validate v21 final site
 
 on:
@@ -84,6 +84,19 @@ jobs:
           print('WOM snapshots',counts); print('ranges',{k:(w['snapshots'][k][0]['createdAt'],w['snapshots'][k][-1]['createdAt']) for k in E}); print('Collection Logs',t['membersWithClog'])
           PY
 
+      - name: Persist validated staging source and saved history
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs scripts/refresh_shared_data.py
+          if git diff --cached --quiet; then echo 'No generated changes'; exit 0; fi
+          git commit -m 'Persist validated public v21 staging site and complete WOM history'
+          git fetch origin v21-bugfix
+          git rebase origin/v21-bugfix
+          git push origin HEAD:v21-bugfix
+
       - name: Full browser accessibility and interaction audit
         shell: bash
         run: |
@@ -92,16 +105,3 @@ jobs:
           python -m http.server 8123 --directory docs >/tmp/http.log 2>&1 &
           server=$!; trap 'kill $server || true' EXIT; sleep 2
           python scripts/audit_v21_browser.py
-
-      - name: Persist audited site and saved history
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs scripts/refresh_shared_data.py
-          if git diff --cached --quiet; then echo 'No generated changes'; exit 0; fi
-          git commit -m 'Persist fully audited public v21 site and complete WOM history'
-          git fetch origin v21-bugfix
-          git rebase origin/v21-bugfix
-          git push origin HEAD:v21-bugfix
