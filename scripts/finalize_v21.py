@@ -4,7 +4,6 @@ import re
 
 DOCS=Path('docs')
 
-# Remove old visible terminology and disable Time Machine network fallback.
 p=DOCS/'assets/app.js'; s=p.read_text(encoding='utf-8')
 old_catalogue='Temple '+'catalogue'
 for a,b in {
@@ -21,18 +20,18 @@ for a,b in {
 }.items(): s=s.replace(a,b)
 p.write_text(s,encoding='utf-8')
 
-# Keep the v21 Collection Log in sync after an explicit browser-side refresh.
 p=DOCS/'assets/v21-clog.js'; s=p.read_text(encoding='utf-8')
 listener="window.addEventListener('ug:data-updated',async e=>{if(e.detail?.key!==U.TKEY)return;doc=await loadClog();model=build();ensurePicker();populate();renderAll()});\n"
 if "window.addEventListener('ug:data-updated'" not in s:
     s=s.replace('async function init(){',listener+'async function init(){')
-# The member picker is persistent and additive; do not redraw it after each checkbox click.
 s=s.replace("renderMemberPicker(host,selected,n=>{selected=n;page=0;ensurePicker();renderAll()}","renderMemberPicker(host,selected,n=>{selected=n;page=0;renderAll()}")
 p.write_text(s,encoding='utf-8')
 
-# Same persistent additive member filter for XP, skills, boss KC and Hiscores.
 p=DOCS/'assets/v21-progress.js'; s=p.read_text(encoding='utf-8')
 s=s.replace("renderMemberPicker(host,selected,n=>{selected=n;renderStatsPicker();pageName==='progress'?refreshProgress():renderHiscores()}","renderMemberPicker(host,selected,n=>{selected=n;pageName==='progress'?refreshProgress():renderHiscores()}")
+# In an open graph modal, redraw the graph without rebuilding the additive member control.
+s=s.replace('function renderModal(){','function renderModal(updatePicker=true){')
+s=s.replace("renderMemberPicker($('#v21ModalMembers',m),modalSelected,n=>{modalSelected=n;renderModal()},{title:","if(updatePicker)renderMemberPicker($('#v21ModalMembers',m),modalSelected,n=>{modalSelected=n;renderModal(false)},{title:")
 p.write_text(s,encoding='utf-8')
 
 pages=['index.html','gim.html','hiscores.html','progress.html','history.html','time-machine.html','chronicle.html']
