@@ -2,7 +2,9 @@ name: Publish United Gimps player goal
 
 on:
   issues:
-    types: [opened, edited, reopened, labeled]
+    types: [opened, edited, reopened]
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: write
@@ -14,16 +16,16 @@ concurrency:
 
 jobs:
   await-approval:
-    if: startsWith(github.event.issue.title, '[GIM GOAL]') && github.event.action == 'opened' && github.event.issue.author_association != 'OWNER' && github.event.issue.author_association != 'MEMBER' && github.event.issue.author_association != 'COLLABORATOR'
+    if: github.event_name == 'issues' && startsWith(github.event.issue.title, '[GIM GOAL]') && github.event.action == 'opened' && github.event.issue.author_association != 'OWNER' && github.event.issue.author_association != 'MEMBER' && github.event.issue.author_association != 'COLLABORATOR'
     runs-on: ubuntu-latest
     steps:
       - name: Explain approval
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh issue comment "${{ github.event.issue.number }}" --repo "${{ github.repository }}" --body "Goal request received. Because this is a public site, an untrusted public account cannot directly overwrite a player's shared goal. A repository collaborator can approve it by adding the **goal-approved** label."
+        run: gh issue comment "${{ github.event.issue.number }}" --repo "${{ github.repository }}" --body "Goal request received. Because this is a public site, an untrusted public account cannot directly overwrite a player's shared goal. A trusted repository collaborator can approve this request by commenting **/approve-goal**."
 
   publish-goal:
-    if: startsWith(github.event.issue.title, '[GIM GOAL]') && ((github.event.issue.author_association == 'OWNER' || github.event.issue.author_association == 'MEMBER' || github.event.issue.author_association == 'COLLABORATOR') || (github.event.action == 'labeled' && github.event.label.name == 'goal-approved'))
+    if: startsWith(github.event.issue.title, '[GIM GOAL]') && ((github.event_name == 'issues' && (github.event.issue.author_association == 'OWNER' || github.event.issue.author_association == 'MEMBER' || github.event.issue.author_association == 'COLLABORATOR')) || (github.event_name == 'issue_comment' && github.event.comment.body == '/approve-goal' && (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER' || github.event.comment.author_association == 'COLLABORATOR')))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
