@@ -2,7 +2,7 @@ name: Publish United Gimps player goal
 
 on:
   issues:
-    types: [opened, edited, reopened]
+    types: [opened, edited, reopened, labeled]
 
 permissions:
   contents: write
@@ -13,8 +13,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  await-approval:
+    if: startsWith(github.event.issue.title, '[GIM GOAL]') && github.event.action == 'opened' && github.event.issue.author_association != 'OWNER' && github.event.issue.author_association != 'MEMBER' && github.event.issue.author_association != 'COLLABORATOR'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain approval
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue comment "${{ github.event.issue.number }}" --repo "${{ github.repository }}" --body "Goal request received. Because this is a public site, an untrusted public account cannot directly overwrite a player's shared goal. A repository collaborator can approve it by adding the **goal-approved** label."
+
   publish-goal:
-    if: startsWith(github.event.issue.title, '[GIM GOAL]')
+    if: startsWith(github.event.issue.title, '[GIM GOAL]') && ((github.event.issue.author_association == 'OWNER' || github.event.issue.author_association == 'MEMBER' || github.event.issue.author_association == 'COLLABORATOR') || (github.event.action == 'labeled' && github.event.label.name == 'goal-approved'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,50 +42,24 @@ jobs:
           import json, os, re
           from datetime import date
           from pathlib import Path
-
-          title=os.environ.get('ISSUE_TITLE','')
-          body=os.environ.get('ISSUE_BODY','')
-          if '<!-- united-gimps-goal -->' not in body:
-              raise SystemExit('Missing United Gimps goal marker')
-
+          title=os.environ.get('ISSUE_TITLE',''); body=os.environ.get('ISSUE_BODY','')
+          if '<!-- united-gimps-goal -->' not in body: raise SystemExit('Missing United Gimps goal marker')
           player=title[len('[GIM GOAL]'):].strip()
-          players={
-              'dikste':'dikste',
-              'big dog aura':'big dog aura',
-              'lijpste':'lijpste',
-              'poep aura':'poep aura',
-              'lompste':'lompste',
-          }
+          players={'dikste':'dikste','big dog aura':'big dog aura','lijpste':'lijpste','poep aura':'poep aura','lompste':'lompste'}
           key=players.get(player.lower())
-          if not key:
-              raise SystemExit(f'Unknown player: {player}')
-
+          if not key: raise SystemExit(f'Unknown player: {player}')
           def field(name):
               m=re.search(rf'(?mi)^{re.escape(name)}:\s*(.*?)\s*$',body)
-              return (m.group(1).strip() if m else '')
-
-          goal=field('Goal')
-          target=field('Target')
-          if not goal:
-              raise SystemExit('Goal is required')
-          if len(goal)>140:
-              raise SystemExit('Goal must be 140 characters or fewer')
+              return m.group(1).strip() if m else ''
+          goal=field('Goal'); target=field('Target')
+          if not goal: raise SystemExit('Goal is required')
+          if len(goal)>140: raise SystemExit('Goal must be 140 characters or fewer')
           if target:
               try: date.fromisoformat(target)
               except Exception: raise SystemExit('Target must use YYYY-MM-DD')
-
-          path=Path('docs/data/goals.json')
-          data=json.loads(path.read_text()) if path.exists() else {'updatedAt':None,'goals':{}}
+          path=Path('docs/data/goals.json'); data=json.loads(path.read_text()) if path.exists() else {'updatedAt':None,'goals':{}}
           data.setdefault('goals',{})
-          if goal.upper()=='CLEAR':
-              data['goals'][key]=None
-          else:
-              data['goals'][key]={
-                  'text':goal,
-                  'target':target or None,
-                  'updatedAt':os.environ.get('ISSUE_UPDATED') or None,
-                  'submittedBy':os.environ.get('ISSUE_ACTOR') or None,
-              }
+          data['goals'][key]=None if goal.upper()=='CLEAR' else {'text':goal,'target':target or None,'updatedAt':os.environ.get('ISSUE_UPDATED') or None,'submittedBy':os.environ.get('ISSUE_ACTOR') or None}
           data['updatedAt']=os.environ.get('ISSUE_UPDATED') or None
           path.write_text(json.dumps(data,indent=2,ensure_ascii=False)+'\n')
           PY
@@ -87,9 +70,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add docs/data/goals.json
-          if git diff --cached --quiet; then
-            echo 'No goal data change'
-          else
+          if ! git diff --cached --quiet; then
             git commit -m "Update shared player goal from issue #${{ github.event.issue.number }}"
             git pull --rebase origin main
             git push origin HEAD:main
@@ -99,5 +80,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh issue comment "${{ github.event.issue.number }}" --body "Goal update accepted. GitHub Pages will publish the shared Chronicle goal shortly."
-          gh issue close "${{ github.event.issue.number }}" --reason completed
+          gh issue comment "${{ github.event.issue.number }}" --repo "${{ github.repository }}" --body "Goal update accepted. GitHub Pages will publish the shared Chronicle goal shortly."
+          gh issue close "${{ github.event.issue.number }}" --repo "${{ github.repository }}" --reason completed
