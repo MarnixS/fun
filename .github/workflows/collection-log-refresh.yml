@@ -1,0 +1,42 @@
+name: Refresh saved Collection Log
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - v24-temple-fix
+    paths:
+      - '.github/workflows/collection-log-refresh.yml'
+      - 'scripts/refresh_collection_log.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: united-gimps-collection-log-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Refresh Collection Log via Temple for all five members
+        run: python scripts/refresh_collection_log.py
+      - name: Commit saved Collection Log when changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain -- docs/data/temple-clog.json)" ]; then
+            echo 'No saved Collection Log change to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/data/temple-clog.json
+          git commit -m 'Refresh United Gimps saved Collection Log'
+          git fetch origin "${GITHUB_REF_NAME}"
+          git rebase "origin/${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
