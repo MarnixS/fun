@@ -57,6 +57,8 @@ def assert_page_shell(fn):
     assert d.find_element(By.CSS_SELECTOR,'.main-nav').get_attribute('aria-label')=='Primary'
     assert d.find_element(By.CSS_SELECTOR,'.v21-skip-link').get_attribute('href').endswith('#main-content')
     assert d.find_element(By.CSS_SELECTOR,'main').get_attribute('id')=='main-content'
+    assert d.find_element(By.CSS_SELECTOR,'meta[name="robots"]').get_attribute('content')=='index,follow'
+    assert d.find_element(By.CSS_SELECTOR,'meta[name="googlebot"]').get_attribute('content')=='index,follow'
     assert 'Temple '+'catalogue' not in d.find_element(By.TAG_NAME,'body').text
     assert_named_controls(); severe(); axe_serious()
 
@@ -112,7 +114,7 @@ try:
     assert 'percent' in (d.find_element(By.CSS_SELECTOR,'#clogContributionPie svg').get_attribute('aria-label') or '')
     activate('[data-gim-tab="overlap"]'); wait('#clogOverlapBars svg')
     set_members('clogMemberPicker',{'dikste'}); activate('[data-gim-tab="contribution"]'); time.sleep(.4); assert d.find_elements(By.CSS_SELECTOR,'#clogContributionPie svg circle')
-    set_members('clogMemberPicker',{'lompste'}); time.sleep(.5); assert 'unknown' in d.find_element(By.ID,'clogItemTable').text.lower()
+    set_members('clogMemberPicker',{'lompste'}); activate('[data-gim-tab="collection"]'); time.sleep(.5); assert 'unknown' in d.find_element(By.ID,'clogItemTable').text.lower()
     assert Select(d.find_element(By.ID,'clogStatus')).options[-1].get_attribute('value')=='dupes'
     assert any(o.get_attribute('value')=='value' for o in Select(d.find_element(By.ID,'clogSort')).options)
     assert_named_controls(); severe()
