@@ -73,10 +73,10 @@ try:
         assert js('return getComputedStyle(arguments[0]).filter',el)=='none'
 
     d.get(BASE+'progress.html'); wait('#statsMemberPicker fieldset'); wait('#xpChart svg'); time.sleep(.4)
-    assert selected('statsMemberPicker')==CORE
+    assert selected('statsMemberPicker')==ALL
     labels=d.find_elements(By.CSS_SELECTOR,'#statsMemberPicker .v21-member-list label'); assert len(labels)==5 and all(x.is_displayed() for x in labels)
-    poep=d.find_element(By.CSS_SELECTOR,'#statsMemberPicker input[value="poep aura"]'); js("arguments[0].scrollIntoView({block:'center'})",poep); poep.click(); time.sleep(.2); assert 'poep aura' in selected('statsMemberPicker')
-    poep.send_keys(Keys.SPACE); time.sleep(.2); assert 'poep aura' not in selected('statsMemberPicker')
+    poep=d.find_element(By.CSS_SELECTOR,'#statsMemberPicker input[value="poep aura"]'); js("arguments[0].scrollIntoView({block:'center'})",poep); poep.click(); time.sleep(.2); assert 'poep aura' not in selected('statsMemberPicker')
+    poep.send_keys(Keys.SPACE); time.sleep(.2); assert 'poep aura' in selected('statsMemberPicker')
     set_members('statsMemberPicker',ALL); time.sleep(.4)
     assert len(d.find_elements(By.CSS_SELECTOR,'#skillGainTable thead th'))==6
     assert len(d.find_elements(By.CSS_SELECTOR,'#bossGainTable thead th'))==6
@@ -98,7 +98,8 @@ try:
     invoker=focus_activate('[data-v21-skill]'); wait('#v21MetricModal[aria-hidden="false"]'); time.sleep(.2)
     modal=d.find_element(By.ID,'v21MetricModal'); assert modal.get_attribute('role')=='dialog' and modal.get_attribute('aria-modal')=='true'
     assert 'modal-close' in (d.switch_to.active_element.get_attribute('class') or '')
-    assert len(d.find_elements(By.CSS_SELECTOR,'#v21ModalMembers input'))==5 and d.find_elements(By.CSS_SELECTOR,'#v21ModalChart svg')
+    assert len(d.find_elements(By.CSS_SELECTOR,'#v21ModalMembers input'))==0 and d.find_elements(By.CSS_SELECTOR,'#v21ModalChart svg')
+    assert all(name in d.find_element(By.ID,'v21ModalMembers').text for name in ['Dikste','Big Dog Aura','Lijpste','Poep Aura','Lompste'])
     activate('[data-v21-modal-view="bars"]'); time.sleep(.3); assert len(d.find_elements(By.CSS_SELECTOR,'#v21ModalChart svg rect'))>=5
     close=d.find_element(By.CSS_SELECTOR,'#v21MetricModal .modal-close'); js("arguments[0].scrollIntoView({block:'center'})",close); close.click(); w.until(lambda x:x.find_element(By.ID,'v21MetricModal').get_attribute('aria-hidden')=='true')
     assert d.switch_to.active_element.get_attribute('data-v21-skill') is not None
@@ -132,7 +133,8 @@ try:
 
     d.get(BASE+'chronicle.html'); wait('#chronicle'); time.sleep(.7)
     assert d.find_element(By.ID,'chronicleRefresh').text.strip()=='Reload stats Chronicle via WOM'
-    events=d.find_elements(By.CSS_SELECTOR,'.chronicle-event'); assert len(events)>=10,len(events)
+    events=d.find_elements(By.CSS_SELECTOR,'.chronicle-event'); assert len(events)>600,len(events)
+    assert len(d.find_elements(By.CSS_SELECTOR,'.chronicle-event[data-event-type="level"][data-level]'))>1000
     txt=' '.join(x.text for x in events); assert 'Dikste' in txt and 'Big Dog Aura' in txt; severe()
     d.get(BASE+'history.html'); wait('#activityEras'); time.sleep(.7); assert d.find_elements(By.CSS_SELECTOR,'.era-segment'); severe()
 finally:

@@ -8,8 +8,9 @@ const PLAYERS=[
  {key:'lompste',name:'Lompste',color:'#d3b35d'}
 ];
 const CORE_KEYS=['dikste','big dog aura','lijpste'];
+const ALL_KEYS=PLAYERS.map(p=>p.key);
 const PERIODS={7:'1 week',30:'1 month',90:'3 months',180:'6 months',365:'1 year'};
-const WKEY='ug-v20-wom-cache',TKEY='ug-v20-temple-cache';
+const WKEY='ug-v20-wom-cache',TKEY='ug-v20-temple-cache',MKEY='ug-v25-member-selection';
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const fmt=n=>Number.isFinite(+n)?Math.round(+n).toLocaleString('en-GB'):'—';
 const fmt1=n=>Number.isFinite(+n)?(+n).toLocaleString('en-GB',{maximumFractionDigits:1}):'—';
@@ -21,10 +22,13 @@ async function loadWom(){let shared=null;try{shared=await staticJSON('data/wom-c
 async function loadClog(){let shared=null;try{shared=await staticJSON('data/temple-clog.json')}catch(e){console.warn('v21 Collection Log cache',e)}const local=localJSON(TKEY),st=+(shared?.fetchedAt||0),lt=+(local?.fetchedAt||local?.savedAt||0);return lt>st&&local?.players?local:(shared?.players?shared:local)||{players:{}}}
 function snapData(w,key){return w?.profiles?.[key]?.latestSnapshot?.data||w?.profiles?.[key]?.latest_snapshot?.data||null}
 function player(key){return PLAYERS.find(p=>p.key===key)}
-function cleanSelection(sel,fallback=CORE_KEYS){const ok=new Set(PLAYERS.map(p=>p.key)),out=new Set([...(sel||[])].filter(k=>ok.has(k)));if(!out.size)fallback.forEach(k=>out.add(k));return out}
+function cleanSelection(sel,fallback=ALL_KEYS){const ok=new Set(ALL_KEYS),out=new Set([...(sel||[])].filter(k=>ok.has(k)));if(!out.size)fallback.forEach(k=>out.add(k));return out}
+function loadMemberSelection(){const saved=localJSON(MKEY),raw=Array.isArray(saved)?saved:saved?.keys;return cleanSelection(raw,ALL_KEYS)}
+function saveMemberSelection(selection){const next=cleanSelection(selection,ALL_KEYS),keys=ALL_KEYS.filter(k=>next.has(k));try{localStorage.setItem(MKEY,JSON.stringify(keys))}catch{}window.dispatchEvent(new CustomEvent('ug:members-changed',{detail:{keys}}));return next}
+function sameSelection(a,b){return ALL_KEYS.every(k=>a?.has?.(k)===b?.has?.(k))}
 function memberSummary(sel){const a=PLAYERS.filter(p=>sel.has(p.key));return a.length===PLAYERS.length?'All five selected':a.length===1?`${a[0].name} selected`:`${a.length} members selected`}
 let pickerSeq=0;
-function renderMemberPicker(host,selection,onChange,{title='Members',subtitle='Add or remove members',fallback=CORE_KEYS,availability=null}={}){
+function renderMemberPicker(host,selection,onChange,{title='Members',subtitle='Add or remove members',fallback=ALL_KEYS,availability=null}={}){
  if(typeof host==='string')host=$(host);if(!host)return;
  const sel=cleanSelection(selection,fallback),base=(host.id||`v21-members-${++pickerSeq}`).replace(/[^a-z0-9_-]/gi,'-'),helpId=`${base}-help`,statusId=`${base}-status`;
  host.classList.add('v21-member-picker');
@@ -50,7 +54,7 @@ const TERMS=[
 ];
 function replaceTextNode(n){if(!n||n.nodeType!==Node.TEXT_NODE)return;let s=n.nodeValue||'',z=s;for(const [a,b] of TERMS)z=z.replace(a,b);if(z!==s)n.nodeValue=z}
 function normalizeVisibleTerminology(root=document){const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode()))replaceTextNode(n)}
-function installObserver(){normalizeVisibleTerminology();const o=new MutationObserver(ms=>{for(const m of ms){for(const n of m.addedNodes){if(n.nodeType===Node.TEXT_NODE)replaceTextNode(n);else if(n.nodeType===Node.ELEMENT_NODE){normalizeVisibleTerminology(n);enhanceAccessibility(n)}}}});o.observe(document.documentElement,{childList:true,subtree:true})}
+function installObserver(){normalizeVisibleTerminology();let scheduled=false;const flush=()=>{scheduled=false;normalizeVisibleTerminology(document);enhanceAccessibility(document)},o=new MutationObserver(()=>{if(scheduled)return;scheduled=true;if(window.requestAnimationFrame)window.requestAnimationFrame(flush);else setTimeout(flush,0)});o.observe(document.documentElement,{childList:true,subtree:true})}
 let modalReturnFocus=null;
 function focusables(root){return $$('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])',root).filter(x=>!x.hidden&&x.getAttribute('aria-hidden')!=='true')}
 function closeGraphModal(el){const m=el?.closest?.('.modal')||$('.modal:not([hidden])');if(m){m.hidden=true;m.style.display='none';m.setAttribute('aria-hidden','true');if(modalReturnFocus?.isConnected)modalReturnFocus.focus();modalReturnFocus=null}}
@@ -71,8 +75,10 @@ function enhanceAccessibility(root=document){
 }
 document.addEventListener('click',e=>{if(e.target.closest?.('.seg button,.modal-periods button,[data-gim-tab]'))requestAnimationFrame(()=>enhanceAccessibility(document))});
 function installDataNotifications(){if(window.__ugDataNotifyInstalled)return;window.__ugDataNotifyInstalled=true;const proto=Storage.prototype,orig=proto.setItem;proto.setItem=function(k,v){orig.call(this,k,v);if(this===localStorage&&(k===WKEY||k===TKEY))window.dispatchEvent(new CustomEvent('ug:data-updated',{detail:{key:k}}))}}
+function renderSharedMemberPicker(){const page=document.body?.dataset?.page;if(!['home','history','time'].includes(page))return;let host=$('#statsMemberPicker');if(!host){host=document.createElement('div');host.id='statsMemberPicker';host.className='v21-filter-wrap';$('#pageNotice')?.insertAdjacentElement('afterend',host)}renderMemberPicker(host,loadMemberSelection(),next=>saveMemberSelection(next),{title:'Members across this site',subtitle:'This same selection controls cards, tables, charts, Time Machine and Chronicle comparisons.',fallback:ALL_KEYS})}
+function installMemberSelection(){window.addEventListener('storage',e=>{if(e.key===MKEY)window.dispatchEvent(new CustomEvent('ug:members-changed',{detail:{keys:[...loadMemberSelection()]}}))});window.addEventListener('ug:members-changed',renderSharedMemberPicker);renderSharedMemberPicker()}
 function loadNav(){if(document.querySelector('script[data-v21-nav]'))return;const s=document.createElement('script');s.src='assets/v21-nav.js';s.dataset.v21Nav='1';document.head.append(s)}
-window.UGV21={PLAYERS,CORE_KEYS,PERIODS,$,$$,fmt,fmt1,compact,nice,loadWom,loadClog,snapData,player,WKEY,TKEY,cleanSelection,renderMemberPicker,closeGraphModal,showGraphModal,enhanceAccessibility};
-function init(){installObserver();installDataNotifications();loadNav();enhanceAccessibility(document)}
+window.UGV21={PLAYERS,CORE_KEYS,ALL_KEYS,PERIODS,$,$$,fmt,fmt1,compact,nice,loadWom,loadClog,snapData,player,WKEY,TKEY,MKEY,cleanSelection,loadMemberSelection,saveMemberSelection,sameSelection,renderMemberPicker,closeGraphModal,showGraphModal,enhanceAccessibility};
+function init(){installObserver();installDataNotifications();installMemberSelection();loadNav();enhanceAccessibility(document)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
