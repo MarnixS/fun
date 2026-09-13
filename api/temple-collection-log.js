@@ -70,11 +70,25 @@ async function fetchJson(url, { attempts = 2, timeout = 20_000 } = {}) {
 function recentRows(payload, player) {
   const data = payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload;
   const rows = Array.isArray(data) ? data : data && typeof data === 'object' ? Object.values(data) : [];
-  return rows.filter((row) => row && typeof row === 'object').map((row) => ({
+  return rows.map((row) => normalizeRecent(row, player)).filter(Boolean);
+}
+
+function normalizeRecent(row, player = '') {
+  if (!row || typeof row !== 'object' || row.Code || row.code || row.error || row.errors) return null;
+  const id = Number(row.id ?? row.item_id);
+  const name = String(row.name ?? row.item_name ?? '').trim();
+  const owner = String(row.player_name_with_capitalization || row.player || player).trim();
+  const time = recentTime(row);
+  if (!Number.isInteger(id) || id <= 0 || !name || !owner || !time) return null;
+  return {
     ...row,
-    player: row.player || player,
-    player_name_with_capitalization: row.player_name_with_capitalization || player,
-  }));
+    id,
+    name,
+    player: owner,
+    player_name_with_capitalization: owner,
+    date_unix: Math.floor(time / 1000),
+    date: new Date(time).toISOString().slice(0, 19).replace('T', ' '),
+  };
 }
 
 function recentKey(row) {
@@ -88,8 +102,62 @@ function recentKey(row) {
 function recentTime(row) {
   const unix = Number(row.date_unix);
   if (Number.isFinite(unix) && unix > 0) return unix > 1e12 ? unix : unix * 1000;
+  const numeric = Number(row.date);
+  if (Number.isFinite(numeric) && numeric > 0) return numeric > 1e12 ? numeric : numeric * 1000;
   const parsed = Number(new Date(row.date));
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function logItems(log) {
+  if (!validLog(log)) return new Map();
+  const data = log.data ?? log;
+  const found = new Map();
+  function walk(node) {
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    if (!node || typeof node !== 'object') return;
+    const id = Number(node.id ?? node.item_id);
+    if (Number.isInteger(id) && id > 0) {
+      const count = Math.max(0, Number(node.count ?? node.quantity ?? 0));
+      const time = recentTime(node);
+      const name = String(node.name ?? node.item_name ?? '').trim();
+      const previous = found.get(id);
+      if (!previous || count > previous.count || time > previous.time) found.set(id, { id, count, time, name });
+      return;
+    }
+    Object.values(node).forEach(walk);
+  }
+  walk(data.items);
+  return found;
+}
+
+function derivedRecentRows(players, previous) {
+  const rows = [];
+  const cutoff = Number(previous?.fetchedAt) || 0;
+  for (const [key, player] of Object.entries(PLAYERS)) {
+    const currentLog = players[key];
+    const previousLog = previous?.players?.[key];
+    if (!validLog(currentLog) || !validLog(previousLog)) continue;
+    const current = logItems(currentLog);
+    const before = logItems(previousLog);
+    for (const item of current.values()) {
+      const old = before.get(item.id);
+      const newUnique = (old?.count || 0) === 0 && item.count > 0;
+      const newerDrop = item.time > Math.max(old?.time || 0, cutoff);
+      if (item.count <= 0 || !item.time || !item.name || (!newUnique && !newerDrop)) continue;
+      const row = normalizeRecent({
+        id: item.id,
+        name: item.name,
+        date_unix: Math.floor(item.time / 1000),
+        player,
+        source: 'full Temple Collection Log',
+      }, player);
+      if (row) rows.push(row);
+    }
+  }
+  return rows;
 }
 
 async function buildDocument() {
@@ -159,11 +227,11 @@ async function buildDocument() {
     }
   }
 
-  const mergedRecent = new Map(
-    (Array.isArray(previous.recent) ? previous.recent : [])
-      .filter((row) => row && typeof row === 'object')
-      .map((row) => [recentKey(row), row]),
-  );
+  const mergedRecent = new Map();
+  (Array.isArray(previous.recent) ? previous.recent : []).forEach((raw) => {
+    const row = normalizeRecent(raw);
+    if (row) mergedRecent.set(recentKey(row), row);
+  });
   const recentEntries = playerEntries.filter(([key]) => validLog(players[key]));
   const recentResults = await mapWithConcurrency(recentEntries, 2, async ([key, player], index) => {
     if (index % 2) await wait(225);
@@ -180,6 +248,8 @@ async function buildDocument() {
   });
   const recentPlayers = recentResults.filter((result) => result.ok).map((result) => result.key);
   recentResults.forEach((result) => result.rows.forEach((row) => mergedRecent.set(recentKey(row), row)));
+  const derivedRecent = derivedRecentRows(players, previous);
+  derivedRecent.forEach((row) => mergedRecent.set(recentKey(row), row));
 
   const validNames = new Set(
     Object.keys(PLAYERS).filter((key) => validLog(players[key])).map((key) => PLAYERS[key].toLowerCase()),
@@ -199,12 +269,18 @@ async function buildDocument() {
     recent,
     membersWithClog: Object.keys(PLAYERS).filter((key) => validLog(players[key])).length,
     groupSize: 5,
-    refreshDiagnostics: { freshPlayers, failedPlayers, recentPlayers, refreshedAt: fetchedAt },
+    refreshDiagnostics: {
+      freshPlayers,
+      failedPlayers,
+      recentPlayers,
+      derivedRecentItems: derivedRecent.length,
+      refreshedAt: fetchedAt,
+    },
   };
 }
 
-async function getDocument() {
-  if (memoryCache && Date.now() - memoryCachedAt < CACHE_MS) return memoryCache;
+async function getDocument(force = false) {
+  if (!force && memoryCache && Date.now() - memoryCachedAt < CACHE_MS) return memoryCache;
   if (!inflight) {
     inflight = buildDocument()
       .then((document) => {
@@ -247,9 +323,10 @@ module.exports = async function handler(req, res) {
     return send(res, 200, { ok: true, service: 'united-gimps-temple-proxy' });
   }
 
-  res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=90, stale-while-revalidate=300');
+  const force = req.query?.refresh === '1' || /(?:\?|&)refresh=1(?:&|$)/.test(req.url || '');
+  res.setHeader('Cache-Control', force ? 'no-store' : 'public, max-age=0, s-maxage=90');
   try {
-    const document = await getDocument();
+    const document = await getDocument(force);
     res.setHeader('X-Temple-Fresh-Players', String(document.refreshDiagnostics.freshPlayers.length));
     return send(res, 200, document);
   } catch (error) {
@@ -262,6 +339,9 @@ module.exports._test = {
   PLAYERS,
   mapWithConcurrency,
   validLog,
+  logItems,
+  normalizeRecent,
+  derivedRecentRows,
   recentRows,
   resetCache() {
     memoryCache = null;

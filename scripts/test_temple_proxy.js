@@ -37,15 +37,24 @@ async function run() {
     global.fetch = async (url) => {
       calls.push(String(url));
       if (String(url).includes('temple-clog.json')) {
-        return response({ players: { 'poep aura': { data: { items: { old: [] } } } }, recent: [] });
+        return response({
+          fetchedAt: 1_700_000_000_000,
+          players: Object.fromEntries(Object.keys(handler._test.PLAYERS).map((key) => [key, {
+            data: { items: { General: [{ id: 1, name: 'Existing item', count: 1, date: 1_699_000_000 }] } },
+          }])),
+          recent: [{ Code: 403, Message: 'No new items', player: 'Dikste' }],
+        });
       }
       if (String(url).includes('player_collection_log.php')) {
         const player = new URL(url).searchParams.get('player');
-        return response({ data: { items: { General: [{ id: 1, name: 'Test item', count: 1 }] }, player } });
+        const items = [{ id: 1, name: 'Existing item', count: 1, date: 1_699_000_000 }];
+        if (player === 'Lijpste') items.push({ id: 2, name: 'Recovered full-log item', count: 1, date: 1_700_000_100 });
+        return response({ data: { items: { General: items }, player } });
       }
       if (String(url).includes('player_recent_items.php')) {
         const player = new URL(url).searchParams.get('player');
-        return response({ data: [{ id: 1, name: 'Test item', date_unix: 1_700_000_000, player }] });
+        if (player === 'Lijpste') return response({ Code: 403, Message: 'No items after initial sync' }, 403);
+        return response({ data: [{ id: 1, name: 'Existing item', date_unix: 1_700_000_000, player }] });
       }
       if (String(url).includes('items.php')) return response({ data: { 1: 'Test item' } });
       if (String(url).includes('categories.php')) return response({ data: { General: [1] } });
@@ -56,8 +65,12 @@ async function run() {
     assert.equal(first.statusCode, 200);
     assert.equal(first.headers.get('access-control-allow-origin'), 'https://marnixs.github.io');
     assert.equal(first.json.refreshDiagnostics.freshPlayers.length, 5);
+    assert.equal(first.json.refreshDiagnostics.recentPlayers.length, 4);
+    assert.equal(first.json.refreshDiagnostics.derivedRecentItems, 1);
     assert.equal(Object.keys(first.json.players).length, 5);
     assert.equal(first.json.recent.length, 5);
+    assert(first.json.recent.some((row) => row.name === 'Recovered full-log item' && row.player === 'Lijpste'));
+    assert(!first.json.recent.some((row) => row.Code || !row.id || !row.name), 'error objects are never published as recent items');
     assert.equal(calls.filter((url) => url.includes('player_collection_log.php')).length, 5);
     assert.equal(calls.filter((url) => url.includes('player_recent_items.php')).length, 5);
 
@@ -65,6 +78,11 @@ async function run() {
     const second = await call();
     assert.equal(second.statusCode, 200);
     assert.equal(calls.length, callCount, '90-second in-memory cache should shield Temple');
+
+    const forced = await call({ url: '/api/temple-collection-log?refresh=1' });
+    assert.equal(forced.statusCode, 200);
+    assert(calls.length > callCount, 'an explicit button refresh must bypass the in-memory cache');
+    assert.equal(forced.headers.get('cache-control'), 'no-store');
 
     const forbidden = await call({ origin: 'https://example.com' });
     assert.equal(forbidden.statusCode, 403);

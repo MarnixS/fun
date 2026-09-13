@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json, time, urllib.parse, urllib.request
+from datetime import datetime
 from urllib.error import HTTPError
 from pathlib import Path
 
@@ -61,6 +62,97 @@ def valid_temple(x):
     return isinstance(d, dict) and isinstance(d.get('items'), (list, dict))
 
 
+
+def recent_time(row):
+    try:
+        value = float(row.get('date_unix') or row.get('date') or 0)
+    except Exception:
+        value = 0
+    if value:
+        return value / 1000 if value > 1e12 else value
+    raw = row.get('date')
+    if isinstance(raw, str):
+        try:
+            return datetime.fromisoformat(raw.replace('Z', '+00:00')).timestamp()
+        except Exception:
+            pass
+    return 0
+
+
+def normalize_recent(row, player=''):
+    if not isinstance(row, dict) or row.get('Code') or row.get('code') or row.get('error') or row.get('errors'):
+        return None
+    try:
+        item_id = int(row.get('id') or row.get('item_id') or 0)
+    except Exception:
+        item_id = 0
+    item_name = str(row.get('name') or row.get('item_name') or '').strip()
+    owner = str(row.get('player_name_with_capitalization') or row.get('player') or player).strip()
+    when = recent_time(row)
+    if item_id <= 0 or not item_name or not owner or when <= 0:
+        return None
+    out = dict(row)
+    out.update({'id': item_id, 'name': item_name, 'player': owner, 'player_name_with_capitalization': owner, 'date_unix': int(when), 'date': datetime.fromtimestamp(when).strftime('%Y-%m-%d %H:%M:%S')})
+    return out
+
+
+def recent_key(row):
+    return str(row.get('player_name_with_capitalization') or row.get('player') or '').lower(), int(row['id']), int(row['date_unix'])
+
+
+def log_items(log):
+    if not valid_temple(log):
+        return {}
+    data = log.get('data', log)
+    found = {}
+
+    def walk(node):
+        if isinstance(node, list):
+            for value in node:
+                walk(value)
+            return
+        if not isinstance(node, dict):
+            return
+        try:
+            item_id = int(node.get('id') or node.get('item_id') or 0)
+        except Exception:
+            item_id = 0
+        if item_id > 0:
+            try:
+                count = max(0, int(node.get('count') or node.get('quantity') or 0))
+            except Exception:
+                count = 0
+            item = {'id': item_id, 'count': count, 'time': recent_time(node), 'name': str(node.get('name') or node.get('item_name') or '').strip()}
+            old = found.get(item_id)
+            if not old or item['count'] > old['count'] or item['time'] > old['time']:
+                found[item_id] = item
+            return
+        for value in node.values():
+            walk(value)
+
+    walk(data.get('items') or {})
+    return found
+
+
+def derived_recent_rows(current, previous):
+    rows = []
+    cutoff = float(previous.get('fetchedAt') or 0) / 1000
+    previous_players = previous.get('players') or {}
+    for key, name in PLAYERS.items():
+        if not valid_temple(current.get(key)) or not valid_temple(previous_players.get(key)):
+            continue
+        before = log_items(previous_players[key])
+        for item in log_items(current[key]).values():
+            old = before.get(item['id']) or {}
+            new_unique = int(old.get('count') or 0) == 0 and item['count'] > 0
+            newer_drop = item['time'] > max(float(old.get('time') or 0), cutoff)
+            if item['count'] <= 0 or item['time'] <= 0 or not item['name'] or not (new_unique or newer_drop):
+                continue
+            row = normalize_recent({'id': item['id'], 'name': item['name'], 'date_unix': int(item['time']), 'player': name, 'source': 'full Temple Collection Log'}, name)
+            if row:
+                rows.append(row)
+    return rows
+
 def merge_snapshots(old, new):
     """Merge WOM snapshots by timestamp.
 
@@ -100,6 +192,20 @@ def fetch_all_snapshots(name):
     return out
 
 
+
+def latest_snapshot_millis(current_profiles):
+    values = []
+    for profile in current_profiles.values():
+        snapshot = profile.get('latestSnapshot') if isinstance(profile, dict) else None
+        created = snapshot.get('createdAt') if isinstance(snapshot, dict) else None
+        if not created:
+            continue
+        try:
+            values.append(int(datetime.fromisoformat(str(created).replace('Z', '+00:00')).timestamp() * 1000))
+        except Exception:
+            pass
+    return max(values or [0])
+
 oldw = load('wom-cache.json')
 oldt = load('temple-clog.json')
 profiles = {k: v for k, v in dict(oldw.get('profiles') or oldw.get('players') or {}).items() if k in PLAYERS}
@@ -111,11 +217,15 @@ snapshots = {k: list(v or []) for k, v in dict(oldw.get('snapshots') or oldw.get
 for key, name in PLAYERS.items():
     try:
         try:
-            get('https://api.wiseoldman.net/v2/players/' + urllib.parse.quote(name), method='POST', data=b'{}', attempts=2, delay=1.2)
+            updated = get('https://api.wiseoldman.net/v2/players/' + urllib.parse.quote(name), method='POST', data=b'{}', attempts=2, delay=1.2)
             print('WOM update requested:', name)
         except Exception as e:
+            updated = None
             print('WOM update warning:', name, repr(e))
-        profiles[key] = get('https://api.wiseoldman.net/v2/players/' + urllib.parse.quote(name), attempts=4, delay=1.2)
+        if isinstance(updated, dict) and isinstance(updated.get('latestSnapshot'), dict):
+            profiles[key] = updated
+        else:
+            profiles[key] = get('https://api.wiseoldman.net/v2/players/' + urllib.parse.quote(name), attempts=4, delay=1.2)
         print('WOM profile:', name)
     except Exception as e:
         print('WOM profile failed; preserving last known good:', name, repr(e))
@@ -156,6 +266,7 @@ for key, name in PLAYERS.items():
 wom_doc = {
     'source': 'Wise Old Man',
     'fetchedAt': int(time.time() * 1000),
+    'sourceLatestAt': latest_snapshot_millis(profiles),
     'profiles': profiles,
     'gains': gains,
     'achievements': achievements,
@@ -202,7 +313,11 @@ except Exception as e:
     print('Collection Log categories failed; preserving previous:', repr(e))
     categories = oldt.get('categories') or {}
 
-recent = []
+recent_map = {}
+for raw in list(oldt.get('recent') or []):
+    row = normalize_recent(raw)
+    if row:
+        recent_map[recent_key(row)] = row
 for key, name in PLAYERS.items():
     if not valid_temple(temple.get(key)):
         print('Collection Log recent unlocks skipped; not synced:', name)
@@ -212,27 +327,18 @@ for key, name in PLAYERS.items():
         p = get('https://templeosrs.com/api/collection-log/player_recent_items.php?' + q, attempts=3, delay=.8)
         d = p.get('data', p) if isinstance(p, dict) else p
         rows = list(d.values()) if isinstance(d, dict) else (d if isinstance(d, list) else [])
-        for row in rows:
-            if isinstance(row, dict):
-                z = dict(row)
-                z.setdefault('player', name)
-                z.setdefault('player_name_with_capitalization', name)
-                recent.append(z)
+        for raw in rows:
+            row = normalize_recent(raw, name)
+            if row:
+                recent_map[recent_key(row)] = row
         print('Collection Log recent unlocks:', name, len(rows))
     except Exception as e:
         print('Collection Log recent unlocks failed:', name, repr(e))
 
-
-def rtime(x):
-    try:
-        return int(x.get('date_unix') or 0)
-    except Exception:
-        return 0
-
-if recent:
-    recent.sort(key=rtime, reverse=True)
-else:
-    recent = list(oldt.get('recent') or [])
+derived_recent = derived_recent_rows(temple, oldt)
+for row in derived_recent:
+    recent_map[recent_key(row)] = row
+recent = sorted(recent_map.values(), key=recent_time, reverse=True)
 
 synced_names = {PLAYERS[k].lower() for k in PLAYERS if valid_temple(temple.get(k))}
 recent = [r for r in recent if str(r.get('player_name_with_capitalization') or r.get('player') or '').lower() in synced_names]
@@ -246,6 +352,7 @@ temple_doc = {
     'recent': recent[:300],
     'membersWithClog': sum(1 for k in PLAYERS if valid_temple(temple.get(k))),
     'groupSize': 5,
+    'refreshDiagnostics': {'derivedRecentItems': len(derived_recent)},
 }
 
 (ROOT / 'wom-cache.json').write_text(json.dumps(wom_doc, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')

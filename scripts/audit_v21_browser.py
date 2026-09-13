@@ -132,7 +132,7 @@ try:
     assert '01 Jan 2026' in d.find_element(By.TAG_NAME,'body').text; severe()
 
     d.get(BASE+'chronicle.html'); wait('#chronicle'); time.sleep(.7)
-    assert d.find_element(By.ID,'chronicleRefresh').text.strip()=='Reload stats Chronicle via WOM'
+    assert d.find_element(By.ID,'chronicleRefresh').text.strip()=='Update Chronicle via WOM'
     events=d.find_elements(By.CSS_SELECTOR,'.chronicle-event'); assert len(events)>600,len(events)
     assert len(d.find_elements(By.CSS_SELECTOR,'.chronicle-event[data-event-type="level"][data-level]'))>1000
     txt=' '.join(x.text for x in events); assert 'Dikste' in txt and 'Big Dog Aura' in txt; severe()

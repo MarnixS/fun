@@ -27,7 +27,7 @@ function jsonResponse(value, status = 200) {
   });
 }
 
-async function openPage(path, { selection, templeResponse } = {}) {
+async function openPage(path, { selection, templeResponse, womResponse, womDocument } = {}) {
   const errors = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', (error) => errors.push(error.message));
@@ -39,6 +39,7 @@ async function openPage(path, { selection, templeResponse } = {}) {
     virtualConsole,
     beforeParse(window) {
       if (selection) window.localStorage.setItem(MEMBER_KEY, JSON.stringify(selection));
+      if (womDocument) window.localStorage.setItem('ug-v20-wom-cache', JSON.stringify(womDocument));
       window.fetch = async (input, options) => {
         const url = new URL(String(input), window.location.href).href;
         if (url.includes('__TEMPLE_PROXY_URL__') || url.includes('/api/temple-collection-log')) {
@@ -46,7 +47,21 @@ async function openPage(path, { selection, templeResponse } = {}) {
           return jsonResponse(templeResponse);
         }
         if (url.startsWith('https://prices.runescape.wiki/')) return jsonResponse({ data: {} });
-        if (url.startsWith('https://api.wiseoldman.net/')) return jsonResponse({ error: 'Network disabled in UI audit' }, 503);
+        if (url.startsWith('https://api.wiseoldman.net/')) {
+          if (!womResponse) return jsonResponse({ error: 'Network disabled in UI audit' }, 503);
+          const parsed = new URL(url);
+          const tail = parsed.pathname.split('/players/')[1] || '';
+          const username = decodeURIComponent(tail.split('/')[0]).toLowerCase();
+          const key = ALL.find((value) => value === username);
+          if (!key) return jsonResponse({ error: 'Unknown WOM test member' }, 404);
+          if (parsed.pathname.endsWith('/achievements')) return jsonResponse(womResponse.achievements?.[key] || []);
+          if (parsed.pathname.endsWith('/gained')) {
+            const period = parsed.searchParams.get('period');
+            return jsonResponse(womResponse.gains?.[period]?.[key] || { data: { skills: {}, bosses: {} } });
+          }
+          if ((options?.method || 'GET').toUpperCase() === 'POST') return jsonResponse(womResponse.profiles[key]);
+          return jsonResponse(womResponse.profiles[key]);
+        }
         return fetch(url, options);
       };
       window.open = () => null;
@@ -113,6 +128,23 @@ function expectedLevelKeys() {
     }
   }
   return keys;
+}
+
+function womRefreshFixture() {
+  const saved = JSON.parse(fs.readFileSync('docs/data/wom-cache.json', 'utf8'));
+  const next = structuredClone(saved);
+  const key = 'big dog aura';
+  const profile = next.profiles[key];
+  const snapshot = structuredClone(profile.latestSnapshot);
+  assert.equal(snapshot.data.skills.thieving.level, 81, 'fixture expects the saved Big Dog Aura Thieving baseline');
+  snapshot.id = -1;
+  snapshot.createdAt = '2026-09-13T12:00:00.000Z';
+  snapshot.data.skills.thieving.level = 83;
+  snapshot.data.skills.thieving.experience += 500_000;
+  snapshot.data.skills.overall.level += 2;
+  snapshot.data.skills.overall.experience += 500_000;
+  profile.latestSnapshot = snapshot;
+  return next;
 }
 
 async function testShells() {
@@ -214,14 +246,60 @@ async function testChronicleLevelsAndFilter() {
   assert.equal(errors.length, 0, errors.join('; '));
 }
 
+async function testWomRefreshUpdatesChronicleAndPersists() {
+  console.log('WOM refresh propagation');
+  const womResponse = womRefreshFixture();
+  const first = await openPage('chronicle.html', { womResponse });
+  const { window } = first.dom;
+  const { document } = window;
+  click(window, document.querySelector('[data-refresh-wom]'));
+  await waitFor(
+    () => document.querySelector('#pageNotice')?.textContent.includes('2 new level events added to Chronicle'),
+    'WOM refresh and Chronicle derivation',
+    30_000,
+  );
+  await waitFor(
+    () => document.querySelector('.chronicle-event[data-player-key="big dog aura"][data-metric="thieving"][data-level="83"]'),
+    'new Thieving level in current Chronicle',
+  );
+  assert(document.querySelector('.chronicle-event[data-player-key="big dog aura"][data-metric="thieving"][data-level="82"]'));
+  const stored = JSON.parse(window.localStorage.getItem('ug-v20-wom-cache'));
+  const newRows = stored.snapshots['big dog aura'].filter((row) => row.createdAt === '2026-09-13T12:00:00.000Z');
+  assert.equal(newRows.length, 1, 'new WOM snapshot is persisted exactly once even with sentinel id -1');
+  assert.match(document.querySelector('[data-wom-status] b').textContent, /2026/);
+  assert.equal(first.errors.length, 0, first.errors.join('; '));
+
+  const second = await openPage('chronicle.html', { womDocument: stored });
+  await waitFor(
+    () => second.dom.window.document.querySelector('.chronicle-event[data-player-key="big dog aura"][data-metric="thieving"][data-level="83"]'),
+    'persisted Thieving level after navigation',
+  );
+  assert(second.dom.window.document.querySelector('.chronicle-event[data-player-key="big dog aura"][data-metric="thieving"][data-level="82"]'));
+  assert.match(second.dom.window.document.querySelector('[data-wom-status] b').textContent, /2026/);
+  assert.equal(second.errors.length, 0, second.errors.join('; '));
+}
+
 async function testTempleButtonAction() {
   console.log('Temple button');
+  const previousTemple = JSON.parse(fs.readFileSync('docs/data/temple-clog.json', 'utf8'));
+  const dateUnix = Math.floor(Date.now() / 1000);
   const templeResponse = {
     fetchedAt: Date.now(),
-    players: Object.fromEntries(ALL.map((key) => [key, { data: { items: { General: [{ id: 1, name: 'Test item', count: 1 }] } } }])),
-    catalog: { 1: 'Test item' },
-    categories: { General: [1] },
-    recent: [],
+    players: Object.fromEntries(ALL.map((key, index) => {
+      const oldData = previousTemple.players?.[key]?.data || previousTemple.players?.[key] || {};
+      return [key, { data: {
+        items: { General: [{ id: 700_001 + index, name: `Recovered ${key} item`, count: 1, date: dateUnix }] },
+        total_collections_finished: Number(oldData.total_collections_finished || 0) + 1,
+        last_checked: dateUnix,
+        last_changed: dateUnix,
+      } }];
+    })),
+    catalog: Object.fromEntries(ALL.map((key, index) => [700_001 + index, `Recovered ${key} item`])),
+    categories: { General: ALL.map((key, index) => 700_001 + index) },
+    recent: [
+      { id: 700_001, name: 'Recovered dikste item', date_unix: dateUnix, player: 'Dikste' },
+      { Code: 403, Message: 'No new items after initial sync', player: 'Lijpste' },
+    ],
     refreshDiagnostics: { freshPlayers: ALL, failedPlayers: [], recentPlayers: ALL },
   };
   const { dom, errors } = await openPage('gim.html', { templeResponse });
@@ -234,6 +312,10 @@ async function testTempleButtonAction() {
   const saved = JSON.parse(window.localStorage.getItem('ug-v20-temple-cache'));
   assert.equal(saved.source, 'TempleOSRS manual site update');
   assert.equal(Object.keys(saved.players).length, 5);
+  assert(saved.recent.some((row) => row.name === 'Recovered lijpste item' && row.player === 'Lijpste'), 'full Collection Log recovers a missing recent-feed item');
+  assert(!saved.recent.some((row) => row.Code || !row.id || !row.name), 'Temple error objects are removed');
+  await waitFor(() => document.querySelector('#recentDrops')?.textContent.includes('Recovered lijpste item'), 'Collection Log recent view redraw');
+  assert(!document.querySelector('#recentDrops').textContent.includes('undefined'));
   assert.equal(errors.length, 0, errors.join('; '));
 
   const partialResponse = {
@@ -255,6 +337,7 @@ async function testTempleButtonAction() {
   await testHiscoresFilterAndModal();
   await testSharedSelectionEverywhere();
   await testChronicleLevelsAndFilter();
+  await testWomRefreshUpdatesChronicleAndPersists();
   await testTempleButtonAction();
   console.log('V25 JSDOM INTERACTION AUDIT PASSED');
   process.exit(0);
