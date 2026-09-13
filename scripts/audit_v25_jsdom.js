@@ -235,6 +235,19 @@ async function testTempleButtonAction() {
   assert.equal(saved.source, 'TempleOSRS manual site update');
   assert.equal(Object.keys(saved.players).length, 5);
   assert.equal(errors.length, 0, errors.join('; '));
+
+  const partialResponse = {
+    ...templeResponse,
+    players: Object.fromEntries(ALL.slice(0, 4).map((key) => [key, templeResponse.players[key]])),
+    refreshDiagnostics: { freshPlayers: ALL.slice(0, 4), failedPlayers: ['lompste'], recentPlayers: ALL.slice(0, 4) },
+  };
+  const partial = await openPage('gim.html', { templeResponse: partialResponse });
+  click(partial.dom.window, partial.dom.window.document.querySelector('[data-refresh-temple]'));
+  await waitFor(
+    () => partial.dom.window.document.querySelector('#pageNotice')?.textContent.includes('no valid saved Collection Log for Lompste'),
+    'accurate partial Temple result',
+  );
+  assert.equal(partial.errors.length, 0, partial.errors.join('; '));
 }
 
 (async () => {
