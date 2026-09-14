@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { JSDOM, VirtualConsole } = require('jsdom');
 
-const BASE = 'http://127.0.0.1:8123/';
+const BASE = process.env.SITE_TEST_URL || 'http://127.0.0.1:8123/';
 const PAGES = ['index.html', 'gim.html', 'hiscores.html', 'progress.html', 'history.html', 'time-machine.html', 'chronicle.html'];
 const ALL = ['dikste', 'big dog aura', 'lijpste', 'poep aura', 'lompste'];
 const MEMBER_KEY = 'ug-v25-member-selection';

@@ -25,7 +25,7 @@ async function loadDocument(key,path,field){
  if(documents.has(key))return documents.get(key);
  if(pending.has(key))return pending.get(key);
  const request=(async()=>{let shared=null;try{shared=await staticJSON(path)}catch(e){console.warn(path,e)}
- const local=localJSON(key),st=+(shared?.fetchedAt||0),lt=+(local?.fetchedAt||local?.savedAt||0);
+ const local=key===WKEY?await window.UGWomStore.latest(localJSON(key)):localJSON(key),st=+(shared?.fetchedAt||0),lt=+(local?.fetchedAt||local?.savedAt||0);
  const chosen=lt>st&&local?.[field]?local:(shared?.[field]?shared:local)||{[field]:{}};
  if(!documents.has(key))documents.set(key,chosen);return documents.get(key)})();
  pending.set(key,request);try{return await request}finally{pending.delete(key)}
@@ -89,7 +89,7 @@ document.addEventListener('click',e=>{if(e.target.closest?.('.seg button,.modal-
 function installDataNotifications(){if(window.__ugDataNotifyInstalled)return;window.__ugDataNotifyInstalled=true;window.addEventListener('storage',async e=>{if(e.key!==WKEY&&e.key!==TKEY)return;let doc=localJSON(e.key);if(!doc){documents.delete(e.key);doc=await(e.key===WKEY?loadWom():loadClog())}window.dispatchEvent(new CustomEvent('ug:data-updated',{detail:{key:e.key,document:doc,source:'storage'}}))})}
 function renderSharedMemberPicker(){const page=document.body?.dataset?.page;if(!['home','history','time'].includes(page))return;let host=$('#statsMemberPicker');if(!host){host=document.createElement('div');host.id='statsMemberPicker';host.className='v21-filter-wrap';$('#pageNotice')?.insertAdjacentElement('afterend',host)}renderMemberPicker(host,loadMemberSelection(),next=>saveMemberSelection(next),{title:'Members across this site',subtitle:'This same selection controls cards, tables, charts, Time Machine and Chronicle comparisons.',fallback:ALL_KEYS})}
 function installMemberSelection(){window.addEventListener('storage',e=>{if(e.key===MKEY)window.dispatchEvent(new CustomEvent('ug:members-changed',{detail:{keys:[...loadMemberSelection()]}}))});window.addEventListener('ug:members-changed',renderSharedMemberPicker);renderSharedMemberPicker()}
-function loadNav(){if(document.querySelector('script[data-v21-nav]'))return;const s=document.createElement('script');s.src='assets/v21-nav.js?v=28';s.dataset.v21Nav='1';document.head.append(s)}
+function loadNav(){if(document.querySelector('script[data-v21-nav]'))return;const s=document.createElement('script');s.src='assets/v21-nav.js?v=29';s.dataset.v21Nav='1';document.head.append(s)}
 window.UGV21={PLAYERS,CORE_KEYS,ALL_KEYS,PERIODS,$,$$,fmt,fmt1,compact,nice,loadWom,loadClog,snapData,player,WKEY,TKEY,MKEY,cleanSelection,loadMemberSelection,saveMemberSelection,sameSelection,renderMemberPicker,closeGraphModal,showGraphModal,enhanceAccessibility};
 function init(){installObserver();installDataNotifications();installMemberSelection();loadNav();enhanceAccessibility(document)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();

@@ -12,20 +12,26 @@ function removeGloves(node){if(!node||typeof node!=='object')return;if(node.id==
 removeGloves(old.players['big dog aura']);
 async function run(){
  for(const path of ['index.html','gim.html','hiscores.html','progress.html','history.html','time-machine.html','chronicle.html']){
-  console.log('automatic live data',path);const requests=[];
+  console.log('manual-only live data',path);const requests=[];
   const {dom,errors}=await openPage(path,{liveSync:true,savedTemple:old,templeResponse:temple,womResponse:wom,fetchLog:requests});
   const w=dom.window,d=w.document;
-  await waitFor(()=>d.querySelector('[data-mast-drop]')?.textContent==='Ancient ceremonial gloves','automatic gloves mast');
+  assert.equal(d.querySelector('[data-mast-drop]').textContent,'Nihil shard');
+  w.dispatchEvent(new w.Event('focus'));w.dispatchEvent(new w.Event('online'));d.dispatchEvent(new w.Event('visibilitychange'));
+  await new Promise(r=>setTimeout(r,150));
+  assert(!requests.some(x=>x.url.includes('api.wiseoldman.net')||x.url.includes('/api/temple-collection-log')),'no WOM or Temple requests on page load, focus or network events');
+  assert(!w.ugLiveSync,'automatic scheduler is not installed');
+  d.querySelector('[data-refresh-temple]').click();
+  await waitFor(()=>d.querySelector('[data-mast-drop]')?.textContent==='Ancient ceremonial gloves','manual gloves mast');
   assert.equal(d.querySelector('[data-mast-drop-sub]').textContent.split(' · ')[0],'Big Dog Aura');
-  assert(requests.some(x=>x.url.includes('/api/temple-collection-log')),'opening a menu automatically queries Temple');
+  assert(requests.some(x=>x.url.includes('/api/temple-collection-log')),'refresh button queries Temple');
   assert(!requests.some(x=>x.method==='POST'),'automatic WOM checks read tracked data without requesting hiscores updates');
   if(path==='gim.html')await waitFor(()=>d.querySelector('#recentDrops').textContent.includes('Ancient ceremonial gloves'),'automatic Collection Log recent');
   if(path==='chronicle.html')await waitFor(()=>d.querySelector('#chronicle').textContent.includes('Ancient ceremonial gloves'),'automatic Chronicle');
-  await waitFor(()=>d.querySelector('#liveSyncStatus').textContent.includes('WOM: checked'),'WOM automatic check');
+  assert(!d.querySelector('#liveSyncStatus'),'no automatic status banner');
   const stored=JSON.parse(w.localStorage.getItem('ug-v20-temple-cache'));
   assert(stored.recent.some(x=>x.id===26227),'automatic response persisted for navigation');
-  assert.equal(errors.length,0,errors.join('; '));w.ugLiveSync.stop();
+  assert.equal(errors.length,0,errors.join('; '));
  }
- console.log('ALL MENUS AUTOMATIC SYNC AUDIT PASSED');
+ console.log('ALL MENUS MANUAL-ONLY SYNC AUDIT PASSED');
 }
 run().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)});

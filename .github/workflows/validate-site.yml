@@ -22,7 +22,7 @@ jobs:
         run: |
           for file in docs/assets/*.js; do node --check "$file"; done
           node scripts/test_temple_proxy.js
-          node scripts/test_live_sync.js
+          node scripts/test_history_model.js
           python scripts/check_site.py
       - name: All menus and sync regressions
         run: |
@@ -32,3 +32,5 @@ jobs:
           node scripts/audit_v25_jsdom.js
           node scripts/audit_sync.js
           node scripts/audit_live_sync.js
+          node scripts/audit_chronicle_goals.js
+          node scripts/audit_chart_ranges.js
