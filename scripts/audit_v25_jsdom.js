@@ -38,6 +38,9 @@ async function openPage(path, { selection, templeResponse, womResponse, womDocum
     pretendToBeVisual: true,
     virtualConsole,
     beforeParse(window) {
+      // Skip only the production WOM courtesy delay against mocked API responses.
+      const realTimer=window.setTimeout.bind(window);
+      window.setTimeout=(fn,ms,...args)=>realTimer(fn,ms===3200?0:ms,...args);
       if(!liveSync)for(const source of ['temple','wom'])window.localStorage.setItem('ug-v28-live-'+source,JSON.stringify({checkedAt:Date.now()}));
       if (selection) window.localStorage.setItem(MEMBER_KEY, JSON.stringify(selection));
       if (womDocument) window.localStorage.setItem('ug-v20-wom-cache', JSON.stringify(womDocument));
