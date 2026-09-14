@@ -18,8 +18,20 @@ const compact=n=>{n=+n;if(!Number.isFinite(n))return'—';const a=Math.abs(n);if
 const nice=s=>String(s||'').replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase()).replace(/Of /g,'of ').replace(/The /g,'the ');
 function localJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}}
 async function staticJSON(path){const r=await fetch(path,{cache:'no-store',headers:{Accept:'application/json'}});if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json()}
-async function loadWom(){let shared=null;try{shared=await staticJSON('data/wom-cache.json')}catch(e){console.warn('v21 WOM cache',e)}const local=localJSON(WKEY),st=+(shared?.fetchedAt||0),lt=+(local?.fetchedAt||local?.savedAt||0);return lt>st&&local?.profiles?local:(shared?.profiles?shared:local)||{profiles:{},gains:{},snapshots:{},achievements:{}}}
-async function loadClog(){let shared=null;try{shared=await staticJSON('data/temple-clog.json')}catch(e){console.warn('v21 Collection Log cache',e)}const local=localJSON(TKEY),st=+(shared?.fetchedAt||0),lt=+(local?.fetchedAt||local?.savedAt||0);return lt>st&&local?.players?local:(shared?.players?shared:local)||{players:{}}}
+// One in-memory document per source. A successful sync is usable even when browser storage is full.
+const documents=new Map(),pending=new Map();
+window.addEventListener('ug:data-updated',e=>{const {key,document:doc}=e.detail||{};if(doc)documents.set(key,doc);else documents.delete(key)});
+async function loadDocument(key,path,field){
+ if(documents.has(key))return documents.get(key);
+ if(pending.has(key))return pending.get(key);
+ const request=(async()=>{let shared=null;try{shared=await staticJSON(path)}catch(e){console.warn(path,e)}
+ const local=localJSON(key),st=+(shared?.fetchedAt||0),lt=+(local?.fetchedAt||local?.savedAt||0);
+ const chosen=lt>st&&local?.[field]?local:(shared?.[field]?shared:local)||{[field]:{}};
+ if(!documents.has(key))documents.set(key,chosen);return documents.get(key)})();
+ pending.set(key,request);try{return await request}finally{pending.delete(key)}
+}
+async function loadWom(){return loadDocument(WKEY,'data/wom-cache.json','profiles')}
+async function loadClog(){return loadDocument(TKEY,'data/temple-clog.json','players')}
 function snapData(w,key){return w?.profiles?.[key]?.latestSnapshot?.data||w?.profiles?.[key]?.latest_snapshot?.data||null}
 function player(key){return PLAYERS.find(p=>p.key===key)}
 function cleanSelection(sel,fallback=ALL_KEYS){const ok=new Set(ALL_KEYS),out=new Set([...(sel||[])].filter(k=>ok.has(k)));if(!out.size)fallback.forEach(k=>out.add(k));return out}
@@ -74,10 +86,10 @@ function enhanceAccessibility(root=document){
  const modal=root.matches?.('.modal')?root:$('.modal',root);if(modal){modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');if($('#v21ModalTitle',modal))modal.setAttribute('aria-labelledby','v21ModalTitle')}
 }
 document.addEventListener('click',e=>{if(e.target.closest?.('.seg button,.modal-periods button,[data-gim-tab]'))requestAnimationFrame(()=>enhanceAccessibility(document))});
-function installDataNotifications(){if(window.__ugDataNotifyInstalled)return;window.__ugDataNotifyInstalled=true;window.addEventListener('storage',e=>{if(e.key!==WKEY&&e.key!==TKEY)return;window.dispatchEvent(new CustomEvent('ug:data-updated',{detail:{key:e.key,document:localJSON(e.key),source:'storage'}}))})}
+function installDataNotifications(){if(window.__ugDataNotifyInstalled)return;window.__ugDataNotifyInstalled=true;window.addEventListener('storage',async e=>{if(e.key!==WKEY&&e.key!==TKEY)return;let doc=localJSON(e.key);if(!doc){documents.delete(e.key);doc=await(e.key===WKEY?loadWom():loadClog())}window.dispatchEvent(new CustomEvent('ug:data-updated',{detail:{key:e.key,document:doc,source:'storage'}}))})}
 function renderSharedMemberPicker(){const page=document.body?.dataset?.page;if(!['home','history','time'].includes(page))return;let host=$('#statsMemberPicker');if(!host){host=document.createElement('div');host.id='statsMemberPicker';host.className='v21-filter-wrap';$('#pageNotice')?.insertAdjacentElement('afterend',host)}renderMemberPicker(host,loadMemberSelection(),next=>saveMemberSelection(next),{title:'Members across this site',subtitle:'This same selection controls cards, tables, charts, Time Machine and Chronicle comparisons.',fallback:ALL_KEYS})}
 function installMemberSelection(){window.addEventListener('storage',e=>{if(e.key===MKEY)window.dispatchEvent(new CustomEvent('ug:members-changed',{detail:{keys:[...loadMemberSelection()]}}))});window.addEventListener('ug:members-changed',renderSharedMemberPicker);renderSharedMemberPicker()}
-function loadNav(){if(document.querySelector('script[data-v21-nav]'))return;const s=document.createElement('script');s.src='assets/v21-nav.js';s.dataset.v21Nav='1';document.head.append(s)}
+function loadNav(){if(document.querySelector('script[data-v21-nav]'))return;const s=document.createElement('script');s.src='assets/v21-nav.js?v=27';s.dataset.v21Nav='1';document.head.append(s)}
 window.UGV21={PLAYERS,CORE_KEYS,ALL_KEYS,PERIODS,$,$$,fmt,fmt1,compact,nice,loadWom,loadClog,snapData,player,WKEY,TKEY,MKEY,cleanSelection,loadMemberSelection,saveMemberSelection,sameSelection,renderMemberPicker,closeGraphModal,showGraphModal,enhanceAccessibility};
 function init(){installObserver();installDataNotifications();installMemberSelection();loadNav();enhanceAccessibility(document)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();

@@ -54,6 +54,7 @@ async function openPage(path, { selection, templeResponse, womResponse, womDocum
           const username = decodeURIComponent(tail.split('/')[0]).toLowerCase();
           const key = ALL.find((value) => value === username);
           if (!key) return jsonResponse({ error: 'Unknown WOM test member' }, 404);
+          if (parsed.pathname.endsWith('/snapshots')) return jsonResponse([]);
           if (parsed.pathname.endsWith('/achievements')) return jsonResponse(womResponse.achievements?.[key] || []);
           if (parsed.pathname.endsWith('/gained')) {
             const period = parsed.searchParams.get('period');
@@ -136,10 +137,10 @@ function womRefreshFixture() {
   const key = 'big dog aura';
   const profile = next.profiles[key];
   const snapshot = structuredClone(profile.latestSnapshot);
-  assert.equal(snapshot.data.skills.thieving.level, 81, 'fixture expects the saved Big Dog Aura Thieving baseline');
+  const previousLevel = snapshot.data.skills.thieving.level;
   snapshot.id = -1;
-  snapshot.createdAt = '2026-09-13T12:00:00.000Z';
-  snapshot.data.skills.thieving.level = 83;
+  snapshot.createdAt = new Date(Date.now()+60000).toISOString();
+  snapshot.data.skills.thieving.level = previousLevel + 2;
   snapshot.data.skills.thieving.experience += 500_000;
   snapshot.data.skills.overall.level += 2;
   snapshot.data.skills.overall.experience += 500_000;
@@ -249,6 +250,8 @@ async function testChronicleLevelsAndFilter() {
 async function testWomRefreshUpdatesChronicleAndPersists() {
   console.log('WOM refresh propagation');
   const womResponse = womRefreshFixture();
+  const targetLevel = womResponse.profiles['big dog aura'].latestSnapshot.data.skills.thieving.level;
+  const targetDate = womResponse.profiles['big dog aura'].latestSnapshot.createdAt;
   const first = await openPage('chronicle.html', { womResponse });
   const { window } = first.dom;
   const { document } = window;
@@ -259,22 +262,22 @@ async function testWomRefreshUpdatesChronicleAndPersists() {
     30_000,
   );
   await waitFor(
-    () => document.querySelector('.chronicle-event[data-player-key="big dog aura"][data-metric="thieving"][data-level="83"]'),
+    () => document.querySelector('.chronicle-event[data-player-key="big dog aura"][data-metric="thieving"][data-level="' + targetLevel + '"]'),
     'new Thieving level in current Chronicle',
   );
-  assert(document.querySelector('.chronicle-event[data-player-key="big dog aura"][data-metric="thieving"][data-level="82"]'));
+  assert(document.querySelector('.chronicle-event[data-player-key="big dog aura"][data-metric="thieving"][data-level="' + (targetLevel-1) + '"]'));
   const stored = JSON.parse(window.localStorage.getItem('ug-v20-wom-cache'));
-  const newRows = stored.snapshots['big dog aura'].filter((row) => row.createdAt === '2026-09-13T12:00:00.000Z');
+  const newRows = stored.snapshots['big dog aura'].filter((row) => row.createdAt === targetDate);
   assert.equal(newRows.length, 1, 'new WOM snapshot is persisted exactly once even with sentinel id -1');
   assert.match(document.querySelector('[data-wom-status] b').textContent, /2026/);
   assert.equal(first.errors.length, 0, first.errors.join('; '));
 
   const second = await openPage('chronicle.html', { womDocument: stored });
   await waitFor(
-    () => second.dom.window.document.querySelector('.chronicle-event[data-player-key="big dog aura"][data-metric="thieving"][data-level="83"]'),
+    () => second.dom.window.document.querySelector('.chronicle-event[data-player-key="big dog aura"][data-metric="thieving"][data-level="' + targetLevel + '"]'),
     'persisted Thieving level after navigation',
   );
-  assert(second.dom.window.document.querySelector('.chronicle-event[data-player-key="big dog aura"][data-metric="thieving"][data-level="82"]'));
+  assert(second.dom.window.document.querySelector('.chronicle-event[data-player-key="big dog aura"][data-metric="thieving"][data-level="' + (targetLevel-1) + '"]'));
   assert.match(second.dom.window.document.querySelector('[data-wom-status] b').textContent, /2026/);
   assert.equal(second.errors.length, 0, second.errors.join('; '));
 }
@@ -332,7 +335,7 @@ async function testTempleButtonAction() {
   assert.equal(partial.errors.length, 0, partial.errors.join('; '));
 }
 
-(async () => {
+if (require.main === module) (async () => {
   await testShells();
   await testHiscoresFilterAndModal();
   await testSharedSelectionEverywhere();
@@ -345,3 +348,5 @@ async function testTempleButtonAction() {
   console.error(error);
   process.exit(1);
 });
+
+module.exports={openPage,waitFor,click};

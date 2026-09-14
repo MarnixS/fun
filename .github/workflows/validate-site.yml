@@ -1,0 +1,31 @@
+name: Validate website sync
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - run: pnpm install --frozen-lockfile
+      - name: Syntax and proxy tests
+        run: |
+          for file in docs/assets/*.js; do node --check "$file"; done
+          node scripts/test_temple_proxy.js
+      - name: All menus and sync regressions
+        run: |
+          python -m http.server 8123 --directory docs >/tmp/site-http.log 2>&1 &
+          server=$!
+          trap 'kill "$server"' EXIT
+          node scripts/audit_v25_jsdom.js
+          node scripts/audit_sync.js
