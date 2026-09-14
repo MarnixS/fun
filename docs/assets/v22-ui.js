@@ -20,6 +20,7 @@ function observeDynamicUi(){let scheduled=false;const o=new MutationObserver(()=
 window.addEventListener('ug:page-rendered',renderOverviewClog);
 window.addEventListener('ug:members-changed',()=>{renderOverviewClog();renderPlayerGoals()});
 window.addEventListener('ug:data-updated',renderOverviewClog);
+window.addEventListener('ug:live-checked',renderPlayerGoals);
 async function init(){simplifyMemberFilters();removeOwnerControls();hardenSavedClogReload();enhanceDeveloper();observeDynamicUi();await Promise.all([renderOverviewClog(),renderPlayerGoals()]);setTimeout(()=>{simplifyMemberFilters();removeOwnerControls();hardenSavedClogReload();renderOverviewClog()},1000)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

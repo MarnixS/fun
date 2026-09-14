@@ -6,8 +6,8 @@
     "node": "22.x"
   },
   "scripts": {
-    "test": "node scripts/test_temple_proxy.js",
-    "test:ui": "node scripts/audit_v25_jsdom.js && node scripts/audit_sync.js"
+    "test": "node scripts/test_temple_proxy.js && node scripts/test_live_sync.js",
+    "test:ui": "node scripts/audit_v25_jsdom.js && node scripts/audit_sync.js && node scripts/audit_live_sync.js"
   },
   "devDependencies": {
     "jsdom": "^30.0.1"

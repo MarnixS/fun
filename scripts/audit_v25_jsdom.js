@@ -27,7 +27,7 @@ function jsonResponse(value, status = 200) {
   });
 }
 
-async function openPage(path, { selection, templeResponse, womResponse, womDocument } = {}) {
+async function openPage(path, { selection, templeResponse, womResponse, womDocument, liveSync=false, savedTemple, fetchLog } = {}) {
   const errors = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', (error) => errors.push(error.message));
@@ -38,10 +38,13 @@ async function openPage(path, { selection, templeResponse, womResponse, womDocum
     pretendToBeVisual: true,
     virtualConsole,
     beforeParse(window) {
+      if(!liveSync)for(const source of ['temple','wom'])window.localStorage.setItem('ug-v28-live-'+source,JSON.stringify({checkedAt:Date.now()}));
       if (selection) window.localStorage.setItem(MEMBER_KEY, JSON.stringify(selection));
       if (womDocument) window.localStorage.setItem('ug-v20-wom-cache', JSON.stringify(womDocument));
       window.fetch = async (input, options) => {
         const url = new URL(String(input), window.location.href).href;
+        if(fetchLog)fetchLog.push({url,method:options?.method||'GET'});
+        if(savedTemple&&url.endsWith('/data/temple-clog.json'))return jsonResponse(savedTemple);
         if (url.includes('__TEMPLE_PROXY_URL__') || url.includes('/api/temple-collection-log')) {
           if (!templeResponse) return jsonResponse({ error: 'Temple test response not configured' }, 502);
           return jsonResponse(templeResponse);
