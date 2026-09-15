@@ -35,3 +35,8 @@ button,select,input,.link-button,.btn{min-height:38px}.metric-link{min-height:34
 
 /* Keep every data action visually centred, including the longer Temple label. */
 .data-strip .data-actions{align-items:stretch}.data-strip .data-actions>*{display:inline-flex;align-items:center;justify-content:center;text-align:center;line-height:1.25}.data-strip [data-refresh-temple]{min-width:196px}.data-strip [data-refresh-temple]:disabled{cursor:wait;opacity:.72}
+
+/* Author display rules must not expose inactive goal fields. */
+.v22-goal-dialog [hidden]{display:none!important}
+#sharedProgressOptions[open]{display:grid;gap:12px}
+#sharedProgressOptions summary{cursor:pointer;color:#d7c39b}

@@ -17,6 +17,15 @@ async function run(){
  for(const file of ['goal-progress.js','shared-goals.js'])w.eval(fs.readFileSync('docs/assets/'+file,'utf8'));
  await waitFor(()=>d.querySelector('#reloadSharedGoals:not([disabled])'),'initial goal load');d.querySelector('#reloadSharedGoals').click();
  await waitFor(()=>d.querySelector('[data-edit-shared="lijpste"]:not([disabled])'),'shared editor enabled');
+ d.querySelector('[data-edit-shared="dikste"]').click();
+ const simple=d.querySelector('#sharedGoalDialog form');
+ assert(!d.querySelector('#sharedProgressOptions').open,'progress options collapsed by default');
+ for(const name of ['metric','item','current','targetValue'])assert(simple.elements.namedItem(name).disabled,'irrelevant field disabled: '+name);
+ assert.equal(w.getComputedStyle(d.querySelector('#sharedTargetLabel')).display,'none','hidden fields stay visually hidden');
+ simple.elements.text.value='Complete Desert Treasure II';simple.elements.code.value='test-code';
+ simple.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
+ await waitFor(()=>!d.querySelector('#sharedGoalDialog'),'text-only quest save');
+ assert.equal(posts[0].kind,'none');assert(d.querySelector('#sharedGoals').textContent.includes('Complete Desert Treasure II'));posts.length=0;
  d.querySelector('[data-edit-shared="lijpste"]').click();
  let form=d.querySelector('#sharedGoalDialog form');form.elements.text.value='<b>Learn raids</b>';form.elements.kind.value='manual';form.elements.kind.dispatchEvent(new w.Event('change'));form.elements.current.value='30';form.elements.targetValue.value='100';form.elements.code.value='test-code';form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
  await waitFor(()=>!d.querySelector('#sharedGoalDialog'),'shared save');
