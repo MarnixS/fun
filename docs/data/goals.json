@@ -1,7 +1,14 @@
 {
-  "updatedAt": "2026-09-15T12:51:09.950Z",
+  "updatedAt": "2026-09-15T15:56:40.440Z",
   "goals": {
-    "dikste": null,
+    "dikste": {
+      "text": "99 Farming",
+      "kind": "none",
+      "metric": "",
+      "targetValue": null,
+      "current": null,
+      "updatedAt": "2026-09-15T15:56:40.440Z"
+    },
     "big dog aura": {
       "text": "Desert Treasure II",
       "kind": "none",
