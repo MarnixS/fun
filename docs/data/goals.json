@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-15T12:26:05.794Z",
+  "updatedAt": "2026-09-15T12:26:42.373Z",
   "goals": {
     "dikste": null,
     "big dog aura": {
@@ -9,12 +9,8 @@
       "submittedBy": "MarnixS"
     },
     "lijpste": {
-      "text": "Temporary shared-goal verification",
-      "kind": "manual",
-      "metric": "",
-      "targetValue": 100,
-      "current": 30,
-      "updatedAt": "2026-09-15T12:26:05.794Z"
+      "text": "",
+      "updatedAt": "2026-09-15T12:26:42.373Z"
     },
     "poep aura": null,
     "lompste": null
