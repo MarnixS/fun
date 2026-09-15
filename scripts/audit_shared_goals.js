@@ -3,7 +3,8 @@ const assert=require('node:assert/strict'),fs=require('node:fs');
 const {openPage,waitFor}=require('./audit_v25_jsdom');
 async function run(){
  const {dom,errors}=await openPage('chronicle.html'),w=dom.window,d=w.document;
- await waitFor(()=>d.querySelector('#playerGoals [data-set-goal]'),'existing goal editor');
+ await waitFor(()=>d.querySelector('#sharedGoals'),'shared goals section');
+ assert(!d.querySelector('#playerGoals'),'private goals removed');
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false};
  let shared={enabled:true,goals:{}},posts=[],fail=false;const original=w.fetch;
  w.fetch=async(url,options)=>{

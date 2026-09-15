@@ -5,7 +5,7 @@ const API='https://united-gimps-temple-proxy.vercel.app/api/player-goals';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let doc={goals:{}},wom,temple,enabled=false;
 const host=document.createElement('section');host.className='section';host.id='sharedGoals';
-document.querySelector('#playerGoals')?.closest('section')?.before(host);
+document.querySelector('#chronicleGoals')?.closest('section')?.before(host);
 async function request(body){const r=await fetch(API,{method:body?'POST':'GET',cache:'no-store',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(45000)});const data=await r.json().catch(()=>({error:'Shared goal publishing is temporarily unavailable.'}));if(!r.ok)throw new Error(data.error||'Shared goals are unavailable.');return data;}
 async function stats(){[wom,temple]=await Promise.all([U.loadWom(),U.loadClog()]);render();}
 function render(){

@@ -29,6 +29,11 @@ async function run(){
   send(win,W,structuredClone(w));send(win,T,structuredClone(t));
   await waitFor(()=>d.querySelector('[data-wom-status] b').textContent.includes('2026'),'status');
   if(page==='index.html'){
+   const total=keys.reduce((sum,key)=>sum+w.profiles[key].latestSnapshot.data.skills.overall.experience,0);
+   await waitFor(()=>d.querySelector('[data-mast-xp-exact]').textContent.includes(total.toLocaleString('en-GB')),'group XP summed from all five current WOM profiles');
+   const updatedWom=structuredClone(w);updatedWom.profiles.lompste.latestSnapshot.data.skills.overall.experience+=1;
+   send(win,W,updatedWom);
+   await waitFor(()=>d.querySelector('[data-mast-xp-exact]').textContent.includes((total+1).toLocaleString('en-GB')),'even a one-XP gain updates the exact group total');
    await waitFor(()=>d.querySelector('#standingTable').textContent.includes('2,222'),'standing refreshed');
    await waitFor(()=>d.querySelector('.player-card .v22-clog-quick')?.textContent.includes('Unlocked1'),'overview clog refreshed');
    click(win,d.querySelector('[data-period-button="7"]'));
