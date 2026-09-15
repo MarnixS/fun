@@ -217,7 +217,7 @@ snapshots = {k: list(v or []) for k, v in dict(oldw.get('snapshots') or oldw.get
 for key, name in PLAYERS.items():
     try:
         try:
-            updated = get('https://api.wiseoldman.net/v2/players/' + urllib.parse.quote(name), method='POST', data=b'{}', attempts=2, delay=1.2)
+            updated = get('https://api.wiseoldman.net/v2/players/' + urllib.parse.quote(name), method='POST', data=b'{}', attempts=2, delay=3.2)
             print('WOM update requested:', name)
         except Exception as e:
             updated = None
@@ -225,7 +225,7 @@ for key, name in PLAYERS.items():
         if isinstance(updated, dict) and isinstance(updated.get('latestSnapshot'), dict):
             profiles[key] = updated
         else:
-            profiles[key] = get('https://api.wiseoldman.net/v2/players/' + urllib.parse.quote(name), attempts=4, delay=1.2)
+            profiles[key] = get('https://api.wiseoldman.net/v2/players/' + urllib.parse.quote(name), attempts=4, delay=3.2)
         print('WOM profile:', name)
     except Exception as e:
         print('WOM profile failed; preserving last known good:', name, repr(e))
@@ -236,7 +236,7 @@ for period in ('week', 'month', 'year'):
         try:
             gains[period][key] = get(
                 'https://api.wiseoldman.net/v2/players/' + urllib.parse.quote(name) + '/gained?period=' + period,
-                attempts=3, delay=1.2
+                attempts=3, delay=3.2
             )
             print('WOM gain:', name, period)
         except Exception as e:
@@ -245,7 +245,7 @@ for period in ('week', 'month', 'year'):
 # Chronicle source: WOM achievements for all five.
 for key, name in PLAYERS.items():
     try:
-        a = get('https://api.wiseoldman.net/v2/players/' + urllib.parse.quote(name) + '/achievements', attempts=3, delay=1.2)
+        a = get('https://api.wiseoldman.net/v2/players/' + urllib.parse.quote(name) + '/achievements', attempts=3, delay=3.2)
         if isinstance(a, list):
             achievements[key] = a
             print('WOM achievements:', name, len(a))
