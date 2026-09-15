@@ -160,12 +160,13 @@ function derivedRecentRows(players, previous) {
   return rows;
 }
 
-async function buildDocument() {
-  let previous = {};
+async function buildDocument(previous) {
+  if (!previous) {
   try {
     previous = await fetchJson(SNAPSHOT_URL, { attempts: 1, timeout: 10_000 });
   } catch {
     previous = {};
+  }
   }
 
   const players = {};
@@ -349,3 +350,4 @@ module.exports._test = {
     inflight = null;
   },
 };
+module.exports.buildDocument = buildDocument;

@@ -27,7 +27,12 @@ function jsonResponse(value, status = 200) {
   });
 }
 
-async function openPage(path, { selection, templeResponse, templeDocument, womResponse, womDocument, liveSync=false, savedTemple, fetchLog } = {}) {
+async function openPage(path, { selection, templeResponse, templeDocument, womResponse, womDocument, liveSync=false, savedTemple, fetchLog, sharedDocs, indexedDB } = {}) {
+  const {mergeWom,mergeTemple}=require('../docs/assets/wom-store');
+  const templeTools=require('../api/temple-collection-log')._test;
+  const backend=sharedDocs||{wom:JSON.parse(fs.readFileSync('docs/data/wom-cache.json')),temple:savedTemple||JSON.parse(fs.readFileSync('docs/data/temple-clog.json'))};
+  backend.revisions??=new Map();backend.serial??=0;
+  const receipt=source=>{const revision=(++backend.serial).toString(16).padStart(40,'0');backend.revisions.set(revision,structuredClone(backend[source]));return {source,revision,saved:true,diagnostics:backend[source].refreshDiagnostics||{}}};
   const errors = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', (error) => errors.push(error.message));
@@ -41,6 +46,7 @@ async function openPage(path, { selection, templeResponse, templeDocument, womRe
     pretendToBeVisual: true,
     virtualConsole,
     beforeParse(window) {
+      if(indexedDB)window.indexedDB=indexedDB;
       // Skip only the production WOM courtesy delay against mocked API responses.
       const realTimer=window.setTimeout.bind(window);
       window.setTimeout=(fn,ms,...args)=>realTimer(fn,ms===3200?0:ms,...args);
@@ -50,7 +56,31 @@ async function openPage(path, { selection, templeResponse, templeDocument, womRe
       if (templeDocument) window.localStorage.setItem('ug-v20-temple-cache', JSON.stringify(templeDocument));
       window.fetch = async (input, options) => {
         const url = new URL(String(input), window.location.href).href;
-        if(fetchLog)fetchLog.push({url,method:options?.method||'GET'});
+        if(fetchLog)fetchLog.push({url,method:options?.method||'GET',body:options?.body});
+        if(url.includes('/api/shared-data')){
+          if((options?.method||'GET')==='GET')return sharedDocs?jsonResponse(receipt(new URL(url).searchParams.get('source'))):jsonResponse({error:'Testing saved fallback'},503);
+          const {source,player}=JSON.parse(options.body);
+          if(backend.failSaves)return jsonResponse({error:'Could not confirm the shared save'},502);
+          if(source==='temple'){
+            if(!templeResponse)return jsonResponse({error:'Temple test response not configured'},502);
+            const candidate=structuredClone(templeResponse),fresh=candidate.refreshDiagnostics?.freshPlayers||Object.keys(candidate.players||{});
+            candidate.players=Object.fromEntries(Object.entries(candidate.players||{}).filter(([key])=>fresh.includes(key)&&templeTools.validLog(candidate.players[key])));
+            const derived=templeTools.derivedRecentRows(candidate.players,backend.temple);
+            candidate.recent=[...(candidate.recent||[]),...derived].map(row=>templeTools.normalizeRecent(row)).filter(Boolean);
+            candidate.source='TempleOSRS manual site update';
+            candidate.refreshDiagnostics={...candidate.refreshDiagnostics,freshPlayers:fresh,derivedRecentItems:derived.length};
+            backend.temple=mergeTemple(backend.temple,candidate);
+          }else{
+            if(!womResponse||backend.failPlayers?.includes(player))return jsonResponse({error:'WOM test response unavailable'},502);
+            const previous=backend.wom.profiles[player]?.latestSnapshot,profile=womResponse.profiles[player];
+            backend.wom=mergeWom(backend.wom,{fetchedAt:Date.now(),profiles:{[player]:profile},snapshots:{[player]:[profile.latestSnapshot]},achievements:{[player]:womResponse.achievements?.[player]||[]},gains:Object.fromEntries(['week','month','year'].map(period=>[period,{[player]:womResponse.gains?.[period]?.[player]}])),refreshDiagnostics:{successfulPlayers:[player],newerSnapshots:Date.parse(profile.latestSnapshot.createdAt)>Date.parse(previous?.createdAt)?1:0}});
+          }
+          return jsonResponse(receipt(source));
+        }
+        if(url.startsWith('https://raw.githubusercontent.com/MarnixS/fun/')){
+          const revision=new URL(url).pathname.split('/')[3];
+          return backend.revisions.has(revision)?jsonResponse(backend.revisions.get(revision)):jsonResponse({error:'Unknown revision'},404);
+        }
         if(savedTemple&&url.endsWith('/data/temple-clog.json'))return jsonResponse(savedTemple);
         if (url.includes('__TEMPLE_PROXY_URL__') || url.includes('/api/temple-collection-log')) {
           if (!templeResponse) return jsonResponse({ error: 'Temple test response not configured' }, 502);

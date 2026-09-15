@@ -24,9 +24,11 @@ window.addEventListener('ug:data-updated',e=>{const {key,document:doc}=e.detail|
 async function loadDocument(key,path,field){
  if(documents.has(key))return documents.get(key);
  if(pending.has(key))return pending.get(key);
- const request=(async()=>{let shared=null;try{shared=await staticJSON(path)}catch(e){console.warn(path,e)}
+ const request=(async()=>{let confirmed=null;try{confirmed=await window.UGSharedData.load(key===WKEY?'wom':'temple')}catch(e){console.warn('Shared baseline unavailable; using saved fallback',e)}
+ if(confirmed){if(!documents.has(key))documents.set(key,confirmed);return documents.get(key)}
+ let shared=null;try{shared=await staticJSON(path)}catch(e){console.warn(path,e)}
  const local=key===WKEY?await window.UGWomStore.latest(localJSON(key)):await window.UGTempleStore.latest(localJSON(key)),st=+(shared?.fetchedAt||0),lt=+(local?.fetchedAt||local?.savedAt||0);
- const chosen=key===TKEY?(window.UGTempleStore.merge(shared,local)||{players:{}}):(lt>st&&local?.[field]?local:(shared?.[field]?shared:local)||{[field]:{}});
+ const chosen=key===TKEY?(window.UGTempleStore.merge(shared,local)||{players:{}}):(window.UGWomStore.merge(shared,local)||{profiles:{}});
  if(!documents.has(key))documents.set(key,chosen);return documents.get(key)})();
  pending.set(key,request);try{return await request}finally{pending.delete(key)}
 }
