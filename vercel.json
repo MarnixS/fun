@@ -3,6 +3,9 @@
   "functions": {
     "api/temple-collection-log.js": {
       "maxDuration": 120
+    },
+    "api/player-goals.js": {
+      "maxDuration": 60
     }
   }
 }
