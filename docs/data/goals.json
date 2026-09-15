@@ -1,12 +1,14 @@
 {
-  "updatedAt": "2026-09-15T12:26:42.373Z",
+  "updatedAt": "2026-09-15T12:51:09.950Z",
   "goals": {
     "dikste": null,
     "big dog aura": {
       "text": "Desert Treasure II",
-      "target": "2026-09-30",
-      "updatedAt": "2026-09-11T10:33:45Z",
-      "submittedBy": "MarnixS"
+      "kind": "none",
+      "metric": "",
+      "targetValue": null,
+      "current": null,
+      "updatedAt": "2026-09-15T12:51:09.950Z"
     },
     "lijpste": {
       "text": "",
