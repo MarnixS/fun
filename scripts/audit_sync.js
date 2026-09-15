@@ -69,7 +69,8 @@ async function run(){
  await waitFor(()=>qw.document.querySelector('#recentDrops').textContent.includes('Sync regression item'),'quota in-memory redraw');
  assert.equal(qw.localStorage.getItem(T),null);
  // An unavailable selection remains unknown throughout the Collection Log.
- const {dom:ud}=await openPage('gim.html',{selection:['lompste']});
+ const missing=JSON.parse(fs.readFileSync('docs/data/temple-clog.json'));delete missing.players.lompste;
+ const {dom:ud}=await openPage('gim.html',{selection:['lompste'],savedTemple:missing});
  await waitFor(()=>ud.window.document.querySelector('#clogSummary').textContent.includes('Unknown'),'unsynced summary');
  assert(ud.window.document.querySelector('#clogItemTable').textContent.includes('unknown data'));
  const {dom:rd}=await openPage('developer.html');const rw=rd.window;

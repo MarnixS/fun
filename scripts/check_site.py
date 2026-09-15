@@ -22,7 +22,9 @@ for path in root.glob('*.html'):
         if not u.scheme and u.path:
             assert (path.parent/unquote(u.path)).exists(),f'{path}: broken local resource {link}'
     assert not any('live-sync.js' in x for x in p.scripts),f'{path}: automatic sync must be disabled'
-    assert p.scripts.index('assets/history-model.js?v=29')<p.scripts.index('assets/app.js?v=29')
+    script_paths=[urlsplit(s).path for s in p.scripts]
+    assert script_paths.index('assets/history-model.js')<script_paths.index('assets/app.js')
+    assert script_paths.index('assets/wom-store.js')<script_paths.index('assets/app.js')
     assert len(p.scripts)==len(set(p.scripts)),f'{path}: duplicate scripts'
     assert 'Reload saved Collection Log' not in text
     print('Page resources, IDs, script order:',path.name)

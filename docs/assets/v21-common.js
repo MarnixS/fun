@@ -25,8 +25,8 @@ async function loadDocument(key,path,field){
  if(documents.has(key))return documents.get(key);
  if(pending.has(key))return pending.get(key);
  const request=(async()=>{let shared=null;try{shared=await staticJSON(path)}catch(e){console.warn(path,e)}
- const local=key===WKEY?await window.UGWomStore.latest(localJSON(key)):localJSON(key),st=+(shared?.fetchedAt||0),lt=+(local?.fetchedAt||local?.savedAt||0);
- const chosen=lt>st&&local?.[field]?local:(shared?.[field]?shared:local)||{[field]:{}};
+ const local=key===WKEY?await window.UGWomStore.latest(localJSON(key)):await window.UGTempleStore.latest(localJSON(key)),st=+(shared?.fetchedAt||0),lt=+(local?.fetchedAt||local?.savedAt||0);
+ const chosen=key===TKEY?(window.UGTempleStore.merge(shared,local)||{players:{}}):(lt>st&&local?.[field]?local:(shared?.[field]?shared:local)||{[field]:{}});
  if(!documents.has(key))documents.set(key,chosen);return documents.get(key)})();
  pending.set(key,request);try{return await request}finally{pending.delete(key)}
 }

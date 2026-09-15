@@ -27,7 +27,7 @@ function jsonResponse(value, status = 200) {
   });
 }
 
-async function openPage(path, { selection, templeResponse, womResponse, womDocument, liveSync=false, savedTemple, fetchLog } = {}) {
+async function openPage(path, { selection, templeResponse, templeDocument, womResponse, womDocument, liveSync=false, savedTemple, fetchLog } = {}) {
   const errors = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', (error) => errors.push(error.message));
@@ -47,6 +47,7 @@ async function openPage(path, { selection, templeResponse, womResponse, womDocum
       if(!liveSync)for(const source of ['temple','wom'])window.localStorage.setItem('ug-v28-live-'+source,JSON.stringify({checkedAt:Date.now()}));
       if (selection) window.localStorage.setItem(MEMBER_KEY, JSON.stringify(selection));
       if (womDocument) window.localStorage.setItem('ug-v20-wom-cache', JSON.stringify(womDocument));
+      if (templeDocument) window.localStorage.setItem('ug-v20-temple-cache', JSON.stringify(templeDocument));
       window.fetch = async (input, options) => {
         const url = new URL(String(input), window.location.href).href;
         if(fetchLog)fetchLog.push({url,method:options?.method||'GET'});
@@ -338,7 +339,7 @@ async function testTempleButtonAction() {
   const partial = await openPage('gim.html', { templeResponse: partialResponse });
   click(partial.dom.window, partial.dom.window.document.querySelector('[data-refresh-temple]'));
   await waitFor(
-    () => partial.dom.window.document.querySelector('#pageNotice')?.textContent.includes('no valid saved Collection Log for Lompste'),
+    () => partial.dom.window.document.querySelector('#pageNotice')?.textContent.includes('saved data retained for Lompste'),
     'accurate partial Temple result',
   );
   assert.equal(partial.errors.length, 0, partial.errors.join('; '));
