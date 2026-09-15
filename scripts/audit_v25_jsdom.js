@@ -33,6 +33,9 @@ async function openPage(path, { selection, templeResponse, womResponse, womDocum
   virtualConsole.on('jsdomError', (error) => errors.push(error.message));
   virtualConsole.on('error', (error) => errors.push(String(error)));
   const dom = await JSDOM.fromURL(BASE + path, {
+    // jsdom has no IndexedDB; allow the legacy fallback to hold full history.
+    // Storage failure behavior is covered separately in audit_sync.js.
+    storageQuota: 50_000_000,
     resources: 'usable',
     runScripts: 'dangerously',
     pretendToBeVisual: true,
