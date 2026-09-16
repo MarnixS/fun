@@ -1,0 +1,38 @@
+name: Fix collection log valuations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-valuations.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix-valuations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Correct item valuation rules
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('docs/assets/app.js')
+          text = path.read_text()
+          old = "function priceFor(id){if(+id===26219)return 28981998;const p=state.prices?.[String(id)]||state.prices?.[id];if(!p)return 0;const h=+p.high,l=+p.low;if(h>0&&l>0)return(h+l)/2;if(h>0)return h;if(l>0)return l;return 0}"
+          new = "function gePrice(id){const p=state.prices?.[String(id)]||state.prices?.[id];if(!p)return 0;const h=+p.high,l=+p.low;if(h>0&&l>0)return(h+l)/2;if(h>0)return h;if(l>0)return l;return 0}\nfunction priceFor(id){id=+id;if(id===29799)return 28981998;if(id===29790||id===29792||id===29794)return gePrice(29796)/3;if(id===28319||id===28321||id===28323||id===28325)return gePrice(28338)/4;return gePrice(id)}"
+          if old not in text:
+              raise SystemExit('Expected priceFor implementation not found; refusing broad edit')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Commit correction
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/assets/app.js
+          git diff --cached --check
+          git commit -m 'Fix Araxyte, Noxious and Soulreaper valuations'
+          git push origin HEAD:main
