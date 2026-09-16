@@ -6,10 +6,11 @@
     "node": "22.x"
   },
   "scripts": {
-    "test": "node scripts/test_temple_proxy.js && node scripts/test_history_model.js && node scripts/test_player_goals.js",
-    "test:ui": "node scripts/audit_v25_jsdom.js && node scripts/audit_sync.js && node scripts/audit_live_sync.js && node scripts/audit_chronicle_goals.js && node scripts/audit_chart_ranges.js && node scripts/audit_shared_goals.js && node scripts/audit_temple_retention.js"
+    "test": "node scripts/test_temple_proxy.js && node scripts/test_history_model.js && node scripts/test_player_goals.js && node scripts/test_shared_baseline.js",
+    "test:ui": "node scripts/audit_v25_jsdom.js && node scripts/audit_sync.js && node scripts/audit_live_sync.js && node scripts/audit_chronicle_goals.js && node scripts/audit_chart_ranges.js && node scripts/audit_shared_goals.js && node scripts/audit_temple_retention.js && node scripts/audit_shared_baseline.js"
   },
   "devDependencies": {
+    "fake-indexeddb": "^6.2.5",
     "jsdom": "^30.0.1"
   }
 }

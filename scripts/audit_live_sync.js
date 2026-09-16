@@ -23,8 +23,8 @@ async function run(){
   d.querySelector('[data-refresh-temple]').click();
   await waitFor(()=>d.querySelector('[data-mast-drop]')?.textContent==='Ancient ceremonial gloves','manual gloves mast');
   assert.equal(d.querySelector('[data-mast-drop-sub]').textContent.split(' · ')[0],'Big Dog Aura');
-  assert(requests.some(x=>x.url.includes('/api/temple-collection-log')),'refresh button queries Temple');
-  assert(!requests.some(x=>x.method==='POST'),'automatic WOM checks read tracked data without requesting hiscores updates');
+  assert(requests.some(x=>x.url.includes('/api/shared-data')&&x.method==='POST'&&JSON.parse(x.body).source==='temple'),'refresh button requests a persisted Temple update');
+  assert(!requests.some(x=>x.url.includes('api.wiseoldman.net')),'Temple update does not refresh WOM');
   if(path==='gim.html')await waitFor(()=>d.querySelector('#recentDrops').textContent.includes('Ancient ceremonial gloves'),'automatic Collection Log recent');
   if(path==='chronicle.html')await waitFor(()=>d.querySelector('#chronicle').textContent.includes('Ancient ceremonial gloves'),'automatic Chronicle');
   assert(!d.querySelector('#liveSyncStatus'),'no automatic status banner');

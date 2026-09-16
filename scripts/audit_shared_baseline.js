@@ -1,0 +1,47 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const {IDBFactory}=require('fake-indexeddb');
+const {openPage,waitFor}=require('./audit_v25_jsdom');
+(async()=>{
+ const originalWom=JSON.parse(fs.readFileSync('docs/data/wom-cache.json'));
+ const originalTemple=JSON.parse(fs.readFileSync('docs/data/temple-clog.json'));
+ const updated=structuredClone(originalTemple);updated.fetchedAt=Date.now();
+ updated.recent=[{id:700099,name:'Shared baseline regression item',player:'Dikste',date_unix:Math.floor(Date.now()/1000)}];
+ const nextWom=structuredClone(originalWom),snapshot=nextWom.profiles['big dog aura'].latestSnapshot;
+ snapshot.createdAt=new Date(Date.now()+60000).toISOString();snapshot.id=-1;snapshot.data.skills.thieving.level+=1;snapshot.data.skills.overall.level+=1;snapshot.data.skills.overall.experience+=54321;
+ const sharedDocs={wom:structuredClone(originalWom),temple:structuredClone(originalTemple)},requests=[];
+ const first=await openPage('chronicle.html',{templeResponse:updated,womResponse:nextWom,sharedDocs,fetchLog:requests,indexedDB:new IDBFactory()});
+ const w=first.dom.window,d=w.document;
+ assert(!requests.some(r=>r.method==='POST'),'opening Chronicle never refreshes sources');
+ d.querySelector('[data-refresh-temple]').click();
+ await waitFor(()=>d.querySelector('#pageNotice').textContent.includes('updated from Temple'),'manual Temple save');
+ assert(d.querySelector('#chronicle').textContent.includes('Shared baseline regression item'));
+ assert.deepEqual(sharedDocs.wom,originalWom,'Temple does not update WOM');
+ assert.equal(w.localStorage.getItem('ug-v20-temple-cache'),null,'this run exercises IndexedDB, not localStorage fallback');
+ const separate=await openPage('chronicle.html',{sharedDocs,indexedDB:new IDBFactory()});
+ assert(separate.dom.window.document.querySelector('#chronicle').textContent.includes('Shared baseline regression item'),'a separate visitor receives the new baseline without copying browser storage');
+ d.querySelector('[data-refresh-temple]').click();
+ await waitFor(()=>!d.querySelector('[data-refresh-temple]').disabled,'repeat Temple update');
+ assert.equal(sharedDocs.temple.recent.filter(r=>r.id===700099).length,1,'repeated refresh never duplicates the event');
+ const templeBefore=structuredClone(sharedDocs.temple);
+ d.querySelector('#chronicleRefresh').click();d.querySelector('[data-refresh-wom]').click();
+ await waitFor(()=>d.querySelector('#pageNotice').textContent.includes('WOM data received for 5/5'),'manual WOM save');
+ assert.equal(requests.filter(r=>r.method==='POST'&&JSON.parse(r.body).source==='wom').length,5,'both WOM buttons share one in-flight update');
+ assert.deepEqual(sharedDocs.temple,templeBefore,'WOM does not update Temple');
+ const expected=Object.values(sharedDocs.wom.profiles).reduce((sum,p)=>sum+p.latestSnapshot.data.skills.overall.experience,0).toLocaleString('en-GB');
+ const serial=sharedDocs.serial,old=structuredClone(originalWom);old.fetchedAt=Date.now()+864000000;
+ for(const page of ['index.html','gim.html','hiscores.html','progress.html','history.html','time-machine.html','chronicle.html']){
+  const log=[],visitor=await openPage(page,{sharedDocs,womDocument:old,fetchLog:log,indexedDB:new IDBFactory()});const vd=visitor.dom.window.document;
+  assert(vd.querySelector('[data-mast-xp-exact]').textContent.includes(expected),page+' reads the shared WOM baseline');
+  assert.equal(vd.querySelector('[data-mast-drop]').textContent,'Shared baseline regression item',page+' reads the shared Temple baseline');
+  visitor.dom.window.dispatchEvent(new visitor.dom.window.Event('focus'));visitor.dom.window.dispatchEvent(new visitor.dom.window.Event('online'));
+  assert(!log.some(r=>r.method==='POST'||r.url.includes('api.wiseoldman.net')||r.url.includes('/api/temple-collection-log')),page+' stays manual only');
+  assert.equal(visitor.errors.length,0,visitor.errors.join('; '));
+ }
+ assert(sharedDocs.serial>serial,'navigation reads shared snapshots');
+ sharedDocs.failSaves=true;const saved=structuredClone(sharedDocs.temple);
+ d.querySelector('[data-refresh-temple]').click();await waitFor(()=>d.querySelector('#pageNotice').textContent.includes('Temple update failed'),'shared save failure');
+ assert.deepEqual(sharedDocs.temple,saved);assert(d.querySelector('#chronicle').textContent.includes('Shared baseline regression item'));
+ assert.equal(first.errors.length,0,first.errors.join('; '));
+ console.log('Shared baseline UI: separate visitors, IndexedDB, both WOM buttons, repeated Temple, all seven menus, no automatic refresh, source isolation and failed writes passed');
+})().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)});
