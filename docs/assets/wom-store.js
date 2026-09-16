@@ -72,7 +72,7 @@ function mergeTemple(a,b){
  return {...older,...newer,players,membersWithClog:Object.keys(players).length,recent:[...recent.values()].sort((x,y)=>millis(y.date_unix||y.date)-millis(x.date_unix||x.date))};
 }
 async function templeLatest(local){const saved=await access(false,null,TKEY);return mergeTemple(saved,local)}
-async function templeSave(doc){const saved=await access(true,doc,TKEY,mergeTemple);if(!saved)return false;try{localStorage.removeItem(TKEY);localStorage.setItem(TSIGNAL,String(Date.now()))}catch{}return saved}
+async function templeSave(doc,{replace=false}={}){const saved=await access(true,doc,TKEY,replace?undefined:mergeTemple);if(!saved)return false;try{localStorage.removeItem(TKEY);localStorage.setItem(TSIGNAL,String(Date.now()))}catch{}return saved}
 async function templeClear(shared){await access(true,shared,TKEY);try{localStorage.removeItem(TKEY);localStorage.setItem(TSIGNAL,String(Date.now()))}catch{}}
 window.UGTempleStore={latest:templeLatest,save:templeSave,clear:templeClear,merge:mergeTemple};
 window.addEventListener('storage',async e=>{if(e.key!==TSIGNAL)return;const doc=await templeLatest(null);if(doc?.players)window.dispatchEvent(new CustomEvent('ug:data-updated',{detail:{key:TKEY,document:doc,source:'storage'}}))});

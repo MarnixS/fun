@@ -16,6 +16,10 @@ const fmt=n=>Number.isFinite(+n)?Math.round(+n).toLocaleString('en-GB'):'—';
 const fmt1=n=>Number.isFinite(+n)?(+n).toLocaleString('en-GB',{maximumFractionDigits:1}):'—';
 const compact=n=>{n=+n;if(!Number.isFinite(n))return'—';const a=Math.abs(n);if(a>=1e9)return(n/1e9).toFixed(a>=1e10?1:2).replace(/\.0+$/,'')+'B';if(a>=1e6)return(n/1e6).toFixed(a>=1e7?1:2).replace(/\.0+$/,'')+'M';if(a>=1e3)return(n/1e3).toFixed(a>=1e4?1:2).replace(/\.0+$/,'')+'K';return fmt(n)};
 const nice=s=>String(s||'').replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase()).replace(/Of /g,'of ').replace(/The /g,'the ');
+const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function itemLink(id,name){return `<a class="item-link" data-item-id="${+id}" href="https://oldschool.runescape.wiki/w/Special:Lookup?type=item&amp;id=${+id}" target="_blank" rel="noopener noreferrer" title="Open ${escapeHtml(name)} on the OSRS Wiki">${escapeHtml(name)}</a>`}
+function metricLink(kind,key,label=nice(key)){const attr=kind==='skill'?'data-v21-skill':kind==='boss'?'data-v21-boss':'data-v21-metric';return `<button type="button" class="metric-link inline-metric" ${attr}="${escapeHtml(key)}" data-metric-kind="${escapeHtml(kind)}">${escapeHtml(label)}</button>`}
+function summaryMetric(label){const metric={'Total level':['level','overall'],'Total XP':['skill','overall'],EHP:['computed','ehp'],EHB:['computed','ehb'],'99s':['maxed','overall'],'Raid KC':['raids','overall']}[label];return metric?metricLink(...metric,label):escapeHtml(label)}
 function localJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}}
 async function staticJSON(path){const r=await fetch(path,{cache:'no-store',headers:{Accept:'application/json'}});if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json()}
 // One in-memory document per source. A successful sync is usable even when browser storage is full.
@@ -24,10 +28,11 @@ window.addEventListener('ug:data-updated',e=>{const {key,document:doc}=e.detail|
 async function loadDocument(key,path,field){
  if(documents.has(key))return documents.get(key);
  if(pending.has(key))return pending.get(key);
- const request=(async()=>{let confirmed=null;try{confirmed=await window.UGSharedData.load(key===WKEY?'wom':'temple')}catch(e){console.warn('Shared baseline unavailable; using saved fallback',e)}
+ // Only an explicit Recovery import overrides the shared baseline on this browser.
+ const request=(async()=>{const override=key===TKEY?await window.UGTempleStore.latest(localJSON(key)):null;if(override?._browserOverride){if(!documents.has(key))documents.set(key,override);return documents.get(key)}let confirmed=null;try{confirmed=await window.UGSharedData.load(key===WKEY?'wom':'temple')}catch(e){console.warn('Shared baseline unavailable; using saved fallback',e)}
  if(confirmed){if(!documents.has(key))documents.set(key,confirmed);return documents.get(key)}
  let shared=null;try{shared=await staticJSON(path)}catch(e){console.warn(path,e)}
- const local=key===WKEY?await window.UGWomStore.latest(localJSON(key)):await window.UGTempleStore.latest(localJSON(key)),st=+(shared?.fetchedAt||0),lt=+(local?.fetchedAt||local?.savedAt||0);
+ const local=key===WKEY?await window.UGWomStore.latest(localJSON(key)):override;
  const chosen=key===TKEY?(window.UGTempleStore.merge(shared,local)||{players:{}}):(window.UGWomStore.merge(shared,local)||{profiles:{}});
  if(!documents.has(key))documents.set(key,chosen);return documents.get(key)})();
  pending.set(key,request);try{return await request}finally{pending.delete(key)}
@@ -72,7 +77,7 @@ function installObserver(){normalizeVisibleTerminology();let scheduled=false;con
 let modalReturnFocus=null;
 function focusables(root){return $$('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])',root).filter(x=>!x.hidden&&x.getAttribute('aria-hidden')!=='true')}
 function closeGraphModal(el){const m=el?.closest?.('.modal')||$('.modal:not([hidden])');if(m){m.hidden=true;m.style.display='none';m.setAttribute('aria-hidden','true');if(modalReturnFocus?.isConnected)modalReturnFocus.focus();modalReturnFocus=null}}
-function showGraphModal(m){if(!m)return;modalReturnFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;m.hidden=false;m.style.display='flex';m.setAttribute('aria-hidden','false');m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');if($('#v21ModalTitle',m))m.setAttribute('aria-labelledby','v21ModalTitle');requestAnimationFrame(()=>$('.modal-close',m)?.focus())}
+function showGraphModal(m){if(!m)return;modalReturnFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;m.hidden=false;m.style.display='flex';m.setAttribute('aria-hidden','false');m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');if($('#v21ModalTitle',m))m.setAttribute('aria-labelledby','v21ModalTitle');requestAnimationFrame(()=>{if(!m.hidden)$('.modal-close',m)?.focus()})}
 document.addEventListener('click',e=>{const close=e.target.closest?.('.modal-close,[data-modal-close]');if(close){e.preventDefault();e.stopImmediatePropagation();closeGraphModal(close)}else if(e.target.classList?.contains('modal'))closeGraphModal(e.target)},true);
 document.addEventListener('keydown',e=>{const m=$('.modal:not([hidden])');if(!m)return;if(e.key==='Escape'){e.preventDefault();closeGraphModal(m);return}if(e.key==='Tab'){const a=focusables(m);if(!a.length)return;const first=a[0],last=a[a.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}},true);
 function enhanceAccessibility(root=document){
@@ -92,7 +97,7 @@ function installDataNotifications(){if(window.__ugDataNotifyInstalled)return;win
 function renderSharedMemberPicker(){const page=document.body?.dataset?.page;if(!['home','history','time'].includes(page))return;let host=$('#statsMemberPicker');if(!host){host=document.createElement('div');host.id='statsMemberPicker';host.className='v21-filter-wrap';$('#pageNotice')?.insertAdjacentElement('afterend',host)}renderMemberPicker(host,loadMemberSelection(),next=>saveMemberSelection(next),{title:'Members across this site',subtitle:'This same selection controls cards, tables, charts, Time Machine and Chronicle comparisons.',fallback:ALL_KEYS})}
 function installMemberSelection(){window.addEventListener('storage',e=>{if(e.key===MKEY)window.dispatchEvent(new CustomEvent('ug:members-changed',{detail:{keys:[...loadMemberSelection()]}}))});window.addEventListener('ug:members-changed',renderSharedMemberPicker);renderSharedMemberPicker()}
 function loadNav(){if(document.querySelector('script[data-v21-nav]'))return;const s=document.createElement('script');s.src='assets/v21-nav.js?v=29';s.dataset.v21Nav='1';document.head.append(s)}
-window.UGV21={PLAYERS,CORE_KEYS,ALL_KEYS,PERIODS,$,$$,fmt,fmt1,compact,nice,loadWom,loadClog,snapData,player,WKEY,TKEY,MKEY,cleanSelection,loadMemberSelection,saveMemberSelection,sameSelection,renderMemberPicker,closeGraphModal,showGraphModal,enhanceAccessibility};
+window.UGV21={itemLink,metricLink,summaryMetric,escapeHtml,PLAYERS,CORE_KEYS,ALL_KEYS,PERIODS,$,$$,fmt,fmt1,compact,nice,loadWom,loadClog,snapData,player,WKEY,TKEY,MKEY,cleanSelection,loadMemberSelection,saveMemberSelection,sameSelection,renderMemberPicker,closeGraphModal,showGraphModal,enhanceAccessibility};
 function init(){installObserver();installDataNotifications();installMemberSelection();loadNav();enhanceAccessibility(document)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

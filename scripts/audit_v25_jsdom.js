@@ -27,7 +27,7 @@ function jsonResponse(value, status = 200) {
   });
 }
 
-async function openPage(path, { selection, templeResponse, templeDocument, womResponse, womDocument, liveSync=false, savedTemple, fetchLog, sharedDocs, indexedDB, deferredReadyState=false } = {}) {
+async function openPage(path, { selection, templeResponse, templeDocument, womResponse, womDocument, liveSync=false, savedTemple, fetchLog, sharedDocs, indexedDB, deferredReadyState=false, priceData={}, priceResponse } = {}) {
   const {mergeWom,mergeTemple}=require('../docs/assets/wom-store');
   const templeTools=require('../api/temple-collection-log')._test;
   const backend=sharedDocs||{wom:JSON.parse(fs.readFileSync('docs/data/wom-cache.json')),temple:savedTemple||JSON.parse(fs.readFileSync('docs/data/temple-clog.json'))};
@@ -92,7 +92,7 @@ async function openPage(path, { selection, templeResponse, templeDocument, womRe
           if (!templeResponse) return jsonResponse({ error: 'Temple test response not configured' }, 502);
           return jsonResponse(templeResponse);
         }
-        if (url.startsWith('https://prices.runescape.wiki/')) return jsonResponse({ data: {} });
+        if (url.startsWith('https://prices.runescape.wiki/')) return priceResponse?priceResponse():jsonResponse({ data: priceData });
         if (url.startsWith('https://api.wiseoldman.net/')) {
           if (!womResponse) return jsonResponse({ error: 'Network disabled in UI audit' }, 503);
           const parsed = new URL(url);

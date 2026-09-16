@@ -40,3 +40,6 @@ button,select,input,.link-button,.btn{min-height:38px}.metric-link{min-height:34
 .v22-goal-dialog [hidden]{display:none!important}
 #sharedProgressOptions[open]{display:grid;gap:12px}
 #sharedProgressOptions summary{cursor:pointer;color:#d7c39b}
+
+/* Inline links keep existing headings, cards and table geometry. */
+.inline-metric,.item-link{font:inherit;color:inherit;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}.inline-metric{min-height:0;padding:0;border:0;background:none;text-align:inherit;cursor:pointer}

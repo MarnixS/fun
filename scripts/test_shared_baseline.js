@@ -9,6 +9,9 @@ const {mergeWom,mergeTemple}=require('../docs/assets/wom-store');
 const wom=JSON.parse(fs.readFileSync('docs/data/wom-cache.json'));
 const temple=JSON.parse(fs.readFileSync('docs/data/temple-clog.json'));
 const clone=structuredClone;
+// Test refreshes must remain newer than the repository's evolving saved baseline.
+const testStart=Math.max(...Object.values(wom.profiles).map(p=>Date.parse(p.latestSnapshot.createdAt)))+86400000;
+const testDate=new Date(testStart).toISOString(),historyDate=new Date(testStart-3600000).toISOString();
 const json=(value,status=200)=>new Response(JSON.stringify(value),{status});
 function repository(){
  const files=new Map(),blobs=new Map(),commits=new Map(),calls=[];let head='0'.repeat(40),serial=0,failWrites=false;
@@ -29,7 +32,7 @@ function repository(){
  }
  return {request,files,commits,calls,fail:()=>{failWrites=true}};
 }
-function laterWom(key,amount=100,date='2026-09-16T12:00:00Z'){
+function laterWom(key,amount=100,date=testDate){
  const doc=clone(wom),snapshot=doc.profiles[key].latestSnapshot;doc.fetchedAt=Date.parse(date);snapshot.createdAt=date;snapshot.id=-1;snapshot.data.skills.overall.experience+=amount;doc.snapshots[key].push(clone(snapshot));return doc;
 }
 async function call(handler,{method='GET',body,source='wom',origin='https://marnixs.github.io',type='application/json'}={}){
@@ -69,23 +72,23 @@ async function backendTests(){
  assert.equal(combined.profiles.lijpste.latestSnapshot.data.skills.overall.experience,wom.profiles.lijpste.latestSnapshot.data.skills.overall.experience+202);
  assert(concurrent.calls.filter(c=>c.method==='PUT').length>=3,'SHA conflicts are retried against the current file');
  const stale=clone(wom);stale.fetchedAt=Date.now()+864000000;await one.save('wom',stale);
- assert.equal(concurrent.files.get('wom').doc.profiles.dikste.latestSnapshot.createdAt,'2026-09-16T12:00:00Z','late old data cannot roll back source snapshots');
+ assert.equal(concurrent.files.get('wom').doc.profiles.dikste.latestSnapshot.createdAt,testDate,'late old data cannot roll back source snapshots');
  console.log('Shared backend: visitors, restart, 5 MB history, source isolation, conflicts, stale responses, validation and failures passed');
 }
 async function upstreamTests(){
  const profile=laterWom('dikste').profiles.dikste,requested=[];
  const request=async(url,options={})=>{
   requested.push(url);
-  if(url.includes('/snapshots?'))return [profile.latestSnapshot,{...profile.latestSnapshot,createdAt:'2026-09-15T20:00:00Z'}];
+  if(url.includes('/snapshots?'))return [profile.latestSnapshot,{...profile.latestSnapshot,createdAt:historyDate}];
   if(url.endsWith('/achievements')||url.includes('/gained?period=month'))throw Error('partial failure');
-  if(url.includes('/gained'))return {startsAt:'2026-09-01T00:00:00Z',endsAt:'2026-09-16T12:00:00Z',data:{skills:{overall:{experience:{gained:123}}}}};
+  if(url.includes('/gained'))return {startsAt:'2026-09-01T00:00:00Z',endsAt:testDate,data:{skills:{overall:{experience:{gained:123}}}}};
   if(options.method==='POST')throw Error('WOM update unavailable');return profile;
  };
- const result=await refreshWomPlayer(wom,'dikste',{request,pause:async()=>{},now:()=>Date.parse('2026-09-16T12:01:00Z')});
+ const result=await refreshWomPlayer(wom,'dikste',{request,pause:async()=>{},now:()=>testStart+60000});
  assert.equal(result.profiles.dikste.latestSnapshot.createdAt,profile.latestSnapshot.createdAt);assert.deepEqual(result.profiles.lompste,wom.profiles.lompste);
  assert.deepEqual(result.achievements.dikste,wom.achievements.dikste);assert.deepEqual(result.gains.month.dikste,wom.gains.month.dikste);
  assert.equal(result.gains.week.dikste.data.skills.overall.experience.gained,123);
- assert(result.snapshots.dikste.some(s=>s.createdAt==='2026-09-15T20:00:00Z'));assert(result.snapshots.dikste.length>wom.snapshots.dikste.length);
+ assert(result.snapshots.dikste.some(s=>s.createdAt===historyDate));assert(result.snapshots.dikste.length>wom.snapshots.dikste.length);
  assert.equal(result.snapshots.dikste.filter(s=>s.createdAt===profile.latestSnapshot.createdAt).length,1,'sentinel IDs never collapse history');
  assert.deepEqual(result.refreshDiagnostics.trackedOnly,['dikste']);assert.equal(result.refreshDiagnostics.detailFailures.length,2);
  assert(requested.every(url=>url.includes('/Dikste')),'requests target only the fixed group member');
