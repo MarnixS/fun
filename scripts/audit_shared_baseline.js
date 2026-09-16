@@ -10,7 +10,7 @@ const {openPage,waitFor}=require('./audit_v25_jsdom');
  const nextWom=structuredClone(originalWom),snapshot=nextWom.profiles['big dog aura'].latestSnapshot;
  snapshot.createdAt=new Date(Date.now()+60000).toISOString();snapshot.id=-1;snapshot.data.skills.thieving.level+=1;snapshot.data.skills.overall.level+=1;snapshot.data.skills.overall.experience+=54321;
  const sharedDocs={wom:structuredClone(originalWom),temple:structuredClone(originalTemple)},requests=[];
- const first=await openPage('chronicle.html',{templeResponse:updated,womResponse:nextWom,sharedDocs,fetchLog:requests,indexedDB:new IDBFactory()});
+ const first=await openPage('chronicle.html',{deferredReadyState:true,templeResponse:updated,womResponse:nextWom,sharedDocs,fetchLog:requests,indexedDB:new IDBFactory()});
  const w=first.dom.window,d=w.document;
  assert(!requests.some(r=>r.method==='POST'),'opening Chronicle never refreshes sources');
  d.querySelector('[data-refresh-temple]').click();
@@ -31,7 +31,7 @@ const {openPage,waitFor}=require('./audit_v25_jsdom');
  const expected=Object.values(sharedDocs.wom.profiles).reduce((sum,p)=>sum+p.latestSnapshot.data.skills.overall.experience,0).toLocaleString('en-GB');
  const serial=sharedDocs.serial,old=structuredClone(originalWom);old.fetchedAt=Date.now()+864000000;
  for(const page of ['index.html','gim.html','hiscores.html','progress.html','history.html','time-machine.html','chronicle.html']){
-  const log=[],visitor=await openPage(page,{sharedDocs,womDocument:old,fetchLog:log,indexedDB:new IDBFactory()});const vd=visitor.dom.window.document;
+  const log=[],visitor=await openPage(page,{deferredReadyState:true,sharedDocs,womDocument:old,fetchLog:log,indexedDB:new IDBFactory()});const vd=visitor.dom.window.document;
   assert(vd.querySelector('[data-mast-xp-exact]').textContent.includes(expected),page+' reads the shared WOM baseline');
   assert.equal(vd.querySelector('[data-mast-drop]').textContent,'Shared baseline regression item',page+' reads the shared Temple baseline');
   visitor.dom.window.dispatchEvent(new visitor.dom.window.Event('focus'));visitor.dom.window.dispatchEvent(new visitor.dom.window.Event('online'));

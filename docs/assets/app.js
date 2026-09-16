@@ -231,5 +231,5 @@ async function renderPage(){renderMast();updateDataStatus();const pg=document.bo
 window.addEventListener('ug:members-changed',()=>renderPage());
 window.addEventListener('ug:data-updated',function dataUpdatedListener(e){if(e.detail?.source==='app')return;const key=e.detail?.key,doc=e.detail?.document||loadJSON(key);if(key===WKEY&&doc?.profiles)applyWomDoc(doc);else if(key===TKEY&&doc?.players)state.temple=doc;else return;renderPage()});
 async function init(){bindCommon();globalClicks();await Promise.all([loadTempleSaved(),loadWomSaved()]);$$('[data-period-button]').forEach(x=>x.classList.toggle('active',+x.dataset.periodButton===state.period));await renderPage()}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+if(document.readyState==='loading'||!window.UGV21)document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
