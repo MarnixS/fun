@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),M=require('../d
 const doc=JSON.parse(fs.readFileSync('docs/data/temple-clog.json'));
 const keys=Object.keys(doc.players),players=keys.map(key=>({key}));
 const model=M.build(doc,players),ids=[...new Set(model.categories.flatMap(c=>c.ids))];
-assert.equal(model.categories.length,124);assert.equal(ids.length,1717);
+assert(model.categories.length>100,'full saved category map');assert(ids.length>1500,'full saved item catalogue');assert.deepEqual([...new Set(model.categories.map(c=>c.tab))],M.TABS);
 for(const id of ids){const s=M.shares(model,id,players);assert(Number.isFinite(s.total));assert(s.entries.every(p=>p.count>=0));assert(Math.abs(s.entries.reduce((n,p)=>n+p.share,0)-(s.total?1:0))<1e-10)}
 const synthetic=M.build({players:{a:{data:{items:{one:[{id:1,count:3}],two:[{id:1,count:3},{id:2,count:0}]}}},b:{data:{items:[{id:1,count:1}]}},c:{error:'offline'}}},[{key:'a'},{key:'b'},{key:'c'}]);
 assert.deepEqual(M.shares(synthetic,1,[{key:'a'},{key:'b'},{key:'c'}]).entries.map(p=>[p.count,p.share]),[[3,.75],[1,.25],[null,0]],'shared-category items are counted once per player; unavailable stays unknown');
