@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-17T14:59:27.383Z",
+  "updatedAt": "2026-09-17T15:39:52.347Z",
   "goals": {
     "dikste": {
       "text": "99 Farming",
@@ -18,12 +18,12 @@
       "updatedAt": "2026-09-15T12:51:09.950Z"
     },
     "lijpste": {
-      "text": "test",
+      "text": "Master CA's",
       "kind": "none",
       "metric": "",
       "targetValue": null,
       "current": null,
-      "updatedAt": "2026-09-17T14:59:27.383Z"
+      "updatedAt": "2026-09-17T15:39:52.347Z"
     },
     "poep aura": null,
     "lompste": null
