@@ -1,0 +1,18 @@
+'use strict';
+const assert=require('node:assert/strict'),{openPage,waitFor}=require('./audit_v25_jsdom');
+(async()=>{
+ const requests=[],{dom,errors}=await openPage('history.html',{fetchLog:requests}),w=dom.window,d=w.document;
+ await waitFor(()=>d.querySelector('.era-story'),'readable eras');assert.equal(d.querySelectorAll('.era-player').length,5);assert(d.querySelectorAll('.era-story').length>20);assert(!d.querySelector('.era-track'),'no clipped calendar bars');
+ const old=d.querySelector('.era-details').textContent;d.querySelector('#eraResolution').value='28';d.querySelector('#eraResolution').dispatchEvent(new w.Event('change'));assert.notEqual(d.querySelector('.era-details').textContent,old,'time resolution recomputes stories');assert.equal(d.querySelector('#eraResolution').value,'28');
+ assert(d.querySelector('.era-story.era-unknown').textContent.includes('gap'));assert(d.querySelector('.era-story [data-v21-skill]'));assert(d.querySelector('.era-story [data-v21-boss]'));
+ assert.equal(errors.length,0,errors.join('; '));
+ for(const page of ['progress.html','hiscores.html']){
+ const {dom,errors}=await openPage(page,{fetchLog:requests}),w=dom.window,d=w.document;
+ if(page==='progress.html'){await waitFor(()=>d.querySelectorAll('#skillShares svg').length===2,'skill contribution pies');const select=d.querySelector('#skillSelect');for(const option of [...select.options]){select.value=option.value;select.dispatchEvent(new w.Event('change'));assert.equal(d.querySelectorAll('#skillShares tbody tr').length,5);assert(!d.querySelector('#skillShares').innerHTML.includes('NaN'));assert.equal(d.querySelectorAll('#skillShares svg').length,2)}select.value='fishing';select.dispatchEvent(new w.Event('change'));assert(d.querySelector('#skillShares').textContent.includes('Fishing'));assert.equal(d.querySelectorAll('#skillShares tbody tr').length,5)}
+ const trigger=d.querySelector('[data-v21-skill]');trigger.click();await waitFor(()=>d.querySelector('#v21MetricModal:not([hidden])'),'skill dialog');d.querySelector('[data-v21-modal-view="share"]').click();assert.equal(d.querySelectorAll('#v21ModalChart svg').length,2);assert(d.querySelector('#v21MetricModal .modal-periods').hidden);assert.equal(d.querySelectorAll('#v21ModalChart tbody tr').length,5);
+ const picker=d.querySelector('#statsMemberPicker');for(const key of ['big dog aura','lijpste','poep aura','lompste'])picker.querySelector(`input[value="${key}"]`).click();await waitFor(()=>d.querySelectorAll('#v21ModalChart tbody tr').length===1,'shares follow selected members');assert(d.querySelector('#v21ModalChart svg').getAttribute('aria-label').includes('100.0 percent'));assert(!d.querySelector('#v21ModalChart').innerHTML.includes('NaN'));
+ d.querySelector('[data-v21-modal-view="timeline"]').click();assert(!d.querySelector('#v21MetricModal .modal-periods').hidden);assert(d.querySelector('#v21ModalChart svg'));d.querySelector('[data-modal-close]').click();assert(d.querySelector('#v21MetricModal').hidden);assert.equal(errors.length,0,errors.join('; '));
+ }
+ assert(!requests.some(r=>r.method==='POST'||r.url.includes('api.wiseoldman.net')||r.url.includes('/api/temple-collection-log')),'no upstream refresh from eras or pie interactions');
+ console.log('Activity eras and XP/level contribution pies passed: resolution, evidence, all skills, filters, modes, one-member pies, no automatic updates.');
+})().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)});
