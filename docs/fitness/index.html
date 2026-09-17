@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#0d0f12"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="icon" href="icon.svg" type="image/svg+xml"/>
+<title>BIG DOG AURA</title>
+<style>
+:root{--bg:#0d0f12;--card:#171a20;--card2:#20242c;--text:#f5f7fa;--muted:#9ea6b4;--line:#303641;--accent:#d8ff3e;--good:#73e48d}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+body{padding-bottom:94px}button,input,textarea{font:inherit}
+header{position:sticky;top:0;z-index:10;background:rgba(13,15,18,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:14px 14px 10px}
+.head{max-width:760px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:10px}
+h1{font-size:20px;margin:0}.sub{font-size:12px;color:var(--muted);margin-top:2px}.status{font-size:11px;color:var(--good);font-weight:800}
+main{max-width:760px;margin:auto;padding:12px}.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:4px 0 12px}
+.tab{min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);font-weight:800}.tab.active{background:var(--accent);border-color:var(--accent);color:#111}
+.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:8px 2px 10px}.hero h2{font-size:18px;margin:0}.focus{color:var(--muted);font-size:12px;margin-top:2px}
+.progress{height:8px;background:var(--card2);border-radius:99px;overflow:hidden;margin:8px 0 14px}.bar{height:100%;background:var(--accent);width:0}.card{background:var(--card);border:1px solid var(--line);border-radius:15px;margin:10px 0;overflow:hidden}
+.chead{padding:13px 13px 9px}.name{font-size:16px;font-weight:850}.plan{color:var(--accent);font-weight:800;margin-top:3px;font-size:14px}.ref{font-size:12px;color:var(--muted);margin-top:5px}.pr{font-size:12px;color:var(--good);margin-top:4px;font-weight:700}
+.labels,.setrow{display:grid;grid-template-columns:32px 1fr 1fr 1fr 40px;gap:6px;align-items:center}.labels{font-size:10px;color:var(--muted);text-align:center;padding:0 10px}.sets{padding:0 10px 11px}.setrow{margin-top:7px}.setno{text-align:center;color:var(--muted);font-size:12px}
+input[type=number],textarea{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:11px 8px;min-height:44px}input[type=checkbox]{width:26px;height:26px;accent-color:var(--accent)}textarea{resize:vertical;min-height:70px;margin-top:8px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:13px;margin-top:12px}.panel h3{font-size:14px;margin:0 0 8px}.panel ol{padding-left:20px;margin:0;color:#d7dbe2;font-size:12px;line-height:1.6}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.btn{min-height:46px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-weight:800}.btn.primary{background:var(--accent);color:#111;border-color:var(--accent)}
+.bottom{position:fixed;bottom:0;left:0;right:0;background:rgba(13,15,18,.96);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:8px 12px calc(8px + env(safe-area-inset-bottom))}.bottomin{max-width:760px;margin:auto;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.small{font-size:12px}.historyitem{padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}.historyitem:last-child{border:0}.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header><div class="head"><div><h1>BIG DOG AURA</h1><div class="sub">Compact • local-first • offline</div></div><div class="status" id="saveStatus">Lokaal opgeslagen</div></div></header>
+<main><div class="tabs" id="tabs"></div><div class="hero"><div><h2 id="dayName"></h2><div class="focus" id="focus"></div></div><div class="small" id="sessionMeta"></div></div><div class="progress"><div id="bar" class="bar"></div></div><section id="workout"></section><section class="panel"><h3>Sessienotitie</h3><textarea id="sessionNote" placeholder="Schouder, energie, techniek, etc."></textarea></section><section class="panel"><h3>Progressieregels</h3><ol id="rules"></ol></section><section class="panel"><h3>Geschiedenis</h3><div id="history"></div></section><section class="panel"><h3>Back-up</h3><div class="actions"><button class="btn" id="exportBtn">Exporteer JSON</button><button class="btn" id="importBtn">Importeer JSON</button></div><input id="fileInput" class="hidden" type="file" accept=".json"></section></main>
+<div class="bottom"><div class="bottomin"><button class="btn" id="prevBtn">← Vorige</button><button class="btn primary" id="finishBtn">Sessie afronden</button><button class="btn" id="nextBtn">Volgende →</button></div></div><script src="app.js"></script></body></html>
