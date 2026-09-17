@@ -24,13 +24,14 @@ function render(){
  const ps=players(),available=model.categories.filter(c=>c.tab===tab),current=available.find(c=>c.key===category)||available[0];category=current?.key||'';
  $('#betaTabs').innerHTML=M.TABS.map(t=>`<button type="button" data-beta-tab="${t}" aria-pressed="${t===tab}">${nice(t)}</button>`).join('');
  const ids=[...new Set(model.categories.flatMap(c=>c.ids))],got=ids.filter(id=>share(id).total>0).length;
- $('#betaTotal').textContent=`${fmt(got)} / ${fmt(ids.length)}`;
+ const hasKnown=ps.some(p=>model.known.has(p.key));
+ $('#betaTotal').textContent=`${hasKnown?fmt(got):'?'} / ${fmt(ids.length)}`;
  $('#betaCategories').innerHTML=available.map(c=>{const count=c.ids.filter(id=>share(id).total>0).length;return `<button type="button" data-beta-category="${esc(c.key)}" aria-pressed="${c.key===category}" class="${count===c.ids.length?'complete':''}" title="${esc(label(c.key))}: ${count}/${c.ids.length}">${esc(label(c.key))}</button>`}).join('');
- $('#betaCategoryTitle').textContent=current?label(category):'No saved categories';
- $('#betaObtained').textContent=current?`${current.ids.filter(id=>share(id).total>0).length}/${current.ids.length}`:'—';
- $('#betaKills').textContent=current?kills(category):'';
+ $('#betaCategoryTitle').textContent=query?'Search results':current?label(category):'No saved categories';
+ $('#betaKills').textContent=!query&&current?kills(category):'';
  const missing=ps.filter(p=>!model.known.has(p.key));$('#betaCoverage').textContent=missing.length?`No synced log for ${missing.map(p=>p.name).join(', ')}. Counts show the available members only.`:'';
  const rows=(query?ids:current?.ids||[]).filter(id=>!query||(model.names.get(id)||`Item ${id}`).toLowerCase().includes(query));
+ $('#betaObtained').textContent=`${hasKnown?rows.filter(id=>share(id).total>0).length:'?'}/${rows.length}`;
  $('#betaSearchStatus').textContent=query?`${rows.length} matches across all tabs`:'';
  $('#betaGrid').innerHTML=rows.length?rows.map(id=>{const data=share(id),name=model.names.get(id)||`Item ${id}`,text=data.known?`${fmt(data.total)} logged`:'unknown';return `<button type="button" class="beta-item ${data.total?'obtained':'missing'}" data-beta-item="${id}" aria-pressed="${chosen===id}" aria-label="${esc(name)}, ${text}. Show contributions" title="${esc(name)} · ${text}"><img src="https://static.runelite.net/cache/item/icon/${id}.png" alt="" loading="lazy">${data.total>1?`<span class="beta-quantity">${data.total>=100000?U.compact(data.total):fmt(data.total)}</span>`:''}${data.total?`<span class="beta-item-pie" aria-hidden="true" style="background:conic-gradient(${pie(data)})"></span>`:''}</button>`}).join(''):'<p class="beta-empty">'+(query?'No matching items.':'No category data in this saved snapshot.')+'</p>';
  $('#betaLegend').innerHTML=ps.map(p=>`<span><i style="background:${p.color}"></i>${esc(p.name)}</span>`).join('');detail();

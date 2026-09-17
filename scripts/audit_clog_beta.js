@@ -20,7 +20,7 @@ assert.equal(M.shares(synthetic,2,[{key:'a'},{key:'b'}]).total,0);
    buttons[0].click();assert.equal(d.querySelectorAll('.beta-counts>div').length,5);assert(d.querySelector('#betaItemDetail a').href.includes('id='+c.ids[0]));checked++;
   }
  }
- const search=d.querySelector('#betaSearch');search.value='Osmumten';search.dispatchEvent(new w.Event('input'));assert.equal(d.querySelectorAll('[data-beta-item]').length,1);assert.equal(d.querySelector('[data-beta-item]').dataset.betaItem,'26219');d.querySelector('[data-beta-item]').click();
+ const search=d.querySelector('#betaSearch');search.value='Osmumten';search.dispatchEvent(new w.Event('input'));assert.equal(d.querySelectorAll('[data-beta-item]').length,1);assert.equal(d.querySelector('#betaCategoryTitle').textContent,'Search results');assert.equal(d.querySelector('#betaKills').textContent,'');assert(d.querySelector('#betaObtained').textContent.endsWith('/1'));assert.equal(d.querySelector('[data-beta-item]').dataset.betaItem,'26219');d.querySelector('[data-beta-item]').click();
  const expected=M.shares(model,26219,players);assert.deepEqual([...d.querySelectorAll('.beta-counts strong')].map(n=>Number(n.textContent.replace(/,/g,''))),expected.entries.map(p=>p.count));
  const picker=d.querySelector('#betaMembers');for(const k of keys.slice(1))picker.querySelector(`input[value="${k}"]`).click();assert.equal(d.querySelectorAll('.beta-counts>div').length,1);assert(d.querySelector('.beta-counts small').textContent==='100.0%'||expected.entries[0].count===0);
  assert.equal(JSON.parse(w.localStorage.getItem('ug-v25-member-selection')).length,1);
@@ -33,7 +33,7 @@ assert.equal(M.shares(synthetic,2,[{key:'a'},{key:'b'}]).total,0);
  await waitFor(()=>d.querySelector('[data-beta-item="13262"]')?.getAttribute('aria-label').includes('99 logged'),'new saved baseline in beta');
  const unknown=structuredClone(updated);unknown.players.dikste={error:'unavailable'};
  w.dispatchEvent(new w.CustomEvent('ug:data-updated',{detail:{key:'ug-v20-temple-cache',document:unknown,source:'test'}}));
- await waitFor(()=>d.querySelector('#betaCoverage').textContent.includes('No synced log for Dikste'),'unknown member');d.querySelector('[data-beta-item="13262"]').click();assert.equal(d.querySelector('.beta-counts strong').textContent,'Unknown');assert.equal(d.querySelectorAll('.beta-item-pie').length,0);
+ await waitFor(()=>d.querySelector('#betaCoverage').textContent.includes('No synced log for Dikste'),'unknown member');d.querySelector('[data-beta-item="13262"]').click();assert.equal(d.querySelector('.beta-counts strong').textContent,'Unknown');assert.equal(d.querySelectorAll('.beta-item-pie').length,0);assert(d.querySelector('#betaObtained').textContent.startsWith('?/'));assert(d.querySelector('#betaTotal').textContent.startsWith('? /'));
  assert.equal(errors.length,0,errors.join('; '));assert(!requests.some(r=>r.method==='POST'||r.url.includes('api.wiseoldman.net')||r.url.includes('/api/temple-collection-log')),'no automatic upstream updates');
  console.log(`Collection Log beta passed: ${checked} categories, ${ids.length} items, quantity shares, global duplicate counters, search, filters, links, overlay toggle, saved updates, unknown data and no automatic refresh.`);
 })().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)});
