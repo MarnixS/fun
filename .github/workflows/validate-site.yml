@@ -41,3 +41,4 @@ jobs:
           node scripts/audit_shared_baseline.js
           node scripts/audit_all_interactions.js
           node scripts/audit_interaction_edges.js
+          node scripts/audit_activity_eras.js
