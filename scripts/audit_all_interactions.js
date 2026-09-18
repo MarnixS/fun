@@ -11,7 +11,7 @@ function assertLinks(d,selector,label){const cells=[...d.querySelectorAll(select
  let graphClicks=0,itemLinks=0;
  for(const page of pages){
   const requests=[],{dom,errors}=await openPage(page,{priceData:prices,fetchLog:requests});const w=dom.window,d=w.document;
-  assert.deepEqual([...d.querySelectorAll('.nav-link')].map(a=>a.getAttribute('href')),pages.slice(0,7),page+' navigation');
+  assert.deepEqual([...d.querySelectorAll('.nav-link')].map(a=>a.getAttribute('href')),['index.html','gim.html','clog-beta.html','hiscores.html','progress.html','history.html','time-machine.html','chronicle.html'],page+' navigation');
   assert.equal(d.querySelectorAll('.nav-link[aria-current="page"]').length,page==='developer.html'?0:1);
   if(page!=='developer.html')assertLinks(d,'[data-mast-drop]','Latest item on '+page);
   if(page==='gim.html'){

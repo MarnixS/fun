@@ -20,12 +20,14 @@ assert.equal(M.shares(synthetic,2,[{key:'a'},{key:'b'}]).total,0);
    buttons[0].click();assert.equal(d.querySelectorAll('.beta-counts>div').length,5);assert(d.querySelector('#betaItemDetail a').href.includes('id='+c.ids[0]));checked++;
   }
  }
- const search=d.querySelector('#betaSearch');search.value='Osmumten';search.dispatchEvent(new w.Event('input'));assert.equal(d.querySelectorAll('[data-beta-item]').length,1);assert.equal(d.querySelector('#betaCategoryTitle').textContent,'Search results');assert.equal(d.querySelector('#betaKills').textContent,'');assert(d.querySelector('#betaObtained').textContent.endsWith('/1'));assert.equal(d.querySelector('[data-beta-item]').dataset.betaItem,'26219');d.querySelector('[data-beta-item]').click();
+ const search=d.querySelector('#betaSearch');search.value='Osmumten';search.dispatchEvent(new w.Event('input'));assert.equal(d.querySelectorAll('[data-beta-item]').length,0,'item names do not match category search');assert.equal(d.querySelectorAll('[data-beta-category]').length,0);
+ search.value='TOMBS';search.dispatchEvent(new w.Event('input'));assert.equal(d.querySelectorAll('[data-beta-category]').length,1);assert.equal(d.querySelector('#betaCategoryTitle').textContent,'Tombs of Amascut');assert.equal(d.querySelector('[data-beta-tab="raids"]').getAttribute('aria-pressed'),'true');assert.equal(d.querySelectorAll('[data-beta-item]').length,model.categories.find(c=>c.key==='tombs_of_amascut').ids.length);d.querySelector('[data-beta-category]').click();assert.equal(search.value,'TOMBS','opening category keeps search');d.querySelector('[data-beta-item="26219"]').click();
+ assert.equal(d.querySelector('.nav-link[href="clog-beta.html"]').getAttribute('aria-current'),'page');
  const expected=M.shares(model,26219,players);assert.deepEqual([...d.querySelectorAll('.beta-counts strong')].map(n=>Number(n.textContent.replace(/,/g,''))),expected.entries.map(p=>p.count));
  const picker=d.querySelector('#betaMembers');for(const k of keys.slice(1))picker.querySelector(`input[value="${k}"]`).click();assert.equal(d.querySelectorAll('.beta-counts>div').length,1);assert(d.querySelector('.beta-counts small').textContent==='100.0%'||expected.entries[0].count===0);
  assert.equal(JSON.parse(w.localStorage.getItem('ug-v25-member-selection')).length,1);
  d.querySelector('#betaOverlay').click();assert(d.querySelector('#betaGame').classList.contains('beta-hide-pies'));d.querySelector('#betaOverlay').click();assert(!d.querySelector('#betaGame').classList.contains('beta-hide-pies'));
- search.value='not an existing item xyz';search.dispatchEvent(new w.Event('input'));assert.equal(d.querySelectorAll('[data-beta-item]').length,0);assert(d.querySelector('#betaGrid').textContent.includes('No matching'));
+ search.value='not an existing category xyz';search.dispatchEvent(new w.Event('input'));assert.equal(d.querySelectorAll('[data-beta-item]').length,0);assert(d.querySelector('#betaGrid').textContent.includes('No matching'));
  d.querySelector('[data-beta-tab="bosses"]').click();assert.equal(search.value,'');assert(d.querySelector('[data-beta-item]'));
  // A successful data notification replaces the display without an upstream refresh.
  const updated=structuredClone(doc);updated.players.dikste.data.items.abyssal_sire[0].count=99;
