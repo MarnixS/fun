@@ -5,7 +5,7 @@ const PLAYERS=[
  {key:'big dog aura',name:'Big Dog Aura',color:'#e6ad43'},
  {key:'lijpste',name:'Lijpste',color:'#d94ff0'},
  {key:'poep aura',name:'Poep Aura',color:'#d77878'},
- {key:'lompste',name:'Lompste',color:'#d3b35d'}
+ {key:'lompste',name:'Lompste',color:'#f0eee8'}
 ];
 const CORE_KEYS=['dikste','big dog aura','lijpste'];
 const ALL_KEYS=PLAYERS.map(p=>p.key);

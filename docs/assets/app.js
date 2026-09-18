@@ -14,7 +14,7 @@ const PLAYERS=[
  {key:'big dog aura',name:'Big Dog Aura',core:true,color:'#e6ad43',portrait:portraitFromV19('big dog aura','img/bigdog.webp'),role:'The Founder · strategist with good clicks',mantra:'Wilderness tolerance: too high.'},
  {key:'lijpste',name:'Lijpste',core:true,color:'#d94ff0',portrait:portraitFromV19('lijpste','img/lijpste.webp'),role:'The total package · progression pusher',mantra:'Spooned again. Complaint pending.'},
  {key:'poep aura',name:'Poep Aura',core:false,color:'#d77878',portrait:portraitFromV19('poep aura','img/poep-aura.png'),role:'crab enjoyer',mantra:'crab enjoyer'},
- {key:'lompste',name:'Lompste',core:false,color:'#d3b35d',portrait:portraitFromV19('lompste','img/lompste.png'),role:'Additional group members',mantra:'WOM tracked · Collection Log joins automatically after Temple sync.'}
+ {key:'lompste',name:'Lompste',core:false,color:'#f0eee8',portrait:portraitFromV19('lompste','img/lompste.png'),role:'Additional group members',mantra:'WOM tracked · Collection Log joins automatically after Temple sync.'}
 ];
 const PERIODS={7:'1 week',30:'1 month',90:'3 months',180:'6 months',365:'1 year'};
 const WKEY='ug-v20-wom-cache',TKEY='ug-v20-temple-cache',MKEY='ug-v25-member-selection';
