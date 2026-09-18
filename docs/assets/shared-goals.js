@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const U=window.UGV21,G=window.UGGoalProgress;if(!U||!G||document.body.dataset.page!=='chronicle'||window.__sharedGoalsLoaded)return;window.__sharedGoalsLoaded=true;
+const U=window.UGV21,G=window.UGGoalProgress;if(!U||!G||!['chronicle','goals'].includes(document.body.dataset.page)||window.__sharedGoalsLoaded)return;window.__sharedGoalsLoaded=true;
 const API='https://united-gimps-temple-proxy.vercel.app/api/player-goals';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let doc={goals:{}},wom,temple,enabled=false;
