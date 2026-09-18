@@ -11,8 +11,12 @@ function assertLinks(d,selector,label){const cells=[...d.querySelectorAll(select
  let graphClicks=0,itemLinks=0;
  for(const page of pages){
   const requests=[],{dom,errors}=await openPage(page,{priceData:prices,fetchLog:requests});const w=dom.window,d=w.document;
-  assert.deepEqual([...d.querySelectorAll('.nav-link')].map(a=>a.getAttribute('href')),['index.html','gim.html','clog-beta.html','hiscores.html','progress.html','history.html','time-machine.html','chronicle.html'],page+' navigation');
+  assert.deepEqual([...d.querySelectorAll('.nav-link')].map(a=>a.getAttribute('href')),['index.html','clog-beta.html','gim.html','hiscores.html','time-machine.html','progress.html','history.html','chronicle.html'],page+' navigation');
   assert.equal(d.querySelectorAll('.nav-link[aria-current="page"]').length,page==='developer.html'?0:1);
+  const groups=[...d.querySelectorAll('.nav-dropdown')];assert.equal(groups.length,2);
+  assert.deepEqual(groups.map(g=>g.querySelector('button span:nth-child(2)').textContent),['Collection Log','Stats']);
+  for(const g of groups){const b=g.querySelector('button'),panel=g.querySelector('.nav-dropdown-panel');assert(panel.hidden);b.click();assert(!panel.hidden);assert.equal(b.getAttribute('aria-expanded'),'true');b.dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}));assert.equal(d.activeElement,panel.querySelector('a'));d.activeElement.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert(panel.hidden);assert.equal(d.activeElement,b);b.blur();const enter=new w.Event('pointerenter');Object.defineProperty(enter,'pointerType',{value:'mouse'});g.dispatchEvent(enter);assert(!panel.hidden,'hover opens');g.dispatchEvent(Object.assign(new w.Event('pointerleave'),{pointerType:'mouse'}));assert(panel.hidden,'pointer leave closes');b.click();d.body.click();assert(panel.hidden,'outside click closes')}
+  groups[0].querySelector('button').click();groups[1].querySelector('button').click();assert(groups[0].querySelector('.nav-dropdown-panel').hidden,'only one dropdown opens');d.body.click();
   if(page!=='developer.html')assertLinks(d,'[data-mast-drop]','Latest item on '+page);
   if(page==='gim.html'){
    assertLinks(d,'#clogItemTable .item-cell','Collection Log');itemLinks+=d.querySelectorAll('#clogItemTable a[data-item-id]').length;
