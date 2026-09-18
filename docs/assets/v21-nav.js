@@ -13,7 +13,7 @@ function init(){
  const link=([href,label,rune])=>`<a class="nav-link ${isActive(href)?'active':''}" href="${href}" ${isActive(href)?'aria-current="page"':''}><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span></a>`;
  const group=(id,label,rune,items)=>`<div class="nav-dropdown"><button type="button" class="nav-trigger ${items.some(([href])=>isActive(href))?'active':''}" aria-expanded="false" aria-controls="nav-${id}"><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span><span aria-hidden="true">▾</span></button><div class="nav-dropdown-panel" id="nav-${id}" hidden>${items.map(link).join('')}</div></div>`;
  const brand=nav.querySelector('.nav-brand')?.outerHTML||'<a class="nav-brand" href="index.html" aria-label="United Gimps overview"><img src="img/gim-crest.svg" alt=""></a>';
- nav.innerHTML=brand+link(['index.html','Overview','O'])+group('logs','Collection Log','G',logs)+group('levels','Levels','XP',levels)+group('record','Record','✦',records);
+ nav.innerHTML=brand+link(['index.html','Overview','O'])+group('logs','Collection Log','G',logs)+group('levels','Levels','XP',levels)+group('record','Record','✦',records)+`<span class="nav-spacer" aria-hidden="true"></span>`+link(['faq.html','FAQ','?']);
  const groups=[...nav.querySelectorAll('.nav-dropdown')];
  function setOpen(group,open){group.querySelector('button').setAttribute('aria-expanded',String(open));group.querySelector('.nav-dropdown-panel').hidden=!open}
  function closeAll(){groups.forEach(g=>setOpen(g,false))}
