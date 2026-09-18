@@ -1,16 +1,33 @@
 (()=>{
 'use strict';
-const order=[
- ['index.html','Overview','O'],
- ['gim.html','Collection Log','G','GIM'],
- ['clog-beta.html','Clog Beta','β'],
- ['hiscores.html','Hiscores','H'],
- ['progress.html','XP & Progress','XP'],
- ['history.html','Timeline','T'],
- ['time-machine.html','Time Machine','⧖'],
- ['chronicle.html','Chronicle','✦']
-];
+const logs=[['clog-beta.html','Collection Log Classic','G'],['gim.html','Collection Log Advanced','G']];
+const stats=[['hiscores.html','Hiscores','H'],['time-machine.html','Time Machine','⧖'],['progress.html','XP & Progress','XP']];
+const stories=[['history.html','Timeline','T'],['chronicle.html','Chronicle','✦']];
 function loadV22(){if(document.querySelector('script[data-v22-ui]'))return;const s=document.createElement('script');s.src='assets/v22-ui.js?v=34';s.dataset.v22Ui='1';document.head.append(s)}
-function init(){const nav=document.querySelector('.nav-inner');if(!nav){loadV22();return}const outer=nav.closest('.main-nav');outer?.setAttribute('aria-label','Primary');const page=(location.pathname.split('/').pop()||'index.html').toLowerCase();const brand=nav.querySelector('.nav-brand')?.outerHTML||'<a class="nav-brand" href="index.html" aria-label="United Gimps overview"><img src="img/gim-crest.svg" alt=""></a>';nav.innerHTML=brand+order.map(([href,label,rune,badge],i)=>`<a class="nav-link ${page===href?'active':''} ${href==='history.html'?'nav-group-start':''}" href="${href}" ${page===href?'aria-current="page"':''}><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span>${badge?`<span class="nav-badge" aria-hidden="true">${badge}</span>`:''}</a>`).join('');if(['history.html','time-machine.html','chronicle.html'].includes(page)){const main=document.querySelector('main.wrap');if(main&&!document.querySelector('#historyLocalNav')){const d=document.createElement('nav');d.id='historyLocalNav';d.className='v21-local-nav';d.setAttribute('aria-label','Timeline sections');d.innerHTML='<strong aria-hidden="true">Timeline</strong>'+[['history.html','Timeline'],['time-machine.html','Time Machine'],['chronicle.html','Chronicle']].map(([h,l])=>`<a href="${h}" class="${page===h?'active':''}" ${page===h?'aria-current="page"':''}>${l}</a>`).join('');const after=main.querySelector('.api-courtesy');after?.insertAdjacentElement('afterend',d)}}loadV22()}
+function init(){
+ const nav=document.querySelector('.nav-inner');if(!nav){loadV22();return}
+ nav.closest('.main-nav')?.setAttribute('aria-label','Primary');
+ const page=(location.pathname.split('/').pop()||'index.html').toLowerCase();
+ const link=([href,label,rune])=>`<a class="nav-link ${page===href?'active':''}" href="${href}" ${page===href?'aria-current="page"':''}><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span></a>`;
+ const group=(id,label,rune,items)=>`<div class="nav-dropdown"><button type="button" class="nav-trigger ${items.some(([href])=>href===page)?'active':''}" aria-expanded="false" aria-controls="nav-${id}"><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span><span aria-hidden="true">▾</span></button><div class="nav-dropdown-panel" id="nav-${id}" hidden>${items.map(link).join('')}</div></div>`;
+ const brand=nav.querySelector('.nav-brand')?.outerHTML||'<a class="nav-brand" href="index.html" aria-label="United Gimps overview"><img src="img/gim-crest.svg" alt=""></a>';
+ nav.innerHTML=brand+link(['index.html','Overview','O'])+group('logs','Collection Log','G',logs)+group('stats','Stats','XP',stats)+stories.map(link).join('');
+ const groups=[...nav.querySelectorAll('.nav-dropdown')];
+ function setOpen(group,open){group.querySelector('button').setAttribute('aria-expanded',String(open));group.querySelector('.nav-dropdown-panel').hidden=!open}
+ function closeAll(){groups.forEach(g=>setOpen(g,false))}
+ for(const g of groups){
+  const button=g.querySelector('button');
+  const open=()=>{groups.filter(other=>other!==g).forEach(other=>setOpen(other,false));setOpen(g,true)};
+  g.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')open()});
+  g.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse'&&!g.contains(document.activeElement))setOpen(g,false)});
+  button.addEventListener('click',()=>{if(button.getAttribute('aria-expanded')==='true')setOpen(g,false);else open()});
+  g.addEventListener('focusout',e=>{if(!g.contains(e.relatedTarget))setOpen(g,false)});
+  g.addEventListener('keydown',e=>{if(e.key==='Escape'){setOpen(g,false);button.focus();e.preventDefault()}else if(e.target===button&&e.key==='ArrowDown'){open();g.querySelector('a').focus();e.preventDefault()}});
+ }
+ document.addEventListener('click',e=>{if(!nav.contains(e.target))closeAll()});
+ const local=stats.some(([href])=>href===page)?stats:stories.some(([href])=>href===page)?stories:null;
+ if(local){const main=document.querySelector('main.wrap');if(main&&!document.querySelector('#historyLocalNav')){const d=document.createElement('nav');d.id='historyLocalNav';d.className='v21-local-nav';const title=local===stats?'Stats':'Timeline';d.setAttribute('aria-label',title+' sections');d.innerHTML=`<strong aria-hidden="true">${title}</strong>`+local.map(([h,l])=>`<a href="${h}" class="${page===h?'active':''}" ${page===h?'aria-current="page"':''}>${l}</a>`).join('');main.querySelector('.api-courtesy')?.insertAdjacentElement('afterend',d)}}
+ loadV22();
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
