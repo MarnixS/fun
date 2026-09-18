@@ -1,17 +1,19 @@
 (()=>{
 'use strict';
 const logs=[['clog-beta.html','Collection Log Classic','G'],['gim.html','Collection Log Advanced','G']];
-const stats=[['hiscores.html','Hiscores','H'],['time-machine.html','Time Machine','⧖'],['progress.html','XP & Progress','XP']];
-const stories=[['history.html','Timeline','T'],['chronicle.html','Chronicle','✦']];
+const levels=[['hiscores.html','Current Stats','H'],['time-machine.html','Time Machine','⧖'],['progress.html','Stat Progress','XP']];
+const records=[['chronicle.html','Chronicle','✦'],['history.html','Timeline','T'],['chronicle.html#goals','Goals','◎']];
 function loadV22(){if(document.querySelector('script[data-v22-ui]'))return;const s=document.createElement('script');s.src='assets/v22-ui.js?v=34';s.dataset.v22Ui='1';document.head.append(s)}
 function init(){
  const nav=document.querySelector('.nav-inner');if(!nav){loadV22();return}
  nav.closest('.main-nav')?.setAttribute('aria-label','Primary');
  const page=(location.pathname.split('/').pop()||'index.html').toLowerCase();
- const link=([href,label,rune])=>`<a class="nav-link ${page===href?'active':''}" href="${href}" ${page===href?'aria-current="page"':''}><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span></a>`;
- const group=(id,label,rune,items)=>`<div class="nav-dropdown"><button type="button" class="nav-trigger ${items.some(([href])=>href===page)?'active':''}" aria-expanded="false" aria-controls="nav-${id}"><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span><span aria-hidden="true">▾</span></button><div class="nav-dropdown-panel" id="nav-${id}" hidden>${items.map(link).join('')}</div></div>`;
+ const hash=location.hash.toLowerCase();
+ const isActive=href=>{const [target,targetHash='']=href.toLowerCase().split('#');if(page!==target)return false;if(targetHash)return hash===('#'+targetHash);return !(page==='chronicle.html'&&hash==='#goals')};
+ const link=([href,label,rune])=>`<a class="nav-link ${isActive(href)?'active':''}" href="${href}" ${isActive(href)?'aria-current="page"':''}><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span></a>`;
+ const group=(id,label,rune,items)=>`<div class="nav-dropdown"><button type="button" class="nav-trigger ${items.some(([href])=>isActive(href))?'active':''}" aria-expanded="false" aria-controls="nav-${id}"><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span><span aria-hidden="true">▾</span></button><div class="nav-dropdown-panel" id="nav-${id}" hidden>${items.map(link).join('')}</div></div>`;
  const brand=nav.querySelector('.nav-brand')?.outerHTML||'<a class="nav-brand" href="index.html" aria-label="United Gimps overview"><img src="img/gim-crest.svg" alt=""></a>';
- nav.innerHTML=brand+link(['index.html','Overview','O'])+group('logs','Collection Log','G',logs)+group('stats','Stats','XP',stats)+stories.map(link).join('');
+ nav.innerHTML=brand+link(['index.html','Overview','O'])+group('logs','Collection Log','G',logs)+group('levels','Levels','XP',levels)+group('record','Record','✦',records);
  const groups=[...nav.querySelectorAll('.nav-dropdown')];
  function setOpen(group,open){group.querySelector('button').setAttribute('aria-expanded',String(open));group.querySelector('.nav-dropdown-panel').hidden=!open}
  function closeAll(){groups.forEach(g=>setOpen(g,false))}
@@ -25,8 +27,8 @@ function init(){
   g.addEventListener('keydown',e=>{if(e.key==='Escape'){setOpen(g,false);button.focus();e.preventDefault()}else if(e.target===button&&e.key==='ArrowDown'){open();g.querySelector('a').focus();e.preventDefault()}});
  }
  document.addEventListener('click',e=>{if(!nav.contains(e.target))closeAll()});
- const local=stats.some(([href])=>href===page)?stats:stories.some(([href])=>href===page)?stories:null;
- if(local){const main=document.querySelector('main.wrap');if(main&&!document.querySelector('#historyLocalNav')){const d=document.createElement('nav');d.id='historyLocalNav';d.className='v21-local-nav';const title=local===stats?'Stats':'Timeline';d.setAttribute('aria-label',title+' sections');d.innerHTML=`<strong aria-hidden="true">${title}</strong>`+local.map(([h,l])=>`<a href="${h}" class="${page===h?'active':''}" ${page===h?'aria-current="page"':''}>${l}</a>`).join('');main.querySelector('.api-courtesy')?.insertAdjacentElement('afterend',d)}}
+ const local=levels.some(([href])=>href.split('#')[0]===page)?levels:records.some(([href])=>href.split('#')[0]===page)?records:null;
+ if(local){const main=document.querySelector('main.wrap');if(main&&!document.querySelector('#historyLocalNav')){const d=document.createElement('nav');d.id='historyLocalNav';d.className='v21-local-nav';const title=local===levels?'Levels':'Record';d.setAttribute('aria-label',title+' sections');d.innerHTML=`<strong aria-hidden="true">${title}</strong>`+local.map(([h,l])=>`<a href="${h}" class="${isActive(h)?'active':''}" ${isActive(h)?'aria-current="page"':''}>${l}</a>`).join('');main.querySelector('.api-courtesy')?.insertAdjacentElement('afterend',d)}}
  loadV22();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
