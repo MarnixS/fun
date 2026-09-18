@@ -2,7 +2,16 @@
 const assert=require('node:assert/strict'),{openPage,waitFor}=require('./audit_v25_jsdom');
 (async()=>{
  const requests=[],{dom,errors}=await openPage('history.html',{fetchLog:requests}),w=dom.window,d=w.document;
- await waitFor(()=>d.querySelector('.era-story'),'readable eras');assert.equal(d.querySelectorAll('.era-player').length,5);assert(d.querySelectorAll('.era-story').length>20);assert(!d.querySelector('.era-track'),'no clipped calendar bars');
+ await waitFor(()=>d.querySelector('.era-story'),'readable eras');assert.equal(d.querySelectorAll('.era-player').length,5);assert(d.querySelectorAll('.era-story').length>20);assert.equal(d.querySelectorAll('.timeline-row').length,5);
+ assert.equal(d.querySelector('[data-timeline-range][aria-pressed=true]').dataset.timelineRange,'365');
+ assert.equal(d.querySelector('.nav-link[href="history.html"]').textContent.trim(),'TTimeline');
+ assert.equal(d.querySelector('.nav-link[href="clog-beta.html"]').textContent.trim(),'βClog Beta');
+ let previous=Infinity;
+ for(const range of ['max','365','90','30','7']){d.querySelector(`[data-timeline-range="${range}"]`).click();const chart=d.querySelector('.activity-timeline'),start=+chart.dataset.start,end=+chart.dataset.end;if(range!=='max')assert.equal(end-start,+range*864e5);const cards=[...d.querySelectorAll('.era-story')];assert(cards.length<=previous,'shorter ranges cannot add eras');previous=cards.length;assert.equal(cards.length,d.querySelectorAll('[data-era-target]').length);for(const card of cards){assert(+card.dataset.end>start);assert(+card.dataset.start<=end)}for(const bar of d.querySelectorAll('[data-era-target]')){assert(parseFloat(bar.style.left)>=0);assert(parseFloat(bar.style.left)+parseFloat(bar.style.width)<=100.000001)}}
+ d.querySelector('[data-timeline-range="max"]').click();const firstBar=d.querySelector('[data-era-target]');firstBar.click();const evidence=d.getElementById(firstBar.dataset.eraTarget);assert(evidence.open);if(evidence.closest('.era-older'))assert(evidence.closest('.era-older').open);
+ d.querySelector('[data-timeline-range="365"]').click();
+ const historyPicker=d.querySelector('#statsMemberPicker');for(const key of ['big dog aura','lijpste','poep aura','lompste'])historyPicker.querySelector(`input[value="${key}"]`).click();assert.equal(d.querySelectorAll('.timeline-row').length,1);assert.equal(d.querySelectorAll('.era-player').length,1);assert(d.querySelector('.timeline-player').textContent.includes('Dikste'));assert.equal(d.querySelector('[data-timeline-range][aria-pressed=true]').dataset.timelineRange,'365');for(const key of ['big dog aura','lijpste','poep aura','lompste'])historyPicker.querySelector(`input[value="${key}"]`).click();
+
  const old=d.querySelector('.era-details').textContent;d.querySelector('#eraResolution').value='28';d.querySelector('#eraResolution').dispatchEvent(new w.Event('change'));assert.notEqual(d.querySelector('.era-details').textContent,old,'time resolution recomputes stories');assert.equal(d.querySelector('#eraResolution').value,'28');
  assert(d.querySelector('.era-story.era-unknown').textContent.includes('gap'));assert(d.querySelector('.era-story [data-v21-skill]'));assert(d.querySelector('.era-story [data-v21-boss]'));
  assert.equal(errors.length,0,errors.join('; '));

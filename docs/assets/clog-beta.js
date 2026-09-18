@@ -21,23 +21,23 @@ function detail(){
 }
 function render(){
  if(!model)return;
- const ps=players(),available=model.categories.filter(c=>c.tab===tab),current=available.find(c=>c.key===category)||available[0];category=current?.key||'';
+ const ps=players(),available=model.categories.filter(c=>query?label(c.key).toLowerCase().includes(query):c.tab===tab),current=available.find(c=>c.key===category)||available[0];category=current?.key||'';if(query&&current)tab=current.tab;
  $('#betaTabs').innerHTML=M.TABS.map(t=>`<button type="button" data-beta-tab="${t}" aria-pressed="${t===tab}">${nice(t)}</button>`).join('');
  const ids=[...new Set(model.categories.flatMap(c=>c.ids))],got=ids.filter(id=>share(id).total>0).length;
  const hasKnown=ps.some(p=>model.known.has(p.key));
  $('#betaTotal').textContent=`${hasKnown?fmt(got):'?'} / ${fmt(ids.length)}`;
- $('#betaCategories').innerHTML=available.map(c=>{const count=c.ids.filter(id=>share(id).total>0).length;return `<button type="button" data-beta-category="${esc(c.key)}" aria-pressed="${c.key===category}" class="${count===c.ids.length?'complete':''}" title="${esc(label(c.key))}: ${count}/${c.ids.length}">${esc(label(c.key))}</button>`}).join('');
- $('#betaCategoryTitle').textContent=query?'Search results':current?label(category):'No saved categories';
- $('#betaKills').textContent=!query&&current?kills(category):'';
+ $('#betaCategories').innerHTML=available.map(c=>{const count=c.ids.filter(id=>share(id).total>0).length;return `<button type="button" data-beta-category="${esc(c.key)}" aria-pressed="${c.key===category}" class="${count===c.ids.length?'complete':''}" title="${esc(label(c.key))}: ${count}/${c.ids.length}">${esc(label(c.key))}${query?`<small class="beta-category-tab">${nice(c.tab)}</small>`:''}</button>`}).join('')||(query?'<p class="beta-empty">No matching categories.</p>':'');
+ $('#betaCategoryTitle').textContent=current?label(category):query?'No matching categories':'No saved categories';
+ $('#betaKills').textContent=current?kills(category):'';
  const missing=ps.filter(p=>!model.known.has(p.key));$('#betaCoverage').textContent=missing.length?`No synced log for ${missing.map(p=>p.name).join(', ')}. Counts show the available members only.`:'';
- const rows=(query?ids:current?.ids||[]).filter(id=>!query||(model.names.get(id)||`Item ${id}`).toLowerCase().includes(query));
+ const rows=current?.ids||[];
  $('#betaObtained').textContent=`${hasKnown?rows.filter(id=>share(id).total>0).length:'?'}/${rows.length}`;
- $('#betaSearchStatus').textContent=query?`${rows.length} matches across all tabs`:'';
- $('#betaGrid').innerHTML=rows.length?rows.map(id=>{const data=share(id),name=model.names.get(id)||`Item ${id}`,text=data.known?`${fmt(data.total)} logged`:'unknown';return `<button type="button" class="beta-item ${data.total?'obtained':'missing'}" data-beta-item="${id}" aria-pressed="${chosen===id}" aria-label="${esc(name)}, ${text}. Show contributions" title="${esc(name)} · ${text}"><img src="https://static.runelite.net/cache/item/icon/${id}.png" alt="" loading="lazy">${data.total>1?`<span class="beta-quantity">${data.total>=100000?U.compact(data.total):fmt(data.total)}</span>`:''}${data.total?`<span class="beta-item-pie" aria-hidden="true" style="background:conic-gradient(${pie(data)})"></span>`:''}</button>`}).join(''):'<p class="beta-empty">'+(query?'No matching items.':'No category data in this saved snapshot.')+'</p>';
+ $('#betaSearchStatus').textContent=query?`${available.length} matching ${available.length===1?'category':'categories'} across all tabs`:'';
+ $('#betaGrid').innerHTML=rows.length?rows.map(id=>{const data=share(id),name=model.names.get(id)||`Item ${id}`,text=data.known?`${fmt(data.total)} logged`:'unknown';return `<button type="button" class="beta-item ${data.total?'obtained':'missing'}" data-beta-item="${id}" aria-pressed="${chosen===id}" aria-label="${esc(name)}, ${text}. Show contributions" title="${esc(name)} · ${text}"><img src="https://static.runelite.net/cache/item/icon/${id}.png" alt="" loading="lazy">${data.total>1?`<span class="beta-quantity">${data.total>=100000?U.compact(data.total):fmt(data.total)}</span>`:''}${data.total?`<span class="beta-item-pie" aria-hidden="true" style="background:conic-gradient(${pie(data)})"></span>`:''}</button>`}).join(''):'<p class="beta-empty">'+(query?'No matching categories.':'No category data in this saved snapshot.')+'</p>';
  $('#betaLegend').innerHTML=ps.map(p=>`<span><i style="background:${p.color}"></i>${esc(p.name)}</span>`).join('');detail();
 }
 $('#betaTabs').addEventListener('click',e=>{const button=e.target.closest('[data-beta-tab]');if(!button)return;tab=button.dataset.betaTab;category='';chosen=null;query='';$('#betaSearch').value='';render();$('#betaTabs').querySelector(`[data-beta-tab="${tab}"]`).focus()});
-$('#betaCategories').addEventListener('click',e=>{const button=e.target.closest('[data-beta-category]');if(!button)return;category=button.dataset.betaCategory;chosen=null;query='';$('#betaSearch').value='';const top=$('#betaCategories').scrollTop;render();$('#betaCategories').scrollTop=top;$('#betaCategories').querySelector(`[data-beta-category="${category}"]`).focus({preventScroll:true})});
+$('#betaCategories').addEventListener('click',e=>{const button=e.target.closest('[data-beta-category]');if(!button)return;category=button.dataset.betaCategory;tab=model.categories.find(c=>c.key===category)?.tab||tab;chosen=null;const top=$('#betaCategories').scrollTop;render();$('#betaCategories').scrollTop=top;$('#betaCategories').querySelector(`[data-beta-category="${category}"]`).focus({preventScroll:true})});
 $('#betaGrid').addEventListener('click',e=>{const button=e.target.closest('[data-beta-item]');if(!button)return;chosen=Number(button.dataset.betaItem);$('#betaGrid').querySelectorAll('[aria-pressed]').forEach(b=>b.setAttribute('aria-pressed',b===button?'true':'false'));detail()});
 $('#betaSearch').addEventListener('input',e=>{query=e.target.value.trim().toLowerCase();chosen=null;render()});
 $('#betaOverlay').addEventListener('change',e=>$('#betaGame').classList.toggle('beta-hide-pies',!e.target.checked));
