@@ -2,14 +2,14 @@
 'use strict';
 const logs=[['clog-beta.html','Collection Log Classic','G'],['gim.html','Collection Log Advanced','G']];
 const levels=[['hiscores.html','Current Stats','H'],['progress.html','Stat Progress','XP'],['time-machine.html','Time Machine','⧖']];
-const records=[['chronicle.html','Chronicle','✦'],['history.html','Timeline','T'],['chronicle.html#goals','Goals','◎']];
+const records=[['chronicle.html','Chronicle','✦'],['history.html','Timeline','T'],['goals.html','Goals','◎']];
 function loadV22(){if(document.querySelector('script[data-v22-ui]'))return;const s=document.createElement('script');s.src='assets/v22-ui.js?v=34';s.dataset.v22Ui='1';document.head.append(s)}
 function init(){
  const nav=document.querySelector('.nav-inner');if(!nav){loadV22();return}
  nav.closest('.main-nav')?.setAttribute('aria-label','Primary');
  const page=(location.pathname.split('/').pop()||'index.html').toLowerCase();
  const hash=location.hash.toLowerCase();
- const isActive=href=>{const [target,targetHash='']=href.toLowerCase().split('#');if(page!==target)return false;if(targetHash)return hash===('#'+targetHash);return !(page==='chronicle.html'&&hash==='#goals')};
+ const isActive=href=>{const [target,targetHash='']=href.toLowerCase().split('#');if(page!==target)return false;if(targetHash)return hash===('#'+targetHash);return true};
  const link=([href,label,rune])=>`<a class="nav-link ${isActive(href)?'active':''}" href="${href}" ${isActive(href)?'aria-current="page"':''}><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span></a>`;
  const group=(id,label,rune,items)=>`<div class="nav-dropdown"><button type="button" class="nav-trigger ${items.some(([href])=>isActive(href))?'active':''}" aria-expanded="false" aria-controls="nav-${id}"><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span><span aria-hidden="true">▾</span></button><div class="nav-dropdown-panel" id="nav-${id}" hidden>${items.map(link).join('')}</div></div>`;
  const brand=nav.querySelector('.nav-brand')?.outerHTML||'<a class="nav-brand" href="index.html" aria-label="United Gimps overview"><img src="img/gim-crest.svg" alt=""></a>';
