@@ -133,9 +133,17 @@ function logItems(log) {
   return found;
 }
 
-function derivedRecentRows(players, previous) {
+function derivedRecentRows(players, previous, freshRecent = [], detectedAt = Date.now()) {
   const rows = [];
   const cutoff = Number(previous?.fetchedAt) || 0;
+  const freshByItem = new Map();
+  for (const raw of freshRecent) {
+    const row = normalizeRecent(raw);
+    if (!row || recentTime(row) <= cutoff) continue;
+    const key = `${String(row.player_name_with_capitalization || row.player || '').toLowerCase()}|${row.id}`;
+    const old = freshByItem.get(key);
+    if (!old || recentTime(row) > recentTime(old)) freshByItem.set(key, row);
+  }
   for (const [key, player] of Object.entries(PLAYERS)) {
     const currentLog = players[key];
     const previousLog = previous?.players?.[key];
@@ -144,15 +152,30 @@ function derivedRecentRows(players, previous) {
     const before = logItems(previousLog);
     for (const item of current.values()) {
       const old = before.get(item.id);
-      const newUnique = (old?.count || 0) === 0 && item.count > 0;
-      const newerDrop = item.time > Math.max(old?.time || 0, cutoff);
-      if (item.count <= 0 || !item.time || !item.name || (!newUnique && !newerDrop)) continue;
+      const previousCount = Math.max(0, Number(old?.count) || 0);
+      const currentCount = Math.max(0, Number(item.count) || 0);
+      const countDelta = currentCount - previousCount;
+      if (countDelta <= 0 || !item.name) continue;
+
+      const matchKey = `${player.toLowerCase()}|${item.id}`;
+      const exactRecent = freshByItem.get(matchKey);
+      const newerItemTime = item.time > Math.max(old?.time || 0, cutoff);
+      const eventTime = exactRecent ? recentTime(exactRecent) : newerItemTime ? item.time : detectedAt;
       const row = normalizeRecent({
+        ...(exactRecent || {}),
         id: item.id,
         name: item.name,
-        date_unix: Math.floor(item.time / 1000),
+        date_unix: Math.floor(eventTime / 1000),
         player,
-        source: 'full Temple Collection Log',
+        source: exactRecent
+          ? 'Temple recent item + Collection Log count change'
+          : 'Collection Log count change',
+        previous_count: previousCount,
+        current_count: currentCount,
+        count_delta: countDelta,
+        repeat_drop: previousCount > 0,
+        detected_from_count: !exactRecent && !newerItemTime,
+        detected_at: detectedAt,
       }, player);
       if (row) rows.push(row);
     }
@@ -248,8 +271,10 @@ async function buildDocument(previous) {
     }
   });
   const recentPlayers = recentResults.filter((result) => result.ok).map((result) => result.key);
+  const freshRecent = recentResults.flatMap((result) => result.rows);
   recentResults.forEach((result) => result.rows.forEach((row) => mergedRecent.set(recentKey(row), row)));
-  const derivedRecent = derivedRecentRows(players, previous);
+  const detectedAt = Date.now();
+  const derivedRecent = derivedRecentRows(players, previous, freshRecent, detectedAt);
   derivedRecent.forEach((row) => mergedRecent.set(recentKey(row), row));
 
   const validNames = new Set(
@@ -259,7 +284,7 @@ async function buildDocument(previous) {
     .filter((row) => validNames.has(String(row.player_name_with_capitalization || row.player || '').toLowerCase()))
     .sort((a, b) => recentTime(b) - recentTime(a))
     .slice(0, 500);
-  const fetchedAt = Date.now();
+  const fetchedAt = detectedAt;
 
   return {
     source: 'Collection Log via TempleOSRS manual site update',

@@ -47,7 +47,7 @@ async function run() {
       }
       if (String(url).includes('player_collection_log.php')) {
         const player = new URL(url).searchParams.get('player');
-        const items = [{ id: 1, name: 'Existing item', count: 1, date: 1_699_000_000 }];
+        const items = [{ id: 1, name: 'Existing item', count: player === 'Big Dog Aura' ? 2 : 1, date: 1_699_000_000 }];
         if (player === 'Lijpste') items.push({ id: 2, name: 'Recovered full-log item', count: 1, date: 1_700_000_100 });
         return response({ data: { items: { General: items }, player } });
       }
@@ -66,10 +66,16 @@ async function run() {
     assert.equal(first.headers.get('access-control-allow-origin'), 'https://marnixs.github.io');
     assert.equal(first.json.refreshDiagnostics.freshPlayers.length, 5);
     assert.equal(first.json.refreshDiagnostics.recentPlayers.length, 4);
-    assert.equal(first.json.refreshDiagnostics.derivedRecentItems, 1);
+    assert.equal(first.json.refreshDiagnostics.derivedRecentItems, 2);
     assert.equal(Object.keys(first.json.players).length, 5);
-    assert.equal(first.json.recent.length, 5);
+    assert.equal(first.json.recent.length, 6);
     assert(first.json.recent.some((row) => row.name === 'Recovered full-log item' && row.player === 'Lijpste'));
+    const repeat = first.json.recent.find((row) => row.name === 'Existing item' && row.player === 'Big Dog Aura' && row.repeat_drop);
+    assert(repeat, 'count increase with unchanged item timestamp should create a repeat-drop event');
+    assert.equal(repeat.previous_count, 1);
+    assert.equal(repeat.current_count, 2);
+    assert.equal(repeat.count_delta, 1);
+    assert.equal(repeat.detected_from_count, true);
     assert(!first.json.recent.some((row) => row.Code || !row.id || !row.name), 'error objects are never published as recent items');
     assert.equal(calls.filter((url) => url.includes('player_collection_log.php')).length, 5);
     assert.equal(calls.filter((url) => url.includes('player_recent_items.php')).length, 5);
