@@ -12,3 +12,20 @@
 .era-bossing{background:linear-gradient(135deg,#765337,#402b1c)}.era-mixed{background:linear-gradient(135deg,#66537d,#342843)}.era-quiet{background:#302c25}.era-details{display:grid;gap:10px;margin-top:14px}.era-details summary,.era-method summary{cursor:pointer;padding:8px 0}.era-period{border-top:1px solid #67543a;margin-top:8px;padding:6px}.era-period summary small{display:block;color:#baad94;margin-top:5px}.era-period ul{padding-left:20px}.era-period li{margin:5px 0}.era-method{margin-top:16px}.era-method p{max-width:85ch}.era-shell{overflow-x:auto}.era-track{min-width:500px}.era-lane{min-width:650px}.era-axis{min-width:500px}
 
 @media(max-width:620px){.chronicle-pager-inner{flex-wrap:wrap;justify-content:center}.chronicle-page-summary{width:100%;text-align:center}.chronicle-page-list{order:2;flex:1 1 100%}.chronicle-page-size{order:1;margin-left:0}.chronicle-page-list button,.chronicle-page-size button{min-width:28px}}
+
+/* FAQ accordion */
+.faq-list{display:grid;gap:8px;margin-top:10px}
+.faq-item{padding:0;overflow:hidden;background:#130f0a}
+.faq-item>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 15px;cursor:pointer;user-select:none}
+.faq-item>summary::-webkit-details-marker{display:none}
+.faq-item>summary h3{margin:0;color:#dcc48e;font:700 13px Georgia,serif;line-height:1.35}
+.faq-item>summary:hover{background:#1a130d}
+.faq-item[open]>summary{border-bottom:1px solid #463622;background:#18110c}
+.faq-toggle{position:relative;width:18px;height:18px;flex:0 0 18px;border:1px solid #665137;background:#100c08}
+.faq-toggle:before,.faq-toggle:after{content:"";position:absolute;left:4px;right:4px;top:8px;height:1px;background:#c8aa68}
+.faq-toggle:after{top:4px;bottom:4px;left:8px;width:1px;height:auto;right:auto;transition:transform .15s ease,opacity .15s ease}
+.faq-item[open] .faq-toggle:after{opacity:0;transform:scaleY(0)}
+.faq-answer{padding:12px 15px 14px}
+.faq-answer .muted:first-child{margin-top:0}
+.faq-answer .muted:last-child{margin-bottom:0}
+@media(max-width:620px){.faq-item>summary{padding:12px}.faq-answer{padding:11px 12px 13px}.faq-item>summary h3{font-size:12px}}
