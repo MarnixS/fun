@@ -82,9 +82,9 @@ function calculate(id,name,ps,wom,model,U){
  if(ps.some(p=>!model.known.has(p.key)))return null;
  if(rec.flags&SPECIAL_UNSUPPORTED)return null;
  const sources=new Set(rec.rolls.map(r=>r[0]));if(sources.size<rec.rolls.length)return null;
- const notes=new Set(),groups=[];let observed=0,lower=0,upper=0,rawTrials=0;
+ const notes=new Set(),groups=[];let observed=0,directObserved=0,lower=0,upper=0,rawTrials=0;
  for(const p of ps){
-   const own=itemCount(model,p,id);if(own==null)return null;
+   const own=itemCount(model,p,id);if(own==null)return null;directObserved+=own;
    let playerObserved=own,lo=own,hi=own,localSet=null;
    if(rec.t==='s')playerObserved=lo=hi=Math.ceil(own/Math.max(1,+rec.param||1));
    else if(rec.t==='h'){const shards=Math.max(1,+rec.param||1);lo=own*shards;hi=(own+1)*shards-1;playerObserved=lo}
@@ -114,12 +114,12 @@ function calculate(id,name,ps,wom,model,U){
    let mean=0,v=0;for(const g of groups){const m=g.p*eu,e2=g.p*eu2;mean+=g.n*m;v+=g.n*(e2-m*m)}
    if(v<=0)return null;const sd=Math.sqrt(v),f1=normalCdf((own-.5-mean)/sd),f2=normalCdf((own+.5-mean)/sd),pct=clamp((f1+f2)/2);
    notes.add('Variable stack-size item: percentile uses a compound-distribution normal approximation');
-   return finish(pct,own,mean,rawTrials,groups,notes,true)
+   return finish(pct,directObserved,mean,rawTrials,groups,notes,true)
  }
  const maxSuccess=groups.reduce((n,g)=>n+g.n,0);if(lower>maxSuccess)return null;
  const loCdf=cdf(groups,lower-1),hiCdf=cdf(groups,Math.min(upper,maxSuccess)),pct=clamp((loCdf+hiCdf)/2);
- const expected=groups.reduce((n,g)=>n+g.n*g.p,0);
- return finish(pct,own,expected,rawTrials,groups,notes,groups.reduce((n,g)=>n+g.n,0)>500)
+ const effectiveExpected=groups.reduce((n,g)=>n+g.n*g.p,0),displayExpected=(rec.t==='b'||rec.t==='p')?effectiveExpected:null;
+ return finish(pct,directObserved,displayExpected,rawTrials,groups,notes,groups.reduce((n,g)=>n+g.n,0)>500)
 }
 function finish(percentile,observed,expected,trials,groups,notes,approx){
  const pct=percentile*100,text=formatPct(pct);
