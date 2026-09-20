@@ -166,17 +166,19 @@ function modelConfidence(m){
  if(/variable stack-size.*approximation/.test(notes)){f*=.90;label=label==='direct / accepted model'?'distribution approximation':label+' · distribution approximation'}
  return{f:clamp(f,.5,1),label}
 }
-function memberOnePieceFrom(set,targetName){
+function memberOnePieceFrom(set,targetName,m){
  const target=String(targetName||'').toLowerCase(),others=set.names.filter(x=>x!==target),ids=others.map(itemIdByName);
  if(ids.some(x=>x==null))return false;
- return fullGroupPlayers().some(p=>ids.every(id=>(model.counts.get(p.key)?.get(+id)||0)>0))
+ const keys=new Set(Array.isArray(m?.players)?m.players:[]);
+ const candidates=keys.size?fullGroupPlayers().filter(p=>keys.has(p.key)):fullGroupPlayers();
+ return candidates.some(p=>ids.every(id=>(model.counts.get(p.key)?.get(+id)||0)>0))
 }
 function deficitCompensation(profile,m,z){
  if(!(Number.isFinite(z)&&z<0))return{f:1,label:null};
  if(profile.kind==='component'&&profile.set&&COMPONENT_SETS[profile.set]){
   const set=COMPONENT_SETS[profile.set],complete=completedUntradeableSets(set);
   if(complete>0)return{f:.55,label:'completed '+set.label+' already exists in group'};
-  if(memberOnePieceFrom(set,String(m.name||'').toLowerCase()))return{f:1.22,label:'this component can complete a personal '+set.label+' set'};
+  if(memberOnePieceFrom(set,String(m.name||'').toLowerCase(),m))return{f:1.22,label:'this component can complete a personal '+set.label+' set'};
   return{f:1,label:null}
  }
  if(!['personal-unlock','major-shareable','shareable'].includes(profile.kind))return{f:1,label:null};
@@ -315,7 +317,7 @@ function countFor(id,ps){let n=0;for(const p of ps){const v=model.counts.get(p.k
 function metricsFor(ps){
  const key=ps.map(p=>p.key).sort().join('|');if(metricCache.has(key))return metricCache.get(key);
  const out=[];
- for(const id of modelIds()){const name=model.names.get(id)||'Item '+id;let r=null;try{r=L.calculate(id,name,ps,wom,model,U)}catch{}if(!r||!Number.isFinite(r.percentile))continue;const z=invNorm(r.percentile);if(Number.isFinite(z))out.push({id,name,r,z})}
+ for(const id of modelIds()){const name=model.names.get(id)||'Item '+id;let r=null;try{r=L.calculate(id,name,ps,wom,model,U)}catch{}if(!r||!Number.isFinite(r.percentile))continue;const z=invNorm(r.percentile);if(Number.isFinite(z))out.push({id,name,r,z,players:ps.map(p=>p.key)})}
  metricCache.set(key,out);return out
 }
 function excludedFor(ps){
