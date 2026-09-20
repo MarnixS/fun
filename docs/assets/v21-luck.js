@@ -633,12 +633,12 @@ function scheduleLuckRender(){
  if(!luckActive||!model||!wom)return;
  const gen=++renderGeneration;
  renderPrimary();
- setTimeout(()=>{if(luckActive&&gen===renderGeneration)renderSecondary(gen)},0);
+ setTimeout(()=>{if(!luckActive||gen!==renderGeneration)return;renderSecondary(gen);if(view==='impossible')renderImpossibleLazy(gen)},0);
  if(!prices&&!priceRequest)loadPrices().then(p=>{
   if(!p||!luckActive)return;
   statsCache=new Map();portfolioCache=new Map();
   const next=++renderGeneration;renderPrimary();
-  setTimeout(()=>{if(luckActive&&next===renderGeneration)renderSecondary(next)},0)
+  setTimeout(()=>{if(!luckActive||next!==renderGeneration)return;renderSecondary(next);if(view==='impossible')renderImpossibleLazy(next)},0)
  })
 }
 function bind(){
