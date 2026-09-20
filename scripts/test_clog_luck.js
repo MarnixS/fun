@@ -38,3 +38,16 @@ assert.equal(L.assumptions.toaExpertLevel,350);
 
 assert.equal(L.assumptions.toaPurple,1/45);
 assert.equal(L.assumptions.toaExpertPurple,1/16);
+
+const capModel=model({a:{12934:65535},b:{}});
+const capReason=L.exclusion(12934,"Zulrah's scales",[players[0]],wom,capModel,U);
+assert(capReason&&capReason.kind==='cap'&&capReason.cap===65535,'capped Collection Log counters must be excluded');
+
+const genericModel=model({a:{26370:1,4740:250},b:{}});
+const nexReason=L.exclusion(26370,'Ancient hilt',[players[0]],wom,genericModel,U);
+assert(nexReason&&nexReason.kind==='nex','Nex items must be excluded because historical contribution is unknown');
+const rackReason=L.exclusion(4740,'Bolt rack',[players[0]],wom,genericModel,U);
+assert(rackReason&&rackReason.kind==='barrows','Bolt racks must be excluded because Barrows reward potential is unavailable');
+assert.equal(L.calculate(26370,'Ancient hilt',[players[0]],wom,genericModel,U),null);
+assert.equal(L.calculate(4740,'Bolt rack',[players[0]],wom,genericModel,U),null);
+console.log('Luck exclusions passed: capped counters, Nex and bolt racks.');

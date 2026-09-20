@@ -11,11 +11,25 @@ const COX_REG_WEIGHTS={"dexterous prayer scroll":14,"arcane prayer scroll":14,"t
 const COX_CM_WEIGHTS={"dexterous prayer scroll":12,"arcane prayer scroll":12,"twisted buckler":4,"dragon hunter crossbow":4,"dinh's bulwark":3,"ancestral hat":4,"ancestral robe top":4,"ancestral robe bottom":4,"dragon claws":3,"elder maul":2,"kodai insignia":2,"twisted bow":2};
 const COX_REWORK_AT=Date.parse('2026-08-12T00:00:00Z');
 const TOA_WEIGHTS={"osmumten's fang":7,"lightbearer":7,"elidinis' ward":3,"masori mask":2,"masori body":2,"masori chaps":2,"tumeken's shadow (uncharged)":1};
-const ASSUME={cox:30000,coxCm:62000,toa:16667,toaLevel:150,toaPurple:1/45,toaExpert:21875,toaExpertLevel:350,toaExpertPurple:1/16,tobShare:.25,tobHmShare:.2,nightmareTeam:5,nightmareShare:.202,nexShare:.204,hueyShare:.367,royalShare:.5,callistoShare:.2,venenatisShare:.5,vetionShare:.5,scurriusMvp:1,zalcanoShare:.25,zalcanoPoints:300};
+const ASSUME={cox:30000,coxCm:62000,toa:16667,toaLevel:150,toaPurple:1/45,toaExpert:21875,toaExpertLevel:350,toaExpertPurple:1/16,tobShare:.25,tobHmShare:.2,nightmareTeam:5,nightmareShare:.202,hueyShare:.367,royalShare:.5,callistoShare:.2,venenatisShare:.5,vetionShare:.5,scurriusMvp:1,zalcanoShare:.25,zalcanoPoints:300};
 const F={COX:1,COXCM:2,TOB:4,TOBHM:8,TOAE:16,TOA:32,TOAX:64,NMTEAM:128,NMSHARE:256,NEX:512,HUEY:1024,ROYAL:2048,CALLISTO:4096,VENENATIS:8192,VETION:16384,SCURRIUS:32768,ZALCANO:65536,ZALCANO_PTS:131072,FIRE_CAPES:262144,INFERNAL_CAPES:524288,SKOTIZO_OLD:1048576,KQ_OLD:2097152,KBD_OLD:4194304,NM_OLD:8388608,PNM_OLD:16777216};
 const SPECIAL_UNSUPPORTED=F.FIRE_CAPES|F.INFERNAL_CAPES|F.SKOTIZO_OLD|F.KQ_OLD|F.KBD_OLD|F.NM_OLD|F.PNM_OLD;
 const ACTIVITY={BEGINNER_CLUES_COMPLETED:'clue_scrolls_beginner',EASY_CLUES_COMPLETED:'clue_scrolls_easy',MEDIUM_CLUES_COMPLETED:'clue_scrolls_medium',HARD_CLUES_COMPLETED:'clue_scrolls_hard',ELITE_CLUES_COMPLETED:'clue_scrolls_elite',MASTER_CLUES_COMPLETED:'clue_scrolls_master',TOTAL_CLUES_COMPLETED:'clue_scrolls_all',RIFTS_CLOSED:'guardians_of_the_rift'};
 const BOSS_ALIAS={BARROWS_CHESTS_OPENED:'barrows_chests',CHAMBERS_OF_XERIC_COMPLETIONS:'chambers_of_xeric',CHAMBERS_OF_XERIC_CM_COMPLETIONS:'chambers_of_xeric_challenge_mode',CORRUPTED_GAUNTLET_COMPLETION_COUNT:'the_corrupted_gauntlet',GAUNTLET_COMPLETION_COUNT:'the_gauntlet',GROTESQUE_GUARDIAN_KILLS:'grotesque_guardians',HUEYCOATL_KILLS:'the_hueycoatl',KREEARRA_KILLS:'kreearra',KRIL_TSUTSAROTH_KILLS:'kril_tsutsaroth',LEVIATHAN_KILLS:'the_leviathan',LUNAR_CHESTS_OPENED:'lunar_chests',PHOSANIS_NIGHTMARE_KILLS:'phosanis_nightmare',ROYAL_TITAN_KILLS:'the_royal_titans',SHELLBANE_GRYPHON_KILLS:'shellbane_gryphon',THEATRE_OF_BLOOD_COMPLETIONS:'theatre_of_blood',THEATRE_OF_BLOOD_HARD_COMPLETIONS:'theatre_of_blood_hard_mode',TOMBS_OF_AMASCUT_COMPLETIONS:'tombs_of_amascut',TOMBS_OF_AMASCUT_EXPERT_COMPLETIONS:'tombs_of_amascut_expert',WHISPERER_KILLS:'the_whisperer'};
+const TRACKING_CAPS={
+  12934:65535, // Zulrah's scales
+  20718:250,   // Burnt page
+  21817:250,   // Bracelet of ethereum (uncharged)
+  21820:65535, // Revenant ether
+  24711:250,   // Hallowed mark
+  27616:65535, // Ancient essence
+  28924:250,   // Sunfire splinters
+  28991:250,   // Atlatl dart
+  29482:250,   // Brimhaven voucher
+  31111:65535, // Demon tear
+  31235:250,   // Gryphon feather
+  31916:250    // Dragon cannonball
+};
 function clamp(x,a=0,b=1){return Math.max(a,Math.min(b,x))}
 function erf(x){const s=x<0?-1:1,a=Math.abs(x),t=1/(1+.3275911*a),y=1-(((((1.061405429*t-1.453152027)*t+1.421413741)*t-.284496736)*t+.254829592)*t)*Math.exp(-a*a);return s*y}
 function normalCdf(z){return .5*(1+erf(z/Math.SQRT2))}
@@ -76,7 +90,6 @@ function chance(rec,roll,name,notes,coxRegime='post'){
  if(src==='NIGHTMARE_KILLS'&&(flags&F.NMSHARE)){p*=(1+Math.max(0,Math.min(75,ASSUME.nightmareTeam-5))/100)*ASSUME.nightmareShare;notes.add('Nightmare assumes 5-player teams and 20.2% personal contribution')}
  if(src==='NIGHTMARE_KILLS'&&+rec._id===24495){p*=1+(1/ASSUME.nightmareTeam)*.05;notes.add('Nightmare jar assumes a 5-player team')}
  if(src==='NIGHTMARE_KILLS'&&+rec._id===24491){p*=1/ASSUME.nightmareTeam;notes.add('Nightmare pet assumes a 5-player team')}
- if(src==='NEX_KILLS'&&(flags&F.NEX)){p*=ASSUME.nexShare;notes.add('Nex assumes 20.4% average personal contribution')}
  if(src==='HUEYCOATL_KILLS'&&(flags&F.HUEY)){p*=ASSUME.hueyShare;notes.add('Hueycoatl assumes 36.7% average personal contribution')}
  if(src==='ROYAL_TITAN_KILLS'&&(flags&F.ROYAL)){p*=ASSUME.royalShare;notes.add('Royal Titans assumes 50% average contribution')}
  if(src==='CALLISTO_KILLS'&&(flags&F.CALLISTO)){p*=ASSUME.callistoShare;notes.add('Callisto assumes 20% average contribution')}
@@ -90,7 +103,23 @@ function chance(rec,roll,name,notes,coxRegime='post'){
 function itemCount(model,p,id){return model.known.has(p.key)?model.counts.get(p.key)?.get(+id)||0:null}
 function setCount(model,p,ids){let n=0;for(const id of ids||[]){const v=itemCount(model,p,id);if(v==null)return null;n+=v}return n}
 function labelSource(s){return s.toLowerCase().replace(/_kills$|_completed$|_completion_count$|_opened$|_claimed$/,'').replace(/_/g,' ').replace(/^./,c=>c.toUpperCase())}
+function exclusion(id,name,ps,wom,model,U){
+ id=+id;
+ if(!ps?.length||!model)return{kind:'selection',label:'No comparable selected members',detail:'Select at least one member with a synced Collection Log.'};
+ const cap=TRACKING_CAPS[id];
+ if(cap){
+  const capped=ps.filter(p=>{const n=itemCount(model,p,id);return n!=null&&n>=cap});
+  if(capped.length)return{kind:'cap',label:'Collection Log counter capped',detail:`${capped.map(p=>p.name).join(', ')} ${capped.length===1?'is':'are'} at the tracked maximum of ${cap.toLocaleString('en-GB')}. The real number obtained may be higher, so luck cannot be inferred from this count.`,cap,players:capped.map(p=>p.key)};
+ }
+ if(id===4740)return{kind:'barrows',label:'Barrows reward potential unknown',detail:'Bolt racks depend on Barrows reward potential. WOM records chest completions but not the reward potential used for each chest, so chest KC is not a valid denominator.'};
+ const raw=DATA[id];
+ if(raw?.[1]?.some(r=>r[0]==='NEX_KILLS'))return{kind:'nex',label:'Nex contribution history unknown',detail:'Nex unique and pet chances depend on personal contribution and MVP bonus. Historical team/mass KC does not preserve that contribution share, so a fixed contribution assumption would be misleading.'};
+ if(!raw)return{kind:'rate',label:'No supported rate model',detail:'No sufficiently reliable item-level probability model is available for this Collection Log entry.'};
+ if((raw[4]||0)&SPECIAL_UNSUPPORTED)return{kind:'mechanic',label:'Historical mechanic cannot be reconstructed',detail:'The item depends on historical state or counters that are not available in the saved WOM and Collection Log data.'};
+ return null
+}
 function calculate(id,name,ps,wom,model,U){
+ const blocked=exclusion(id,name,ps,wom,model,U);if(blocked)return null;
  const raw=DATA[+id];if(!raw||!ps?.length||!wom||!model||!U)return null;
  const rec={_id:+id,t:raw[0],rolls:raw[1],param:raw[2],set:raw[3],flags:raw[4]||0};
  if(ps.some(p=>!model.known.has(p.key)))return null;
@@ -152,5 +181,5 @@ function finish(percentile,observed,expected,trials,groups,notes,approx){
 }
 function formatPct(p){if(p<.01)return'<0.01%';if(p>99.99)return'>99.99%';if(p<1||p>99)return p.toFixed(2)+'%';return Math.round(p)+'%'}
 function title(x){if(!x)return'';const base='Luck percentile '+x.text+' · position of the observed item count among players with the same estimated eligible rolls';const exp=Number.isFinite(x.expected)?' · '+x.observed+' logged vs '+x.expected.toFixed(x.expected<10?2:1)+' expected':'';return base+exp+(x.approx?' · distribution approximation used for scale':'')}
-return{calculate,formatPct,title,assumptions:ASSUME,rateItems:Object.keys(DATA).length};
+return{calculate,exclusion,formatPct,title,assumptions:ASSUME,trackingCaps:TRACKING_CAPS,rateItems:Object.keys(DATA).length};
 });

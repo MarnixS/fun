@@ -28,3 +28,14 @@
 .clog-luck-sample{justify-self:end;padding:3px 6px;border:1px solid #51442d;color:#b8a57d;font-size:9px;text-transform:uppercase;letter-spacing:.05em}
 .clog-luck-sample.limited,.clog-luck-sample.insufficient{border-color:#6c5137;color:#d5a873}.clog-luck-empty{padding:12px;color:#8f8575;font-size:11px}
 @media(max-width:760px){.clog-luck-overview{grid-template-columns:1fr}.clog-luck-toolbar{align-items:stretch;flex-direction:column}.clog-luck-toggle button{flex:1}.clog-luck-columns{grid-template-columns:1fr}.clog-luck-player-row{grid-template-columns:1fr 1fr}.clog-luck-sample{justify-self:start}.clog-luck-player-name{grid-column:1/-1}}
+
+.clog-luck-subtabs{display:flex;gap:5px;margin:10px 0 12px;border-bottom:1px solid #403522;padding-bottom:6px}
+.clog-luck-subtabs button{padding:7px 10px}.clog-luck-subtabs button.active{border-color:#9f7a3d;color:#e4c681;background:#251b0e}
+.clog-luck-subtabs span{display:inline-block;min-width:16px;margin-left:4px;color:#9e917d}
+.clog-luck-impossible-list{display:grid;gap:5px}
+.clog-luck-impossible-row{display:grid;grid-template-columns:34px minmax(0,1fr) minmax(170px,.65fr);gap:9px;align-items:center;padding:7px 8px;border:1px solid #3b3123;background:#120f0b}
+.clog-luck-impossible-row img{width:30px;height:27px;object-fit:contain;image-rendering:pixelated}
+.clog-luck-impossible-row>div{min-width:0}.clog-luck-impossible-row b,.clog-luck-impossible-row strong{display:block;font-size:11px}.clog-luck-impossible-row strong{color:#d5ae75;text-align:right}
+.clog-luck-impossible-row small{display:block;color:#918777;font-size:9px;line-height:1.35;margin-top:2px}.clog-luck-impossible-row>div:last-child small{text-align:right}
+.clog-luck-method code{color:#dec58b;background:#0f0c09;border:1px solid #30281c;padding:1px 3px}
+@media(max-width:760px){.clog-luck-impossible-row{grid-template-columns:34px 1fr}.clog-luck-impossible-row>div:last-child{grid-column:2}.clog-luck-impossible-row strong,.clog-luck-impossible-row>div:last-child small{text-align:left}.clog-luck-subtabs{flex-wrap:wrap}}
