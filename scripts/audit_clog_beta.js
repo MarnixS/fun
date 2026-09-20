@@ -12,6 +12,14 @@ assert.equal(M.shares(synthetic,2,[{key:'a'},{key:'b'}]).total,0);
  const requests=[],{dom,errors}=await openPage('clog-beta.html',{fetchLog:requests}),w=dom.window,d=w.document;
  await waitFor(()=>d.querySelectorAll('[data-beta-tab]').length===5,'beta saved log');
  assert.equal(d.querySelectorAll('#betaMembers input[type=checkbox]').length,5);
+ // Regression guard: a luck-calculation problem must never stop a normal category from opening.
+ d.querySelector('[data-beta-tab="bosses"]').click();
+ const barrows=d.querySelector('[data-beta-category="barrows"]');
+ assert(barrows,'Barrows category exists');
+ barrows.click();
+ assert.equal(d.querySelector('#betaCategoryTitle').textContent,'Barrows','Barrows remains openable');
+ assert(d.querySelectorAll('[data-beta-item]').length>20,'Barrows items rendered');
+
  let checked=0;
  for(const tab of M.TABS){d.querySelector(`[data-beta-tab="${tab}"]`).click();
   const cats=model.categories.filter(c=>c.tab===tab);assert.equal(d.querySelectorAll('[data-beta-category]').length,cats.length);

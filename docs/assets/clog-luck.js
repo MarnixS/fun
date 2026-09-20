@@ -112,7 +112,7 @@ function calculate(id,name,ps,wom,model,U){
  if(rec.t==='u'&&Array.isArray(rec.param)){
    const min=rec.param[0],max=rec.param[1],eu=(min+max)/2,eu2=(min*min+min*max+max*max)/3+(max-min)/6;
    let mean=0,v=0;for(const g of groups){const m=g.p*eu,e2=g.p*eu2;mean+=g.n*m;v+=g.n*(e2-m*m)}
-   if(v<=0)return null;const sd=Math.sqrt(v),f1=normalCdf((own-.5-mean)/sd),f2=normalCdf((own+.5-mean)/sd),pct=clamp((f1+f2)/2);
+   if(v<=0)return null;const sd=Math.sqrt(v),f1=normalCdf((directObserved-.5-mean)/sd),f2=normalCdf((directObserved+.5-mean)/sd),pct=clamp((f1+f2)/2);
    notes.add('Variable stack-size item: percentile uses a compound-distribution normal approximation');
    return finish(pct,directObserved,mean,rawTrials,groups,notes,true)
  }

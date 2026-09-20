@@ -6,7 +6,7 @@ let model,selected=U.loadMemberSelection(),tab='bosses',category='',query='',cho
 const players=()=>U.PLAYERS.filter(p=>selected.has(p.key));
 const share=id=>M.shares(model,id,players());
 let luckCache=new Map();
-const luck=(id,ps=players())=>{const key=id+'|'+ps.map(p=>p.key).join(',');if(luckCache.has(key))return luckCache.get(key);const v=L.calculate(id,model.names.get(id)||`Item ${id}`,ps,wom,model,U);luckCache.set(key,v);return v};
+const luck=(id,ps=players())=>{const key=id+'|'+ps.map(p=>p.key).join(',');if(luckCache.has(key))return luckCache.get(key);let v=null;try{v=L.calculate(id,model.names.get(id)||`Item ${id}`,ps,wom,model,U)}catch{}luckCache.set(key,v);return v};
 const label=key=>({kree_arra:"Kree'arra",kril_tsutsaroth:"K'ril Tsutsaroth",vetion_and_calvarion:"Vet'ion and Calvar'ion"}[key]||nice(key).replace(/^./,c=>c.toUpperCase()));
 function pie(data){let end=0;return data.entries.filter(p=>p.count>0).map(p=>{const start=end;end+=100*p.share;return `${p.color} ${start}% ${end}%`}).join(',')}
 function picker(){U.renderMemberPicker($('#betaMembers'),selected,keys=>{selected=new Set(keys);U.saveMemberSelection(selected);render()},{title:'Members in this log',subtitle:'Colour shows each member’s share of the saved item count.',fallback:U.ALL_KEYS,availability:model.known})}
