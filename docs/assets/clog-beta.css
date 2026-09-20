@@ -19,3 +19,9 @@
 .beta-member-luck{font:700 10px Arial,sans-serif;font-style:normal;margin-top:2px}
 .beta-luck-note{max-width:760px;margin:8px auto 0;color:#9f9584;font-size:11px;line-height:1.45;text-align:center}
 @media(max-width:600px){.beta-luck{font-size:7px;bottom:1px}.beta-luck-detail{grid-template-columns:1fr}.beta-luck-note{font-size:10px}}
+
+/* Luck badge stays readable above quantity/pie overlays. */
+.beta-item .beta-luck{left:auto;right:1px;top:1px;bottom:auto;z-index:5;min-width:25px;text-align:center;padding:2px 3px;background:#0d0b08f2;border-color:#79633d;box-shadow:0 1px 2px #000c;font-size:8px;pointer-events:none}
+.beta-item .beta-item-pie{z-index:2}
+.beta-item .beta-quantity{z-index:3}
+@media(max-width:600px){.beta-item .beta-luck{right:0;top:0;min-width:22px;padding:1px 2px;font-size:7px}}

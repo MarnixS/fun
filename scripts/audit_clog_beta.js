@@ -19,6 +19,9 @@ assert.equal(M.shares(synthetic,2,[{key:'a'},{key:'b'}]).total,0);
  barrows.click();
  assert.equal(d.querySelector('#betaCategoryTitle').textContent,'Barrows','Barrows remains openable');
  assert(d.querySelectorAll('[data-beta-item]').length>20,'Barrows items rendered');
+ const barrowsBadges=[...d.querySelectorAll('.beta-luck')];assert(barrowsBadges.length>0,'Barrows renders calculable luck badges');
+ assert(barrowsBadges.every(n=>/%/.test(n.textContent)),'luck badges display percentages');
+
 
  let checked=0;
  for(const tab of M.TABS){d.querySelector(`[data-beta-tab="${tab}"]`).click();
