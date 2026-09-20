@@ -31,7 +31,10 @@ const histWom={a:{bosses:{chambers_of_xeric:{kills:0},chambers_of_xeric_challeng
 const histDex=L.calculate(21034,'Dexterous prayer scroll',[players[0]],histWom,c,U);
 const preChance=(62000/867600)*(20/69),postChance=(62000/867600)*(12/56),expectedSplit=60*preChance+40*postChance;
 assert(Math.abs(histDex.expected-expectedSplit)<1e-10,'CoX history must split KC across pre/post-12-Aug-2026 tables');
-assert.equal(L.assumptions.toa,15141);
+assert.equal(L.assumptions.toa,16667);
 assert.equal(L.assumptions.toaLevel,150);
-assert.equal(L.assumptions.toaExpert,19000);
+assert.equal(L.assumptions.toaExpert,21875);
 assert.equal(L.assumptions.toaExpertLevel,350);
+
+assert.equal(L.assumptions.toaPurple,1/45);
+assert.equal(L.assumptions.toaExpertPurple,1/16);
