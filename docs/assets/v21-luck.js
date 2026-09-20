@@ -130,6 +130,25 @@ function copyUtility(profile,m){
  if(profile.kind==='bound-unlock')return boundUnlockUtility(m);
  return averageMarginal(portfolioCount(m.name,m),profile)
 }
+function utilityIntegral(x,profile){
+ x=Math.max(0,+x||0);const whole=Math.floor(x),frac=x-whole;
+ let total=0;for(let i=0;i<whole;i++)total+=marginalAt(i,profile);
+ if(frac>0)total+=frac*marginalAt(whole,profile);
+ return total
+}
+function deviationUtility(profile,m,z){
+ if(profile.kind==='bound-unlock')return boundUnlockUtility(m);
+ if(profile.kind==='component')return 1;
+ const actual=+m?.r?.observed,expected=+m?.r?.expected;
+ if(Number.isFinite(actual)&&Number.isFinite(expected)&&Math.abs(actual-expected)>.05){
+  const direction=Math.sign(actual-expected);
+  if(!Number.isFinite(z)||Math.sign(z)===direction||Math.abs(z)<.15){
+   const u=Math.abs(utilityIntegral(actual,profile)-utilityIntegral(expected,profile))/Math.abs(actual-expected);
+   if(Number.isFinite(u)&&u>0)return clamp(u,.03,1.5)
+  }
+ }
+ return copyUtility(profile,m)
+}
 function itemIdByName(name){
  const low=String(name||'').toLowerCase();for(const id of modelIds())if(String(model.names.get(id)||'').toLowerCase()===low)return +id;return null
 }
@@ -226,20 +245,11 @@ function deficitCompensation(profile,m,z){
   const f=.04+.96*(missing/n);
   return{f,label:missing<n?(n-missing)+'/'+n+' selected accounts already have the permanent unlock':null}
  }
- if(profile.kind==='pair-component'){
-  const q=portfolioCount(m.name,m),f=marginalAt(q,profile);
-  return{f,label:q>0?q+' component'+(q===1?'':'s')+' in selected portfolio; next drop '+(q%2?'completes':'starts')+' a pair':null}
- }
- if(!['allocatable-unlock','major-shareable','shareable'].includes(profile.kind))return{f:1,label:null};
- const q=portfolioCount(m.name,m),f=marginalAt(q,profile),members=Math.max(1,contextPlayers(m).length);
- let label=null;
- if(profile.kind==='allocatable-unlock'&&q>0)label=Math.min(q,members)+'/'+members+' selected unlock capacity already supplied; next unlock retains '+Math.round(f*100)+'% marginal value';
- else if(q>0)label=q+' existing selected cop'+(q===1?'y':'ies')+'; next copy retains '+Math.round(f*100)+'% marginal progression value';
- return{f,label}
+ return{f:1,label:null}
 }
 function impactWeight(m,z=null){
  const p=impactProfile(m),isDry=Number.isFinite(z)&&z<0;
- const copy=isDry?1:copyUtility(p,m),synergy=isDry?{f:1,label:null}:synergyUtility(m,p),deficit=deficitCompensation(p,m,z),substitution=substitutionUtility(p,m),ge=p.curated===true?1:(p.base>=.5?geModifier(price(m.id)):1),confidence=modelConfidence(m);
+ const copy=deviationUtility(p,m,z),synergy=isDry?{f:1,label:null}:synergyUtility(m,p),deficit=deficitCompensation(p,m,z),substitution=substitutionUtility(p,m),ge=p.curated===true?1:(p.base>=.5?geModifier(price(m.id)):1),confidence=modelConfidence(m);
  const w=clamp(p.base*copy*synergy.f*deficit.f*substitution.f*ge,.03,10.5);
  return{...p,copy,synergy,deficit,substitution,ge,confidence,w,reliability:confidence.f}
 }
@@ -492,9 +502,11 @@ function itemRow(m){
  }
  const imp=impactWeight(m,z),contribution=z*imp.w*imp.reliability;
  const modifiers=[];
- if(imp.copy<.98)modifiers.push('duplicate utility '+Math.round(imp.copy*100)+'%');
+ if(imp.copy<.98)modifiers.push('marginal deviation utility '+Math.round(imp.copy*100)+'%');
  if(imp.synergy?.label)modifiers.push(imp.synergy.label);
  if(imp.deficit?.f<.98&&imp.deficit.label)modifiers.push('dryness softened: '+imp.deficit.label);
+ if(imp.deficit?.f>1.02&&imp.deficit.label)modifiers.push('dryness amplified: '+imp.deficit.label);
+ if(imp.substitution?.f<.98&&imp.substitution.label)modifiers.push('substitution: '+imp.substitution.label);
  if(imp.confidence.f<1)modifiers.push(Math.round(imp.confidence.f*100)+'% model confidence');
  const sub=actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile · '+imp.label+(modifiers.length?' · '+modifiers.join(' · '):'');
  return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(contribution)+'">'+signed(contribution)+'</strong><small>'+sig(z)+' × '+imp.w.toFixed(2)+' impact</small></div></article>'
