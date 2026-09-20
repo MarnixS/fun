@@ -71,8 +71,31 @@ function raidPortfolio(metrics,def){
  const qNum=weighted.reduce((n,x)=>n+(x.m.r.observed-x.m.r.expected)*(x.w-meanW),0);
  const qDen=Math.sqrt(weighted.reduce((n,x)=>n+x.m.r.expected*Math.pow(x.w-meanW,2),0));
  const qualityZ=qDen>.05?cappedZ(qNum/qDen):0;
- const z=cappedZ(.80*volumeZ+.60*qualityZ);
- return{...def,rows,observed,expected,volumeZ,qualityZ,z,contribution:z*def.weight}
+ const cNum=weighted.reduce((n,x)=>{const q=1-Math.exp(-x.m.r.expected),got=x.m.r.observed>0?1:0;return n+x.w*(got-q)},0);
+ const cDen=Math.sqrt(weighted.reduce((n,x)=>{const q=1-Math.exp(-x.m.r.expected);return n+x.w*x.w*q*(1-q)},0));
+ const coverageZ=cDen>.05?cappedZ(cNum/cDen):0;
+ const z=cappedZ((.70*volumeZ+.50*qualityZ+.30*coverageZ)/Math.sqrt(.70*.70+.50*.50+.30*.30));
+ return{...def,rows,observed,expected,volumeZ,qualityZ,coverageZ,z,contribution:z*def.weight}
+}
+
+function independentUnits(metrics){
+ const groups=new Map();
+ for(const m of metrics){
+  const dep=L.dependencyKey?.(m.id);
+  const key=dep||('item:'+m.id);
+  if(!groups.has(key))groups.set(key,[]);
+  groups.get(key).push(m);
+ }
+ const units=[];
+ for(const [key,rows] of groups){
+  if(rows.length===1){const m=rows[0],imp=impactWeight(m);units.push({key,rows,m,z:cappedZ(m.z),imp,w:imp.w});continue}
+  const parts=rows.map(m=>({m,imp:impactWeight(m),z:cappedZ(m.z)}));
+  const sumW=parts.reduce((n,x)=>n+x.imp.w,0);
+  const z=sumW?parts.reduce((n,x)=>n+x.z*x.imp.w,0)/sumW:0;
+  const strongest=parts.reduce((a,b)=>b.imp.w>a.imp.w?b:a);
+  units.push({key,rows,m:strongest.m,z:cappedZ(z),imp:{...strongest.imp,label:strongest.imp.label+' · shared roll group'},w:strongest.imp.w});
+ }
+ return units
 }
 function cappedZ(z){return clamp(z,-3.5,3.5)}
 function luckScore(z){if(!Number.isFinite(z))return null;const t=Math.tanh(.35*z);return clamp(z>=0?5+5*t:5+4*t,1,10)}
@@ -106,16 +129,16 @@ function exposure(metrics){const src=new Map();for(const m of metrics)for(const 
 function sample(metrics){const e=exposure(metrics),n=metrics.length;if(n<12||e.attempts<75)return{key:'insufficient',label:'insufficient sample',detail:n+' scored items · '+fmt(e.attempts)+' source attempts'};if(n<35||e.attempts<350)return{key:'limited',label:'limited sample',detail:n+' scored items · '+fmt(e.attempts)+' source attempts'};return{key:'usable',label:'usable sample',detail:n+' scored items · '+fmt(e.attempts)+' source attempts'}}
 function indices(metrics){
  const rawSum=metrics.reduce((n,m)=>n+cappedZ(m.z),0),rawDen=Math.sqrt(metrics.length||0),raw=rawDen?rawSum/rawDen:null;
- const weighted=metrics.map(m=>({m,imp:impactWeight(m)}));
- const itemNumerator=weighted.reduce((n,x)=>n+cappedZ(x.m.z)*x.imp.w,0);
- const itemWeightSq=weighted.reduce((n,x)=>n+x.imp.w*x.imp.w,0);
+ const weighted=independentUnits(metrics);
+ const itemNumerator=weighted.reduce((n,x)=>n+x.z*x.w,0);
+ const itemWeightSq=weighted.reduce((n,x)=>n+x.w*x.w,0);
  const portfolios=RAID_PORTFOLIOS.map(d=>raidPortfolio(metrics,d)).filter(Boolean);
  const portfolioNumerator=portfolios.reduce((n,p)=>n+p.contribution,0);
  const portfolioWeightSq=portfolios.reduce((n,p)=>n+p.weight*p.weight,0);
  const numerator=itemNumerator+portfolioNumerator;
  const denom=Math.sqrt(itemWeightSq+portfolioWeightSq);
  const meaningful=denom?numerator/denom:null,score=luckScore(meaningful);
- return{raw,rawSum,rawCount:metrics.length,meaningful,numerator,denom,score,weightedCount:weighted.length,portfolios,itemNumerator,portfolioNumerator}
+ return{raw,rawSum,rawCount:metrics.length,meaningful,numerator,denom,score,weightedCount:weighted.length,dependentCollapsed:metrics.length-weighted.length,portfolios,itemNumerator,portfolioNumerator}
 }
 function entityStats(ps){const metrics=metricsFor(ps),idx=indices(metrics),s=sample(metrics);return{metrics,idx,s}}
 function renderPicker(){
@@ -127,7 +150,7 @@ function overview(){
  if(!ps.length){h.innerHTML='<div class="notice">No selected member has a synced Collection Log.</div>';return}
  const s=entityStats(ps),excluded=excludedFor(ps),names=ps.map(p=>p.name).join(', ');
  h.innerHTML='<div class="clog-luck-kpi"><span>Luck score</span><b class="clog-luck-'+tone(s.idx.meaningful||0)+'">'+scoreText(s.idx.score)+'</b><small>5.0 is statistically ordinary. 1.0 and 10.0 are theoretical extremes. Progression-important RNG counts far more than cosmetics.</small></div>'+
- '<div class="clog-luck-kpi"><span>Combined meaningful RNG</span><b class="clog-luck-'+tone(s.idx.meaningful||0)+'">'+(s.idx.meaningful==null?'—':sig(s.idx.meaningful))+'</b><small>'+((s.idx.meaningful==null)?'No score.':signed(s.idx.numerator)+' weighted σ ÷ '+s.idx.denom.toFixed(2)+' Stouffer denominator.')+' Individual item σ is capped at ±3.50. CoX/ToA/ToB also add a pooled raid-portfolio signal so total purple volume and drop quality can compensate across items and selected players.</small></div>'+
+ '<div class="clog-luck-kpi"><span>Combined meaningful RNG</span><b class="clog-luck-'+tone(s.idx.meaningful||0)+'">'+(s.idx.meaningful==null?'—':sig(s.idx.meaningful))+'</b><small>'+((s.idx.meaningful==null)?'No score.':signed(s.idx.numerator)+' weighted σ ÷ '+s.idx.denom.toFixed(2)+' Stouffer denominator.')+' Individual item σ is capped at ±3.50. CoX/ToA/ToB also add pooled volume, drop-quality and useful-coverage signals. '+fmt(s.idx.dependentCollapsed)+' correlated component entries are collapsed into shared roll groups for the headline score.</small></div>'+
  '<div class="clog-luck-kpi"><span>Current selection</span><b>'+fmt(ps.length)+' member'+(ps.length===1?'':'s')+'</b><small>'+esc(names)+' · '+fmt(s.idx.rawCount)+' calculable items · '+fmt(excluded.length)+' excluded/impossible to tell.</small></div>';
  const badge=$('#clogLuckImpossibleCount');if(badge)badge.textContent=fmt(excluded.length)
 }
@@ -143,7 +166,7 @@ function renderLists(){
  const ps=selectedPlayers(),subjectLabel=ps.map(p=>p.name).join(', ')||'no selected members',stats=ps.length?entityStats(ps):null,metrics=stats?.metrics||[],rows=ranked(metrics),lucky=rows.slice(0,8),dry=[...rows].sort((a,b)=>a.sort-b.sort).slice(0,8);
  const formula=$('#clogLuckFormula');
  if(formula){
-  formula.innerHTML=!stats?'':('<b>Final 1–10 score:</b> weighted item signal '+signed(stats.idx.itemNumerator)+' + pooled raid portfolios '+signed(stats.idx.portfolioNumerator)+' = '+signed(stats.idx.numerator)+' ÷ '+stats.idx.denom.toFixed(2)+' = <strong>'+sig(stats.idx.meaningful)+'</strong> → <strong>'+scoreText(stats.idx.score)+'</strong>. '+(stats.idx.portfolios.length?stats.idx.portfolios.map(p=>p.label+': '+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected, '+sig(p.z)).join(' · '):'No raid portfolio with a usable expected-drop denominator.')+' Item σ is capped at ±3.50; transformative raid weapons have the highest single-item impact.') ;
+  formula.innerHTML=!stats?'':('<b>Final 1–10 score:</b> weighted item signal '+signed(stats.idx.itemNumerator)+' + pooled raid portfolios '+signed(stats.idx.portfolioNumerator)+' = '+signed(stats.idx.numerator)+' ÷ '+stats.idx.denom.toFixed(2)+' = <strong>'+sig(stats.idx.meaningful)+'</strong> → <strong>'+scoreText(stats.idx.score)+'</strong>. '+(stats.idx.portfolios.length?stats.idx.portfolios.map(p=>p.label+': '+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected · volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)).join(' · '):'No raid portfolio with a usable expected-drop denominator.')+' Item σ is capped at ±3.50; transformative raid weapons have the highest single-item impact.') ;
  }
  $('#clogLuckLuckyTitle').textContent='Luckiest meaningful drops';
  $('#clogLuckDryTitle').textContent='Unluckiest meaningful grinds';
