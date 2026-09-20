@@ -54,7 +54,15 @@ function impactProfile(m){
  return{base:.35,label:'low-impact collection item'}
 }
 function geModifier(gp){if(!Number.isFinite(+gp)||+gp<=0)return 1;const x=clamp((Math.log10(+gp)-5)/5,0,1);return .9+.2*x}
-function impactWeight(m){const p=impactProfile(m),mod=p.base>=.5?geModifier(price(m.id)):1;return{...p,ge:mod,w:clamp(p.base*mod,.03,6.5)}}
+function modelConfidence(m){
+ const notes=(m?.r?.notes||[]).join(' | ').toLowerCase();
+ if(/pre\/post-rework split unavailable/.test(notes))return{f:.7,label:'historical split uncertain'};
+ if(/nightmare assumes|hueycoatl assumes|royal titans assumes|callisto assumes|venenatis assumes|vet'ion assumes|zalcano assumes/.test(notes))return{f:.78,label:'assumed contribution'};
+ if(/theatre of blood.*assumes/.test(notes))return{f:.85,label:'assumed raid share'};
+ if(/variable stack-size.*approximation/.test(notes))return{f:.9,label:'distribution approximation'};
+ return{f:1,label:'direct / accepted model'}
+}
+function impactWeight(m){const p=impactProfile(m),mod=p.base>=.5?geModifier(price(m.id)):1,confidence=modelConfidence(m);return{...p,ge:mod,confidence,w:clamp(p.base*mod*confidence.f,.03,6.5)}}
 
 const RAID_PORTFOLIOS=[
  {key:'cox',label:'CoX purple portfolio',weight:9,names:new Set(['Twisted bow','Kodai insignia','Elder maul','Dragon claws','Ancestral hat','Ancestral robe top','Ancestral robe bottom',"Dinh's bulwark",'Dragon hunter crossbow','Twisted buckler','Dexterous prayer scroll','Arcane prayer scroll'])},
@@ -145,18 +153,24 @@ function renderPicker(){
  const h=$('#clogLuckMembers');if(!h)return;
  U.renderMemberPicker(h,selected,keys=>{const next=new Set(keys);if(U.sameSelection(selected,next))return;selected=next;U.saveMemberSelection(selected);reset();render()},{title:'Members in luck analysis',subtitle:'Add or remove usernames. Percentiles, progression weighting, the 1–10 score and every selected-account combination recalculate for exactly this selection.',fallback:U.ALL_KEYS,availability:model.known})
 }
+function syncHealth(){
+ const t=+doc?.fetchedAt,w=+wom?.fetchedAt;if(!Number.isFinite(t)||!Number.isFinite(w))return{key:'unknown',text:'Temple/WOM synchronization time unavailable.'};
+ const hours=Math.abs(t-w)/36e5;if(hours<.5)return{key:'good',text:'Temple and WOM snapshots are closely aligned.'};
+ const newer=t>w?'Collection Log':'WOM',bias=t>w?'Recent drops may temporarily look slightly luckier because the KC denominator can lag.':'Recent KC may temporarily look slightly drier because the Collection Log count can lag.';
+ return{key:hours<=6?'minor':hours<=24?'notice':'stale',text:newer+' snapshot is '+hours.toFixed(1)+'h newer. '+bias}
+}
 function overview(){
  const h=$('#clogLuckOverview');if(!h)return;const ps=selectedPlayers();
  if(!ps.length){h.innerHTML='<div class="notice">No selected member has a synced Collection Log.</div>';return}
- const s=entityStats(ps),excluded=excludedFor(ps),names=ps.map(p=>p.name).join(', ');
+ const s=entityStats(ps),excluded=excludedFor(ps),names=ps.map(p=>p.name).join(', '),sync=syncHealth();
  h.innerHTML='<div class="clog-luck-kpi"><span>Luck score</span><b class="clog-luck-'+tone(s.idx.meaningful||0)+'">'+scoreText(s.idx.score)+'</b><small>5.0 is statistically ordinary. 1.0 and 10.0 are theoretical extremes. Progression-important RNG counts far more than cosmetics.</small></div>'+
- '<div class="clog-luck-kpi"><span>Combined meaningful RNG</span><b class="clog-luck-'+tone(s.idx.meaningful||0)+'">'+(s.idx.meaningful==null?'—':sig(s.idx.meaningful))+'</b><small>'+((s.idx.meaningful==null)?'No score.':signed(s.idx.numerator)+' weighted σ ÷ '+s.idx.denom.toFixed(2)+' Stouffer denominator.')+' Individual item σ is capped at ±3.50. CoX/ToA/ToB also add pooled volume, drop-quality and useful-coverage signals. '+fmt(s.idx.dependentCollapsed)+' correlated component entries are collapsed into shared roll groups for the headline score.</small></div>'+
- '<div class="clog-luck-kpi"><span>Current selection</span><b>'+fmt(ps.length)+' member'+(ps.length===1?'':'s')+'</b><small>'+esc(names)+' · '+fmt(s.idx.rawCount)+' calculable items · '+fmt(excluded.length)+' excluded/impossible to tell.</small></div>';
+ '<div class="clog-luck-kpi"><span>Combined meaningful RNG</span><b class="clog-luck-'+tone(s.idx.meaningful||0)+'">'+(s.idx.meaningful==null?'—':sig(s.idx.meaningful))+'</b><small>'+((s.idx.meaningful==null)?'No score.':signed(s.idx.numerator)+' weighted σ ÷ '+s.idx.denom.toFixed(2)+' Stouffer denominator.')+' Individual item σ is capped at ±3.50. CoX/ToA/ToB add pooled volume, quality and coverage. '+fmt(s.idx.dependentCollapsed)+' correlated component entries are collapsed.</small></div>'+
+ '<div class="clog-luck-kpi"><span>Data quality</span><b>'+esc(s.s.label)+'</b><small>'+esc(s.s.detail)+' · '+esc(sync.text)+'</small></div>';
  const badge=$('#clogLuckImpossibleCount');if(badge)badge.textContent=fmt(excluded.length)
 }
 function itemRow(m){
  const imp=impactWeight(m),expected=Number.isFinite(m.r.expected)?m.r.expected:null,actual=fmt(m.r.observed),pct=m.r.text,z=cappedZ(m.z),contribution=z*imp.w;
- const sub=actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile · '+imp.label;
+ const sub=actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile · '+imp.label+(imp.confidence.f<1?' · '+Math.round(imp.confidence.f*100)+'% model confidence':'');
  return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(contribution)+'">'+signed(contribution)+'</strong><small>'+sig(z)+' × '+imp.w.toFixed(2)+' impact</small></div></article>'
 }
 function ranked(metrics){
@@ -166,7 +180,7 @@ function renderLists(){
  const ps=selectedPlayers(),subjectLabel=ps.map(p=>p.name).join(', ')||'no selected members',stats=ps.length?entityStats(ps):null,metrics=stats?.metrics||[],rows=ranked(metrics),lucky=rows.slice(0,8),dry=[...rows].sort((a,b)=>a.sort-b.sort).slice(0,8);
  const formula=$('#clogLuckFormula');
  if(formula){
-  formula.innerHTML=!stats?'':('<b>Final 1–10 score:</b> weighted item signal '+signed(stats.idx.itemNumerator)+' + pooled raid portfolios '+signed(stats.idx.portfolioNumerator)+' = '+signed(stats.idx.numerator)+' ÷ '+stats.idx.denom.toFixed(2)+' = <strong>'+sig(stats.idx.meaningful)+'</strong> → <strong>'+scoreText(stats.idx.score)+'</strong>. '+(stats.idx.portfolios.length?stats.idx.portfolios.map(p=>p.label+': '+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected · volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)).join(' · '):'No raid portfolio with a usable expected-drop denominator.')+' Item σ is capped at ±3.50; transformative raid weapons have the highest single-item impact.') ;
+  formula.innerHTML=!stats?'':('<b>Final 1–10 score:</b> weighted item signal '+signed(stats.idx.itemNumerator)+' + pooled raid portfolios '+signed(stats.idx.portfolioNumerator)+' = '+signed(stats.idx.numerator)+' ÷ '+stats.idx.denom.toFixed(2)+' = <strong>'+sig(stats.idx.meaningful)+'</strong> → <strong>'+scoreText(stats.idx.score)+'</strong>. '+(stats.idx.portfolios.length?stats.idx.portfolios.map(p=>p.label+': '+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected · volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)).join(' · '):'No raid portfolio with a usable expected-drop denominator.')+' Assumption-heavy contribution mechanics are confidence-damped; explicit CoX/ToA baselines remain fully weighted. Item σ is capped at ±3.50; transformative raid weapons have the highest single-item impact.') ;
  }
  $('#clogLuckLuckyTitle').textContent='Luckiest meaningful drops';
  $('#clogLuckDryTitle').textContent='Unluckiest meaningful grinds';
@@ -180,7 +194,7 @@ function combinations(ps){
 }
 function renderPlayers(){
  const h=$('#clogLuckPlayers');if(!h)return;const ps=selectedPlayers(),rows=combinations(ps);
- h.innerHTML=rows.map((x,i)=>{const names=x.group.map(p=>p.name).join(' + '),all=x.group.length===ps.length&&ps.length>1;return '<article class="clog-luck-player-row"><div class="clog-luck-player-name"><div><b>'+(i+1)+'. '+esc(names)+'</b><small>'+esc(x.s.detail)+(all?' · full selected group':'')+'</small></div></div><div class="clog-luck-player-metric"><span>Luck score</span><b class="clog-luck-'+tone(x.idx.meaningful||0)+'">'+scoreText(x.idx.score)+'</b></div><div class="clog-luck-player-metric"><span>Meaningful RNG</span><b class="clog-luck-'+tone(x.idx.meaningful||0)+'">'+(x.idx.meaningful==null?'—':sig(x.idx.meaningful))+'</b></div><span class="clog-luck-sample '+x.s.key+'">'+x.group.length+' account'+(x.group.length===1?'':'s')+'</span></article>'}).join('')||'<div class="clog-luck-empty">No selected synced members.</div>'
+ h.innerHTML=rows.map((x,i)=>{const names=x.group.map(p=>p.name).join(' + '),all=x.group.length===ps.length&&ps.length>1;return '<article class="clog-luck-player-row"><div class="clog-luck-player-name"><div><b>'+(i+1)+'. '+esc(names)+'</b><small>'+esc(x.s.detail)+(all?' · full selected group':'')+'</small></div></div><div class="clog-luck-player-metric"><span>Luck score</span><b class="clog-luck-'+tone(x.idx.meaningful||0)+'">'+scoreText(x.idx.score)+'</b></div><div class="clog-luck-player-metric"><span>Meaningful RNG</span><b class="clog-luck-'+tone(x.idx.meaningful||0)+'">'+(x.idx.meaningful==null?'—':sig(x.idx.meaningful))+'</b></div><span class="clog-luck-sample '+x.s.key+'">'+x.group.length+' account'+(x.group.length===1?'':'s')+' · '+esc(x.s.label)+'</span></article>'}).join('')||'<div class="clog-luck-empty">No selected synced members.</div>'
 }
 function renderImpossible(){
  const h=$('#clogLuckImpossible');if(!h)return;const ps=selectedPlayers(),rows=ps.length?excludedFor(ps):[];
