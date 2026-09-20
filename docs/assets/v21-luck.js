@@ -103,7 +103,13 @@ function marginalCurve(profile){
  if(profile.kind==='shareable')return{curve:[1,.74,.57,.44,.34],tail:.12};
  return{curve:[1],tail:1}
 }
+function pairComponentMarginal(q){
+ const i=Math.max(0,Math.floor(+q||0)),pair=Math.floor(i/2);
+ const first=[.48,.38,.30,.24,.20],finish=[1.32,1.08,.90,.76,.65];
+ return i%2===0?(first[pair]??.16):(finish[pair]??.55)
+}
 function marginalAt(q,profile){
+ if(profile.kind==='pair-component')return pairComponentMarginal(q);
  const x=marginalCurve(profile),i=Math.max(0,Math.floor(+q||0));return i<x.curve.length?x.curve[i]:x.tail
 }
 function averageMarginal(q,profile){
@@ -111,7 +117,19 @@ function averageMarginal(q,profile){
  let total=0;for(let i=0;i<q;i++)total+=marginalAt(i,profile);
  return total/q
 }
-function copyUtility(profile,m){return averageMarginal(portfolioCount(m.name,m),profile)}
+function perPlayerItemCounts(m){
+ const ps=contextPlayers(m),id=+m.id;return ps.map(p=>({p,count:model.counts.get(p.key)?.get(id)||0}))
+}
+function boundUnlockUtility(m){
+ const rows=perPlayerItemCounts(m),total=rows.reduce((n,x)=>n+x.count,0);
+ if(total<=0)return 1;
+ const useful=rows.filter(x=>x.count>0).length,duplicates=Math.max(0,total-useful);
+ return(useful+.04*duplicates)/total
+}
+function copyUtility(profile,m){
+ if(profile.kind==='bound-unlock')return boundUnlockUtility(m);
+ return averageMarginal(portfolioCount(m.name,m),profile)
+}
 function itemIdByName(name){
  const low=String(name||'').toLowerCase();for(const id of modelIds())if(String(model.names.get(id)||'').toLowerCase()===low)return +id;return null
 }
@@ -199,22 +217,31 @@ function deficitCompensation(profile,m,z){
  if(!(Number.isFinite(z)&&z<0))return{f:1,label:null};
  if(profile.kind==='component'&&profile.set&&COMPONENT_SETS[profile.set]){
   const set=COMPONENT_SETS[profile.set],complete=completedUntradeableSets(set,m);
-  if(complete>0)return{f:.55,label:'completed '+set.label+' already exists in group'};
+  if(complete>0)return{f:.55,label:'completed '+set.label+' already exists in selected portfolio'};
   if(memberOnePieceFrom(set,String(m.name||'').toLowerCase(),m))return{f:1.22,label:'this component can complete a personal '+set.label+' set'};
   return{f:1,label:null}
  }
+ if(profile.kind==='bound-unlock'){
+  const rows=perPlayerItemCounts(m),missing=rows.filter(x=>x.count===0).length,n=Math.max(1,rows.length);
+  const f=.04+.96*(missing/n);
+  return{f,label:missing<n?(n-missing)+'/'+n+' selected accounts already have the permanent unlock':null}
+ }
+ if(profile.kind==='pair-component'){
+  const q=portfolioCount(m.name,m),f=marginalAt(q,profile);
+  return{f,label:q>0?q+' component'+(q===1?'':'s')+' in selected portfolio; next drop '+(q%2?'completes':'starts')+' a pair':null}
+ }
  if(!['allocatable-unlock','major-shareable','shareable'].includes(profile.kind))return{f:1,label:null};
- const q=portfolioCount(m.name,m),f=marginalAt(q,profile),members=Math.max(1,fullGroupPlayers().length);
+ const q=portfolioCount(m.name,m),f=marginalAt(q,profile),members=Math.max(1,contextPlayers(m).length);
  let label=null;
- if(profile.kind==='allocatable-unlock'&&q>0)label=Math.min(q,members)+'/'+members+' group unlock capacity already supplied; next unlock retains '+Math.round(f*100)+'% marginal value';
- else if(q>0)label=q+' existing group cop'+(q===1?'y':'ies')+'; next copy retains '+Math.round(f*100)+'% marginal progression value';
+ if(profile.kind==='allocatable-unlock'&&q>0)label=Math.min(q,members)+'/'+members+' selected unlock capacity already supplied; next unlock retains '+Math.round(f*100)+'% marginal value';
+ else if(q>0)label=q+' existing selected cop'+(q===1?'y':'ies')+'; next copy retains '+Math.round(f*100)+'% marginal progression value';
  return{f,label}
 }
 function impactWeight(m,z=null){
  const p=impactProfile(m),isDry=Number.isFinite(z)&&z<0;
- const copy=isDry?1:copyUtility(p,m),synergy=isDry?{f:1,label:null}:synergyUtility(m,p),deficit=deficitCompensation(p,m,z),ge=p.base>=.5?geModifier(price(m.id)):1,confidence=modelConfidence(m);
- const w=clamp(p.base*copy*synergy.f*deficit.f*ge,.03,10.5);
- return{...p,copy,synergy,deficit,ge,confidence,w,reliability:confidence.f}
+ const copy=isDry?1:copyUtility(p,m),synergy=isDry?{f:1,label:null}:synergyUtility(m,p),deficit=deficitCompensation(p,m,z),substitution=substitutionUtility(p,m),ge=p.base>=.5?geModifier(price(m.id)):1,confidence=modelConfidence(m);
+ const w=clamp(p.base*copy*synergy.f*deficit.f*substitution.f*ge,.03,10.5);
+ return{...p,copy,synergy,deficit,substitution,ge,confidence,w,reliability:confidence.f}
 }
 function financialWeight(m){
  const gp=price(m.id);if(!Number.isFinite(gp)||gp<=0)return{gp:0,w:0,reliability:0};
@@ -277,9 +304,11 @@ function raidPortfolio(metrics,def){
 }
 
 function portfolioResidual(m){
+ const p=impactProfile(m);
+ if(p.kind==='bound-unlock')return .45;
  const d=RAID_PORTFOLIOS.find(x=>x.names.has(m.name));
  if(!d)return 1;
- return impactProfile(m).base>=8?.62:impactProfile(m).base>=5?.42:.28
+ return p.base>=8?.62:p.base>=5?.42:.28
 }
 function sourceFamilyKey(rows){
  const src=new Set();
