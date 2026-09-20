@@ -50,19 +50,24 @@ const COMPONENT_SETS={
  nox:{names:['noxious point','noxious blade','noxious pommel'],label:'Noxious halberd'},
  soulreaper:{names:['eye of the duke',"siren's staff","leviathan's lure","executioner's axe head"],label:'Soulreaper axe'}
 };
-let portfolioCache=null;
+let portfolioCache=new Map();
 function fullGroupPlayers(){return U.PLAYERS.filter(p=>model?.known.has(p.key))}
-function portfolioCounts(){
- if(portfolioCache)return portfolioCache;
- const map=new Map(),ps=fullGroupPlayers();
+function contextPlayers(m){
+ const keys=new Set(Array.isArray(m?.players)?m.players:[]);
+ return keys.size?fullGroupPlayers().filter(p=>keys.has(p.key)):fullGroupPlayers()
+}
+function portfolioCounts(m){
+ const ps=contextPlayers(m),key=ps.map(p=>p.key).sort().join('|')||'none';
+ if(portfolioCache.has(key))return portfolioCache.get(key);
+ const map=new Map();
  for(const id of modelIds()){
   const name=String(model.names.get(id)||'').trim().toLowerCase();if(!name)continue;
   const q=countFor(id,ps);map.set(name,(map.get(name)||0)+q)
  }
- portfolioCache=map;return map
+ portfolioCache.set(key,map);return map
 }
-function portfolioCount(name){return portfolioCounts().get(String(name||'').toLowerCase())||0}
-function sumPortfolio(regex){let n=0;for(const [name,q] of portfolioCounts())if(regex.test(name))n+=q;return n}
+function portfolioCount(name,m){return portfolioCounts(m).get(String(name||'').toLowerCase())||0}
+function sumPortfolio(regex,m){let n=0;for(const [name,q] of portfolioCounts(m))if(regex.test(name))n+=q;return n}
 function impactProfile(m){
  const name=String(m?.name||'').trim();
  for(const r of COMMUNITY_RULES)if(r.re.test(name))return{base:r.w,label:r.label,kind:r.kind||'shareable',set:r.set||null};
@@ -92,47 +97,50 @@ function averageMarginal(q,profile){
  let total=0;for(let i=0;i<q;i++)total+=marginalAt(i,profile);
  return total/q
 }
-function copyUtility(profile,m){return averageMarginal(portfolioCount(m.name),profile)}
+function copyUtility(profile,m){return averageMarginal(portfolioCount(m.name,m),profile)}
 function itemIdByName(name){
  const low=String(name||'').toLowerCase();for(const id of modelIds())if(String(model.names.get(id)||'').toLowerCase()===low)return +id;return null
 }
-function completedUntradeableSets(set){
+function completedUntradeableSets(set,m){
  const ids=set.names.map(itemIdByName);if(ids.some(x=>x==null))return 0;
  let complete=0;
- for(const p of fullGroupPlayers()){
+ for(const p of contextPlayers(m)){
   const counts=ids.map(id=>model.counts.get(p.key)?.get(+id)||0);
   complete+=Math.min(...counts)
  }
  return complete
 }
-function componentUtility(profile){
+function componentUtility(profile,m){
  if(!profile.set||!COMPONENT_SETS[profile.set])return{f:1,label:null};
- const set=COMPONENT_SETS[profile.set],complete=completedUntradeableSets(set),pieces=set.names.filter(n=>portfolioCount(n)>0).length;
- if(complete>0)return{f:clamp(1.35+.12*Math.min(complete-1,3),1,1.7),label:complete+' complete '+set.label+(complete===1?'':'s')+' assembled by individual group members'};
- return{f:.45+.15*pieces,label:pieces+'/'+set.names.length+' component types represented, but no confirmed complete set on one member'}
+ const set=COMPONENT_SETS[profile.set],complete=completedUntradeableSets(set,m),counts=set.names.map(n=>portfolioCount(n,m)),pieces=counts.filter(x=>x>0).length,total=counts.reduce((x,y)=>x+y,0);
+ if(complete>0){
+  const completionShare=Math.min(1,(complete*set.names.length)/Math.max(1,total));
+  const f=clamp(.70+.65*completionShare+.08*Math.min(complete-1,2),.7,1.5);
+  return{f,label:complete+' complete '+set.label+(complete===1?'':'s')+' in selected portfolio · '+Math.round(completionShare*100)+'% of component copies belong to complete sets'}
+ }
+ return{f:.55+.10*pieces,label:pieces+'/'+set.names.length+' component types represented, but no confirmed complete set on one selected member'}
 }
-function exactPortfolio(name){return portfolioCount(name)}
-function setCapacity(names){return Math.min(...names.map(exactPortfolio))}
+function exactPortfolio(name,m){return portfolioCount(name,m)}
+function setCapacity(names,m){return Math.min(...names.map(name=>exactPortfolio(name,m)))}
 function matchedFraction(a,b){a=Math.max(0,+a||0);b=Math.max(0,+b||0);return a>0?Math.min(a,b)/a:0}
 function synergyUtility(m,profile){
  const n=String(m.name||'').toLowerCase(),reasons=[];let f=1;
- const tbow=exactPortfolio('twisted bow'),dex=exactPortfolio('dexterous prayer scroll');
- const shadow=exactPortfolio("tumeken's shadow (uncharged)"),enhanced=exactPortfolio('enhanced crystal weapon seed'),armourSeeds=exactPortfolio('crystal armour seed');
- const masoriSet=setCapacity(['masori mask','masori body','masori chaps']);
- const ancNames=['ancestral hat','ancestral robe top','ancestral robe bottom'],ancPieces=ancNames.reduce((x,name)=>x+Math.min(exactPortfolio(name),Math.max(1,shadow)),0);
- const claws=exactPortfolio('dragon claws')+exactPortfolio('burning claw'),zcb=exactPortfolio('zaryte crossbow'),lb=exactPortfolio('lightbearer');
+ const tbow=exactPortfolio('twisted bow',m),dex=exactPortfolio('dexterous prayer scroll',m);
+ const shadow=exactPortfolio("tumeken's shadow (uncharged)",m),enhanced=exactPortfolio('enhanced crystal weapon seed',m),armourSeeds=exactPortfolio('crystal armour seed',m);
+ const masoriSet=setCapacity(['masori mask','masori body','masori chaps'],m);
+ const ancNames=['ancestral hat','ancestral robe top','ancestral robe bottom'],ancPieces=ancNames.reduce((x,name)=>x+Math.min(exactPortfolio(name,m),Math.max(1,shadow)),0);
+ const claws=exactPortfolio('dragon claws',m)+exactPortfolio('burning claw',m),zcb=exactPortfolio('zaryte crossbow',m),lb=exactPortfolio('lightbearer',m);
  const spec=Math.max(0,claws+zcb);
- // Each side receives roughly half of a capped interaction bonus.
- if(n==='twisted bow'&&dex>0){const x=.06*matchedFraction(tbow,dex);f+=x;if(x>.005)reasons.push('matched Rigour capacity')}
- if(n==='dexterous prayer scroll'&&tbow>0){const x=.06*matchedFraction(dex,tbow);f+=x;if(x>.005)reasons.push('matched Tbow capacity')}
+ if(n==='twisted bow'&&dex>0){const x=.06*matchedFraction(tbow,dex);f+=x;if(x>.005)reasons.push('matched Rigour capacity in selection')}
+ if(n==='dexterous prayer scroll'&&tbow>0){const x=.06*matchedFraction(dex,tbow);f+=x;if(x>.005)reasons.push('matched Tbow capacity in selection')}
  if(n==='twisted bow'&&masoriSet>0){const x=.03*matchedFraction(tbow,masoriSet);f+=x;if(x>.005)reasons.push('complete Masori loadout support')}
- if(/^masori (mask|body|chaps)$/.test(n)&&tbow>0){const piece=exactPortfolio(n),x=.03*matchedFraction(piece,tbow);f+=x;if(x>.005)reasons.push('Tbow loadout support')}
+ if(/^masori (mask|body|chaps)$/.test(n)&&tbow>0){const piece=exactPortfolio(n,m),x=.03*matchedFraction(piece,tbow);f+=x;if(x>.005)reasons.push('Tbow loadout support')}
  if(n==="tumeken's shadow (uncharged)"&&ancPieces>0){const coverage=shadow>0?Math.min(1,ancPieces/(3*shadow)):0,x=.06*coverage;f+=x;if(x>.005)reasons.push('Ancestral magic-damage support')}
- if(/^ancestral (hat|robe top|robe bottom)$/.test(n)&&shadow>0){const x=.06*matchedFraction(exactPortfolio(n),shadow);f+=x;if(x>.005)reasons.push('Shadow loadout support')}
+ if(/^ancestral (hat|robe top|robe bottom)$/.test(n)&&shadow>0){const x=.06*matchedFraction(exactPortfolio(n,m),shadow);f+=x;if(x>.005)reasons.push('Shadow loadout support')}
  if(n==='enhanced crystal weapon seed'&&armourSeeds>=6){const sets=Math.floor(armourSeeds/6),x=.06*matchedFraction(enhanced,sets);f+=x;if(x>.005)reasons.push('crystal armour capacity')}
  if(n==='lightbearer'&&spec>0){const x=.05*matchedFraction(lb,spec);f+=x;if(x>.005)reasons.push('matched special-attack weapon capacity')}
- if((n==='dragon claws'||n==='burning claw'||n==='zaryte crossbow')&&lb>0){const q=exactPortfolio(n),x=.05*matchedFraction(q,lb);f+=x;if(x>.005)reasons.push('Lightbearer support')}
- const component=componentUtility(profile);f*=component.f;if(component.label)reasons.push(component.label);
+ if((n==='dragon claws'||n==='burning claw'||n==='zaryte crossbow')&&lb>0){const q=exactPortfolio(n,m),x=.05*matchedFraction(q,lb);f+=x;if(x>.005)reasons.push('Lightbearer support')}
+ const component=componentUtility(profile,m);f*=component.f;if(component.label)reasons.push(component.label);
  return{f:clamp(f,.35,1.30),label:reasons.join(' · ')||null}
 }
 function geModifier(gp){if(!Number.isFinite(+gp)||+gp<=0)return 1;const x=clamp((Math.log10(+gp)-5)/5,0,1);return .94+.12*x}
@@ -176,13 +184,13 @@ function memberOnePieceFrom(set,targetName,m){
 function deficitCompensation(profile,m,z){
  if(!(Number.isFinite(z)&&z<0))return{f:1,label:null};
  if(profile.kind==='component'&&profile.set&&COMPONENT_SETS[profile.set]){
-  const set=COMPONENT_SETS[profile.set],complete=completedUntradeableSets(set);
+  const set=COMPONENT_SETS[profile.set],complete=completedUntradeableSets(set,m);
   if(complete>0)return{f:.55,label:'completed '+set.label+' already exists in group'};
   if(memberOnePieceFrom(set,String(m.name||'').toLowerCase(),m))return{f:1.22,label:'this component can complete a personal '+set.label+' set'};
   return{f:1,label:null}
  }
  if(!['personal-unlock','major-shareable','shareable'].includes(profile.kind))return{f:1,label:null};
- const q=portfolioCount(m.name),f=marginalAt(q,profile),members=Math.max(1,fullGroupPlayers().length);
+ const q=portfolioCount(m.name,m),f=marginalAt(q,profile),members=Math.max(1,fullGroupPlayers().length);
  let label=null;
  if(profile.kind==='personal-unlock'&&q>0)label=Math.min(q,members)+'/'+members+' group unlock capacity already supplied; next unlock retains '+Math.round(f*100)+'% marginal value';
  else if(q>0)label=q+' existing group cop'+(q===1?'y':'ies')+'; next copy retains '+Math.round(f*100)+'% marginal progression value';
@@ -481,7 +489,7 @@ function bind(){
  document.querySelectorAll('[data-luck-lens]').forEach(b=>b.onclick=()=>{lens=b.dataset.luckLens||'meaningful';document.querySelectorAll('[data-luck-lens]').forEach(x=>x.classList.toggle('active',x===b));renderLists()});
  const tab=$('[data-gim-tab="luck"]');if(tab&&!tab.dataset.luckBound){tab.dataset.luckBound='1';tab.addEventListener('click',()=>{render();if(!prices)loadPrices().then(()=>render())})}
 }
-function reset(){metricCache=new Map();excludedCache=new Map();portfolioCache=null}
+function reset(){metricCache=new Map();excludedCache=new Map();portfolioCache=new Map()}
 window.addEventListener('ug:members-changed',e=>{const keys=U.cleanSelection(e.detail?.keys,U.ALL_KEYS);if(U.sameSelection(selected,keys))return;selected=keys;reset();render()});
 window.addEventListener('ug:data-updated',async e=>{if(e.detail?.key===U.TKEY){doc=await U.loadClog();model=M.build(doc,U.PLAYERS);reset();render()}else if(e.detail?.key===U.WKEY){wom=await U.loadWom();reset();render()}});
 async function init(){[doc,wom]=await Promise.all([U.loadClog(),U.loadWom()]);model=M.build(doc,U.PLAYERS);bind();render()}
