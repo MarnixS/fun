@@ -178,13 +178,33 @@ function financialWeight(m){
  const confidence=modelConfidence(m),base=clamp(Math.pow(gp/1e6,.28),.12,6.5);
  return{gp,w:base,reliability:confidence.f,confidence}
 }
+function financialFamilyCap(key){
+ const low=String(key||'').toLowerCase();
+ if(/clue/.test(low))return 2.5;
+ if(/chambers_of_xeric|tombs_of_amascut|theatre_of_blood/.test(low))return 8;
+ return 6
+}
 function financialIndex(metrics){
- const rows=metrics.map(m=>({m,z:cappedZ(m.z),...financialWeight(m)})).filter(x=>x.w>0);
- const numerator=rows.reduce((n,x)=>n+x.z*x.w*x.reliability,0),denom=Math.sqrt(rows.reduce((n,x)=>n+x.w*x.w,0));
+ const units=[];
+ for(const rows of dependencyGroups(metrics)){
+  const parts=rows.map(m=>({m,z:cappedZ(m.z),...financialWeight(m)})).filter(x=>x.w>0);
+  if(!parts.length)continue;
+  const sumW=parts.reduce((n,x)=>n+x.w,0),z=sumW?parts.reduce((n,x)=>n+x.z*x.w,0)/sumW:0;
+  const reliability=sumW?parts.reduce((n,x)=>n+x.reliability*x.w,0)/sumW:1;
+  const strongest=parts.reduce((x,y)=>y.w>x.w?y:x);
+  units.push({rows,z:cappedZ(z),w:strongest.w,reliability,gp:strongest.gp})
+ }
+ const fam=new Map();
+ for(const u of units){const key=sourceFamilyKey(u.rows),arr=fam.get(key)||[];arr.push(u);fam.set(key,arr)}
+ for(const [key,arr] of fam){
+  const norm=Math.sqrt(arr.reduce((n,u)=>n+u.w*u.w,0)),cap=financialFamilyCap(key);
+  if(norm>cap&&norm>0){const scale=cap/norm;for(const u of arr)u.w*=scale}
+ }
+ const numerator=units.reduce((n,x)=>n+x.z*x.w*x.reliability,0),denom=Math.sqrt(units.reduce((n,x)=>n+x.w*x.w,0));
  const z=denom?numerator/denom:null;
- const deltaRows=rows.filter(x=>Number.isFinite(x.m.r.expected));
- const deltaGp=deltaRows.reduce((n,x)=>n+(x.m.r.observed-x.m.r.expected)*x.gp,0);
- return{z,numerator,denom,deltaGp,count:rows.length,deltaCount:deltaRows.length}
+ const deltaRows=metrics.filter(m=>Number.isFinite(m.r.expected)&&financialWeight(m).gp>0);
+ const deltaGp=deltaRows.reduce((n,m)=>n+(m.r.observed-m.r.expected)*financialWeight(m).gp,0);
+ return{z,numerator,denom,deltaGp,count:units.length,pricedItems:metrics.filter(m=>financialWeight(m).gp>0).length,deltaCount:deltaRows.length}
 }
 
 const RAID_PORTFOLIOS=[
@@ -367,11 +387,11 @@ function itemRow(m){
   return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(z)+'">'+sig(z)+'</strong><small>pure statistical deviation</small></div></article>'
  }
  if(lens==='value'){
-  const fw=financialWeight(m),delta=expected==null?null:(m.r.observed-expected)*fw.gp,contribution=z*fw.w;
+  const fw=financialWeight(m),delta=expected==null?null:(m.r.observed-expected)*fw.gp,contribution=z*fw.w*fw.reliability;
   const sub=actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile · GE '+money(fw.gp)+' gp'+(delta==null?'':' · Δ '+(delta>=0?'+':'−')+money(Math.abs(delta))+' gp');
   return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(contribution)+'">'+signed(contribution)+'</strong><small>'+sig(z)+' × '+fw.w.toFixed(2)+' value weight</small></div></article>'
  }
- const imp=impactWeight(m,z),contribution=z*imp.w;
+ const imp=impactWeight(m,z),contribution=z*imp.w*imp.reliability;
  const modifiers=[];
  if(imp.copy<.98)modifiers.push('duplicate utility '+Math.round(imp.copy*100)+'%');
  if(imp.synergy?.label)modifiers.push(imp.synergy.label);
@@ -384,8 +404,8 @@ function ranked(metrics){
  return metrics.map(m=>{
   const z=cappedZ(m.z);
   if(lens==='raw')return{...m,sort:z};
-  if(lens==='value'){const fw=financialWeight(m);return{...m,fw,sort:z*fw.w}}
-  const imp=impactWeight(m,z);return{...m,imp,sort:z*imp.w}
+  if(lens==='value'){const fw=financialWeight(m);return{...m,fw,sort:z*fw.w*fw.reliability}}
+  const imp=impactWeight(m,z);return{...m,imp,sort:z*imp.w*imp.reliability}
  }).filter(m=>lens!=='value'||m.fw?.w>0).sort((a,b)=>b.sort-a.sort)
 }
 function renderLists(){
