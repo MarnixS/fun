@@ -88,11 +88,23 @@ function copyUtility(profile,m){
  if(profile.kind==='shareable')return averageMarginal(q,[1,.72,.54,.40,.30],.12);
  return 1
 }
+function itemIdByName(name){
+ const low=String(name||'').toLowerCase();for(const id of modelIds())if(String(model.names.get(id)||'').toLowerCase()===low)return +id;return null
+}
+function completedUntradeableSets(set){
+ const ids=set.names.map(itemIdByName);if(ids.some(x=>x==null))return 0;
+ let complete=0;
+ for(const p of fullGroupPlayers()){
+  const counts=ids.map(id=>model.counts.get(p.key)?.get(+id)||0);
+  complete+=Math.min(...counts)
+ }
+ return complete
+}
 function componentUtility(profile){
  if(!profile.set||!COMPONENT_SETS[profile.set])return{f:1,label:null};
- const set=COMPONENT_SETS[profile.set],counts=set.names.map(portfolioCount),complete=Math.min(...counts),pieces=counts.filter(x=>x>0).length;
- if(complete>0)return{f:clamp(1.35+.12*Math.min(complete-1,3),1,1.7),label:set.label+' completed as a group'};
- return{f:.45+.15*pieces,label:pieces+'/'+set.names.length+' '+set.label+' components represented'}
+ const set=COMPONENT_SETS[profile.set],complete=completedUntradeableSets(set),pieces=set.names.filter(n=>portfolioCount(n)>0).length;
+ if(complete>0)return{f:clamp(1.35+.12*Math.min(complete-1,3),1,1.7),label:complete+' complete '+set.label+(complete===1?'':'s')+' assembled by individual group members'};
+ return{f:.45+.15*pieces,label:pieces+'/'+set.names.length+' component types represented, but no confirmed complete set on one member'}
 }
 function synergyUtility(m,profile){
  const n=String(m.name||'').toLowerCase(),reasons=[];let f=1;
@@ -143,8 +155,8 @@ function deficitCompensation(profile,m,z){
   return{f,label:q>0?q+' group cop'+(q===1?'y':'ies')+' already reduce the practical deficit':null}
  }
  if(profile.kind==='component'&&profile.set&&COMPONENT_SETS[profile.set]){
-  const set=COMPONENT_SETS[profile.set],complete=Math.min(...set.names.map(portfolioCount));
-  return complete>0?{f:.28,label:'group already has '+complete+' complete '+set.label+(complete===1?'':'s')}:{f:1,label:null}
+  const set=COMPONENT_SETS[profile.set],complete=completedUntradeableSets(set);
+  return complete>0?{f:.28,label:'group already has '+complete+' completed '+set.label+(complete===1?'':'s')+' from personal component sets'}:{f:1,label:null}
  }
  return{f:1,label:null}
 }
