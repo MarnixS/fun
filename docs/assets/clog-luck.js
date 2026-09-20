@@ -11,7 +11,7 @@ const COX_REG_WEIGHTS={"dexterous prayer scroll":14,"arcane prayer scroll":14,"t
 const COX_CM_WEIGHTS={"dexterous prayer scroll":12,"arcane prayer scroll":12,"twisted buckler":4,"dragon hunter crossbow":4,"dinh's bulwark":3,"ancestral hat":4,"ancestral robe top":4,"ancestral robe bottom":4,"dragon claws":3,"elder maul":2,"kodai insignia":2,"twisted bow":2};
 const COX_REWORK_AT=Date.parse('2026-08-12T00:00:00Z');
 const TOA_WEIGHTS={"osmumten's fang":7,"lightbearer":7,"elidinis' ward":3,"masori mask":2,"masori body":2,"masori chaps":2,"tumeken's shadow (uncharged)":1};
-const ASSUME={cox:30000,coxCm:62000,toa:16667,toaLevel:150,toaPurple:1/45,toaExpert:21875,toaExpertLevel:350,toaExpertPurple:1/16,tobShare:.25,tobHmShare:.2,nightmareTeam:5,nightmareShare:.202,hueyShare:.367,royalShare:.5,callistoShare:.2,venenatisShare:.5,vetionShare:.5,scurriusMvp:1,zalcanoShare:.25,zalcanoPoints:300};
+const ASSUME={cox:30000,bigDogCox:33000,coxCm:62000,toa:16667,toaLevel:150,toaPurple:1/45,toaExpert:21875,toaExpertLevel:350,toaExpertPurple:1/16,tobShare:.25,tobHmShare:.2,nightmareTeam:5,nightmareShare:.202,hueyShare:.367,royalShare:.5,callistoShare:.2,venenatisShare:.5,vetionShare:.5,scurriusMvp:1,zalcanoShare:.25,zalcanoPoints:300};
 const F={COX:1,COXCM:2,TOB:4,TOBHM:8,TOAE:16,TOA:32,TOAX:64,NMTEAM:128,NMSHARE:256,NEX:512,HUEY:1024,ROYAL:2048,CALLISTO:4096,VENENATIS:8192,VETION:16384,SCURRIUS:32768,ZALCANO:65536,ZALCANO_PTS:131072,FIRE_CAPES:262144,INFERNAL_CAPES:524288,SKOTIZO_OLD:1048576,KQ_OLD:2097152,KBD_OLD:4194304,NM_OLD:8388608,PNM_OLD:16777216};
 const SPECIAL_UNSUPPORTED=F.FIRE_CAPES|F.INFERNAL_CAPES|F.SKOTIZO_OLD|F.KQ_OLD|F.KBD_OLD|F.NM_OLD|F.PNM_OLD;
 const ACTIVITY={BEGINNER_CLUES_COMPLETED:'clue_scrolls_beginner',EASY_CLUES_COMPLETED:'clue_scrolls_easy',MEDIUM_CLUES_COMPLETED:'clue_scrolls_medium',HARD_CLUES_COMPLETED:'clue_scrolls_hard',ELITE_CLUES_COMPLETED:'clue_scrolls_elite',MASTER_CLUES_COMPLETED:'clue_scrolls_master',TOTAL_CLUES_COMPLETED:'clue_scrolls_all',RIFTS_CLOSED:'guardians_of_the_rift'};
@@ -113,6 +113,13 @@ function chance(rec,roll,name,notes,coxRegime='post'){
  if(src==='ZALCANO_KILLS'&&(flags&F.ZALCANO_PTS)){p*=zShardBoost(ASSUME.zalcanoPoints);notes.add('Zalcano assumes 300 points per kill')}
  return clamp(p)
 }
+function playerSpecificChance(prob,p,roll,notes){
+ if(p?.key==='big dog aura'&&roll?.[0]==='CHAMBERS_OF_XERIC_COMPLETIONS'){
+  prob*=ASSUME.bigDogCox/ASSUME.cox;
+  notes.add('Big Dog Aura normal CoX uses a conservative 33,000 equivalent personal-point estimate (+10% versus the 30,000 baseline) because the screenshot sample indicates substantial scaled-raiding; this is a directional correction, not an exact historical average');
+ }
+ return clamp(prob)
+}
 function itemCount(model,p,id){return model.known.has(p.key)?model.counts.get(p.key)?.get(+id)||0:null}
 function setCount(model,p,ids){let n=0;for(const id of ids||[]){const v=itemCount(model,p,id);if(v==null)return null;n+=v}return n}
 function labelSource(s){return s.toLowerCase().replace(/_kills$|_completed$|_completion_count$|_opened$|_claimed$/,'').replace(/_/g,' ').replace(/^./,c=>c.toUpperCase())}
@@ -170,11 +177,11 @@ function calculate(id,name,ps,wom,model,U){
        const preKc=coxPreReworkKc(wom,p,roll[0],kc);
        if(preKc!=null){
          const preN=Math.round(preKc*roll[2]),postN=Math.max(0,n-preN),split=coxSplit.get(roll[0])||{pre:0,post:0};split.pre+=preKc;split.post+=Math.max(0,kc-preKc);coxSplit.set(roll[0],split);
-         for(const [regime,gn,gkc] of [['pre',preN,preKc],['post',postN,Math.max(0,kc-preKc)]])if(gn>0){let prob=chance(rec,roll,name,notes,regime);if(rec.t==='d')prob=clamp(prob*(rec.set?.length||1));else if(rec.t==='q'){const past=(rec.set||[]).some(x=>(itemCount(model,p,x)||0)>1);if(!past)prob=clamp(prob*(rec.set?.length||1))}groups.push({n:gn,p:prob,source:roll[0],kc:gkc,rolls:roll[2],player:p.key});rawTrials+=gn}
+         for(const [regime,gn,gkc] of [['pre',preN,preKc],['post',postN,Math.max(0,kc-preKc)]])if(gn>0){let prob=playerSpecificChance(chance(rec,roll,name,notes,regime),p,roll,notes);if(rec.t==='d')prob=clamp(prob*(rec.set?.length||1));else if(rec.t==='q'){const past=(rec.set||[]).some(x=>(itemCount(model,p,x)||0)>1);if(!past)prob=clamp(prob*(rec.set?.length||1))}groups.push({n:gn,p:prob,source:roll[0],kc:gkc,rolls:roll[2],player:p.key});rawTrials+=gn}
          continue;
        }else notes.add('CoX pre/post-rework split unavailable for at least one selected member; current table used for that member');
      }
-     let prob=chance(rec,roll,name,notes,'post');
+     let prob=playerSpecificChance(chance(rec,roll,name,notes,'post'),p,roll,notes);
      if(rec.t==='d')prob=clamp(prob*(rec.set?.length||1));
      else if(rec.t==='q'){const past=(rec.set||[]).some(x=>(itemCount(model,p,x)||0)>1);if(!past)prob=clamp(prob*(rec.set?.length||1))}
      groups.push({n,p:prob,source:roll[0],kc,rolls:roll[2],player:p.key});rawTrials+=n;
