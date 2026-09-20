@@ -39,3 +39,8 @@
 .clog-luck-impossible-row small{display:block;color:#918777;font-size:9px;line-height:1.35;margin-top:2px}.clog-luck-impossible-row>div:last-child small{text-align:right}
 .clog-luck-method code{color:#dec58b;background:#0f0c09;border:1px solid #30281c;padding:1px 3px}
 @media(max-width:760px){.clog-luck-impossible-row{grid-template-columns:34px 1fr}.clog-luck-impossible-row>div:last-child{grid-column:2}.clog-luck-impossible-row strong,.clog-luck-impossible-row>div:last-child small{text-align:left}.clog-luck-subtabs{flex-wrap:wrap}}
+
+.clog-luck-filter-note{margin:8px 0 7px;padding:8px 10px;border-left:3px solid #8c713e;background:#17130e;color:#a89d89;font-size:11px;line-height:1.45}.clog-luck-filter-note b{color:#d8c08b}
+.clog-luck-formula{margin:0 0 10px;padding:8px 10px;border:1px solid #463a27;background:#110e0a;color:#a99e89;font-size:11px;line-height:1.45}.clog-luck-formula b,.clog-luck-formula strong{color:#ddc48d}
+.clog-luck-impossible-summary{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:8px 9px;margin-bottom:6px;border:1px solid #54432b;background:#19130d}.clog-luck-impossible-summary b{color:#e0c58e;font-size:11px}.clog-luck-impossible-summary span{color:#968b78;font-size:10px;text-align:right}
+@media(max-width:760px){.clog-luck-impossible-summary{align-items:flex-start;flex-direction:column}.clog-luck-impossible-summary span{text-align:left}}

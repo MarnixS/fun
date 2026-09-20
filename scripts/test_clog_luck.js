@@ -51,3 +51,24 @@ assert(rackReason&&rackReason.kind==='barrows','Bolt racks must be excluded beca
 assert.equal(L.calculate(26370,'Ancient hilt',[players[0]],wom,genericModel,U),null);
 assert.equal(L.calculate(4740,'Bolt rack',[players[0]],wom,genericModel,U),null);
 console.log('Luck exclusions passed: capped counters, Nex and bolt racks.');
+
+
+// Current saved log capped-entry audit.
+const fs=require('node:fs'),path=require('node:path');
+const saved=JSON.parse(fs.readFileSync(path.join(__dirname,'../docs/data/temple-clog.json'),'utf8'));
+const currentModel=require('../docs/assets/clog-beta-model').build(saved,[
+ {key:'dikste',name:'Dikste'},{key:'big dog aura',name:'Big Dog Aura'},{key:'lijpste',name:'Lijpste'},{key:'poep aura',name:'Poep Aura'},{key:'lompste',name:'Lompste'}
+]);
+const currentPlayers=[{key:'dikste',name:'Dikste'},{key:'big dog aura',name:'Big Dog Aura'},{key:'lijpste',name:'Lijpste'},{key:'poep aura',name:'Poep Aura'},{key:'lompste',name:'Lompste'}].filter(p=>currentModel.known.has(p.key));
+const cappedExpected=new Map([[12934,65535],[20718,250],[21817,250],[21820,65535],[24711,250],[27616,65535],[28924,250],[28991,250],[29482,250],[31111,65535],[31235,250],[31916,250]]);
+for(const [id,cap] of cappedExpected){
+ const atCap=currentPlayers.filter(p=>(currentModel.counts.get(p.key)?.get(id)||0)>=cap);
+ assert(atCap.length>0,'expected saved log to contain capped item '+id);
+ const reason=L.exclusion(id,currentModel.names.get(id)||('Item '+id),atCap,{},currentModel,{snapData:()=>({})});
+ assert(reason&&reason.kind==='cap'&&reason.cap===cap,'saved capped item '+id+' must be excluded at '+cap);
+}
+assert.equal(cappedExpected.size,12);
+const gimHtml=fs.readFileSync(path.join(__dirname,'../docs/gim.html'),'utf8');
+const luckPanel=(gimHtml.match(/<section class="hidden" data-gim-panel="luck">([\s\S]*?)<\/section>\s*<section class="hidden" data-gim-panel="categories">/)||[])[1]||'';
+assert(luckPanel&&!/<select\b/i.test(luckPanel),'Lucky or Not must use additive member checkboxes, not a dropdown');
+console.log('Current saved log capped-entry audit passed: 12 capped unique items; Lucky or Not has no dropdown.');

@@ -48,10 +48,10 @@ function excludedFor(ps){
 function exposure(metrics){const src=new Map();for(const m of metrics)for(const s of m.r.sources||[]){const old=src.get(s.source)||0;src.set(s.source,Math.max(old,+s.kc||0))}return{attempts:[...src.values()].reduce((a,b)=>a+b,0),sources:src.size}}
 function sample(metrics){const e=exposure(metrics),n=metrics.length;if(n<12||e.attempts<75)return{key:'insufficient',label:'insufficient sample',detail:n+' scored items · '+fmt(e.attempts)+' source attempts'};if(n<35||e.attempts<350)return{key:'limited',label:'limited sample',detail:n+' scored items · '+fmt(e.attempts)+' source attempts'};return{key:'usable',label:'usable sample',detail:n+' scored items · '+fmt(e.attempts)+' source attempts'}}
 function indices(metrics){
- const raw=metrics.length?metrics.reduce((n,m)=>n+m.z,0)/metrics.length:null;
+ const rawSum=metrics.reduce((n,m)=>n+m.z,0),raw=metrics.length?rawSum/metrics.length:null;
  const valued=prices?metrics.map(m=>({m,w:softValueWeight(price(m.id))})).filter(x=>x.w>0):[];
- const den=valued.reduce((n,x)=>n+x.w,0),value=den?valued.reduce((n,x)=>n+x.m.z*x.w,0)/den:null;
- return{raw,value,priced:valued.length}
+ const valueWeight=valued.reduce((n,x)=>n+x.w,0),valueNumerator=valued.reduce((n,x)=>n+x.m.z*x.w,0),value=valueWeight?valueNumerator/valueWeight:null;
+ return{raw,rawSum,rawCount:metrics.length,value,valueNumerator,valueWeight,priced:valued.length}
 }
 function entityStats(ps){const metrics=metricsFor(ps),idx=indices(metrics),s=sample(metrics);return{metrics,idx,s}}
 function renderPicker(){
@@ -62,15 +62,15 @@ function overview(){
  const h=$('#clogLuckOverview');if(!h)return;const ps=selectedPlayers();
  if(!ps.length){h.innerHTML='<div class="notice">No selected member has a synced Collection Log.</div>';return}
  const s=entityStats(ps),excluded=excludedFor(ps),names=ps.map(p=>p.name).join(', ');
- h.innerHTML='<div class="clog-luck-kpi"><span>Raw RNG index</span><b class="clog-luck-'+tone(s.idx.raw||0)+'">'+(s.idx.raw==null?'—':sig(s.idx.raw))+'</b><small>Plain mean of item-level standardized luck across '+fmt(s.metrics.length)+' calculable items.</small></div>'+
- '<div class="clog-luck-kpi"><span>Soft value-weighted index</span><b class="clog-luck-'+tone(s.idx.value||0)+'">'+(s.idx.value==null?'—':signed(s.idx.value))+'</b><small>Price only changes item weight from 1.00× to at most 2.25×; '+fmt(s.idx.priced)+' priced items included.</small></div>'+
+ h.innerHTML='<div class="clog-luck-kpi"><span>Raw RNG index</span><b class="clog-luck-'+tone(s.idx.raw||0)+'">'+(s.idx.raw==null?'—':sig(s.idx.raw))+'</b><small>Every calculable item gets exactly one equal vote. '+(s.idx.raw==null?'No score.':signed(s.idx.rawSum)+' total σ ÷ '+fmt(s.idx.rawCount)+' items.')+'</small></div>'+
+ '<div class="clog-luck-kpi"><span>Soft value-weighted index</span><b class="clog-luck-'+tone(s.idx.value||0)+'">'+(s.idx.value==null?'—':signed(s.idx.value))+'</b><small>'+(s.idx.value==null?'Needs live prices.':signed(s.idx.valueNumerator)+' weighted σ ÷ '+s.idx.valueWeight.toFixed(2)+' total weight.')+' Each priced item is only 1.00×–2.25×.</small></div>'+
  '<div class="clog-luck-kpi"><span>Current selection</span><b>'+fmt(ps.length)+' member'+(ps.length===1?'':'s')+'</b><small>'+esc(names)+' · '+fmt(excluded.length)+' items excluded/impossible to tell.</small></div>';
  const badge=$('#clogLuckImpossibleCount');if(badge)badge.textContent=fmt(excluded.length)
 }
 function itemRow(m){
  const p=price(m.id),expected=Number.isFinite(m.r.expected)?m.r.expected:null,actual=fmt(m.r.observed),pct=m.r.text,w=softValueWeight(p),weighted=m.z*w;
- const score=mode==='value'?signed(weighted)+' weighted':sig(m.z);
- const sub=mode==='value'?(sig(m.z)+' raw × '+w.toFixed(2)+' value multiplier · '+money(p)+' gp'):(actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile');
+ const score=mode==='value'?signed(weighted)+' numerator':sig(m.z);
+ const sub=mode==='value'?(sig(m.z)+' item σ × '+w.toFixed(2)+' weight = '+signed(weighted)+' · '+money(p)+' gp'):(actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile');
  return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(m.z)+'">'+score+'</strong><small>'+(mode==='value'?pct+' raw percentile':((m.r.sources||[]).slice(0,1).map(s=>fmt(s.kc)+' '+esc(s.label)).join('')||'modelled rolls'))+'</small></div></article>'
 }
 function ranked(metrics){
@@ -78,7 +78,13 @@ function ranked(metrics){
  return metrics.map(m=>({...m,sort:m.z})).sort((a,b)=>b.sort-a.sort)
 }
 function renderLists(){
- const ps=selectedPlayers(),subjectLabel=ps.map(p=>p.name).join(', ')||'no selected members',metrics=ps.length?entityStats(ps).metrics:[],rows=ranked(metrics),lucky=rows.slice(0,8),dry=[...rows].sort((a,b)=>a.sort-b.sort).slice(0,8);
+ const ps=selectedPlayers(),subjectLabel=ps.map(p=>p.name).join(', ')||'no selected members',stats=ps.length?entityStats(ps):null,metrics=stats?.metrics||[],rows=ranked(metrics),lucky=rows.slice(0,8),dry=[...rows].sort((a,b)=>a.sort-b.sort).slice(0,8);
+ const formula=$('#clogLuckFormula');
+ if(formula){
+  if(!stats)formula.innerHTML='';
+  else if(mode==='value')formula.innerHTML=stats.idx.value==null?'<b>Soft value formula:</b> live GE prices unavailable.':'<b>Soft value formula:</b> '+signed(stats.idx.valueNumerator)+' weighted σ ÷ '+stats.idx.valueWeight.toFixed(2)+' total weight = <strong>'+signed(stats.idx.value)+'</strong>. Item multiplier range: 1.00×–2.25×.';
+  else formula.innerHTML='<b>Raw formula:</b> '+signed(stats.idx.rawSum)+' total σ ÷ '+fmt(stats.idx.rawCount)+' calculable items = <strong>'+sig(stats.idx.raw)+'</strong>. Every item has exactly one equal vote.';
+ }
  $('#clogLuckLuckyTitle').textContent=mode==='value'?'Lucky + economically meaningful':'Most statistically lucky';
  $('#clogLuckDryTitle').textContent=mode==='value'?'Unlucky + economically meaningful':'Most statistically unlucky';
  $('#clogLuckLuckySub').textContent=subjectLabel;$('#clogLuckDrySub').textContent=subjectLabel;
@@ -93,7 +99,8 @@ function renderPlayers(){
 function renderImpossible(){
  const h=$('#clogLuckImpossible');if(!h)return;const ps=selectedPlayers(),rows=ps.length?excludedFor(ps):[];
  const order={cap:0,nex:1,barrows:2,mechanic:3,rate:4,unknown:5,selection:6};rows.sort((a,b)=>(order[a.reason.kind]??9)-(order[b.reason.kind]??9)||b.count-a.count||a.name.localeCompare(b.name));
- h.innerHTML=rows.length?rows.map(x=>'<article class="clog-luck-impossible-row"><img src="https://static.runelite.net/cache/item/icon/'+x.id+'.png" alt=""><div><b>'+U.itemLink(x.id,x.name)+'</b><small>'+esc(x.reason.detail)+'</small></div><div><strong>'+esc(x.reason.label)+'</strong><small>'+fmt(x.count)+' logged in current selection</small></div></article>').join(''):'<div class="clog-luck-empty">No excluded items for this selection.</div>'
+ const capped=rows.filter(x=>x.reason.kind==='cap').length,nex=rows.filter(x=>x.reason.kind==='nex').length;
+ h.innerHTML=rows.length?'<div class="clog-luck-impossible-summary"><b>'+fmt(rows.length)+' excluded items</b><span>'+fmt(capped)+' capped counters · '+fmt(nex)+' Nex entries · remaining rows lack a defensible denominator/mechanic</span></div>'+rows.map(x=>'<article class="clog-luck-impossible-row"><img src="https://static.runelite.net/cache/item/icon/'+x.id+'.png" alt=""><div><b>'+U.itemLink(x.id,x.name)+'</b><small>'+esc(x.reason.detail)+'</small></div><div><strong>'+esc(x.reason.label)+'</strong><small>'+fmt(x.count)+' logged in current selection</small></div></article>').join(''):'<div class="clog-luck-empty">No excluded items for this selection.</div>'
 }
 function renderView(){
  const scored=$('#clogLuckScored'),impossible=$('#clogLuckImpossiblePanel');
