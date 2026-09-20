@@ -303,6 +303,32 @@ function raidPortfolio(metrics,def){
  return{...def,rows,observed,expected,volumeZ,qualityZ,coverageZ,z,confidence:confidenceWeighted,effectiveWeight,contribution}
 }
 
+function atLeastOneChance(groups){
+ let none=1;
+ for(const g of groups||[]){
+  const n=Math.max(0,+g.n||0),p=clamp(+g.p||0,0,1);
+  none*=Math.pow(1-p,n)
+ }
+ return clamp(1-none,0,1)
+}
+function boundUnlockPortfolios(metrics){
+ const out=[];
+ for(const m of metrics){
+  const p=impactProfile(m);if(p.kind!=='bound-unlock')continue;
+  const ps=contextPlayers(m);let observed=0,expected=0,variance=0,relNum=0,relDen=0,used=0;
+  for(const player of ps){
+   let r=null;try{r=L.calculate(m.id,m.name,[player],wom,model,U)}catch{}
+   if(!r||!Array.isArray(r.groups)||!r.groups.length)continue;
+   const q=atLeastOneChance(r.groups),got=(model.counts.get(player.key)?.get(+m.id)||0)>0?1:0,rel=modelConfidence({...m,r}).f;
+   observed+=got;expected+=q;variance+=q*(1-q);relNum+=rel*Math.max(q,.05);relDen+=Math.max(q,.05);used++
+  }
+  if(!used||variance<1e-8)continue;
+  const z=cappedZ((observed-expected)/Math.sqrt(variance)),reliability=relDen?relNum/relDen:1,w=p.base*.65;
+  out.push({key:'bound:'+m.id,label:m.name+' unlock coverage',m,observed,expected,z,reliability,effectiveWeight:w,contribution:z*w*reliability})
+ }
+ return out
+}
+
 function portfolioResidual(m){
  const p=impactProfile(m);
  if(p.kind==='bound-unlock')return .45;
@@ -424,12 +450,13 @@ function indices(metrics){
  const rawInfo=rawIndex(metrics),weighted=independentUnits(metrics);
  const itemNumerator=weighted.reduce((n,x)=>n+x.z*x.w*x.reliability,0);
  const itemWeightSq=weighted.reduce((n,x)=>n+x.w*x.w,0);
- const portfolios=RAID_PORTFOLIOS.map(d=>raidPortfolio(metrics,d)).filter(Boolean);
- const portfolioNumerator=portfolios.reduce((n,p)=>n+p.contribution,0);
- const portfolioWeightSq=portfolios.reduce((n,p)=>n+p.effectiveWeight*p.effectiveWeight,0);
+ const portfolios=RAID_PORTFOLIOS.map(d=>raidPortfolio(metrics,d)).filter(Boolean),boundPortfolios=boundUnlockPortfolios(metrics);
+ const raidNumerator=portfolios.reduce((n,p)=>n+p.contribution,0),boundNumerator=boundPortfolios.reduce((n,p)=>n+p.contribution,0);
+ const portfolioNumerator=raidNumerator+boundNumerator;
+ const portfolioWeightSq=portfolios.reduce((n,p)=>n+p.effectiveWeight*p.effectiveWeight,0)+boundPortfolios.reduce((n,p)=>n+p.effectiveWeight*p.effectiveWeight,0);
  const numerator=itemNumerator+portfolioNumerator,denom=Math.sqrt(itemWeightSq+portfolioWeightSq);
  const meaningful=denom?numerator/denom:null,score=luckScore(meaningful),financial=financialIndex(metrics);
- return{raw:rawInfo.z,rawSum:rawInfo.sum,rawCount:metrics.length,rawFamilies:rawInfo.families.length,meaningful,numerator,denom,score,financial,weightedCount:weighted.length,dependentCollapsed:metrics.length-weighted.length,portfolios,itemNumerator,portfolioNumerator,sourceSaturated:weighted.filter(x=>x.sourceScale&&x.sourceScale<.999).length}
+ return{raw:rawInfo.z,rawSum:rawInfo.sum,rawCount:metrics.length,rawFamilies:rawInfo.families.length,meaningful,numerator,denom,score,financial,weightedCount:weighted.length,dependentCollapsed:metrics.length-weighted.length,portfolios,boundPortfolios,itemNumerator,raidNumerator,boundNumerator,portfolioNumerator,sourceSaturated:weighted.filter(x=>x.sourceScale&&x.sourceScale<.999).length}
 }
 function entityStats(ps){const metrics=metricsFor(ps),idx=indices(metrics),s=sample(metrics);return{metrics,idx,s}}
 function renderPicker(){
