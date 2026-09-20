@@ -29,6 +29,8 @@ const COMMUNITY_RULES=[
  {w:6.1,label:'high-breadth raid weapon',kind:'major-shareable',re:/^osmumten's fang$/i},
  {w:5.8,label:'high-impact special-attack weapon',kind:'major-shareable',re:/^dragon claws$/i},
  {w:5.5,label:'progression-opening demonbane choice',kind:'major-shareable',re:/^tormented synapse$/i},
+ {w:5.8,label:'major magic progression / rare permanent utility',kind:'major-shareable',re:/^(imbued heart|saturated heart)$/i},
+ {w:4.8,label:'high-impact special-attack progression',kind:'major-shareable',re:/^burning claw$/i},
  {w:5.4,label:'high-breadth utility ring',kind:'shareable',re:/^lightbearer$/i},
  {w:5.0,label:'major specialist weapon',kind:'major-shareable',re:/^(dragon hunter crossbow|kodai insignia|hydra's claw|hydra claw)$/i},
  {w:4.7,label:'major account upgrade',kind:'shareable',re:/^(zamorakian spear|basilisk jaw)$/i},
@@ -76,18 +78,21 @@ function impactProfile(m){
  if(/sword|bow|staff|mace|spear|halberd|axe|claw|fang|helm|mask|body|plate|robe|legs|chaps|tassets|boots|gloves|ring|amulet|necklace|shield|ward|defender|hilt|seed|crystal/i.test(name))return{base:.9,label:'equipment / progression',kind:'shareable'};
  return{base:.35,label:'low-impact collection item',kind:'low-impact'}
 }
-function averageMarginal(q,curve,tail=.12){
+function marginalCurve(profile){
+ if(profile.kind==='personal-unlock')return{curve:[1,1,1,1,1],tail:.04};
+ if(profile.kind==='major-shareable')return{curve:[1,.86,.74,.63,.53],tail:.16};
+ if(profile.kind==='shareable')return{curve:[1,.74,.57,.44,.34],tail:.12};
+ return{curve:[1],tail:1}
+}
+function marginalAt(q,profile){
+ const x=marginalCurve(profile),i=Math.max(0,Math.floor(+q||0));return i<x.curve.length?x.curve[i]:x.tail
+}
+function averageMarginal(q,profile){
  q=Math.max(0,Math.floor(+q||0));if(q<=0)return 1;
- let total=0;for(let i=0;i<q;i++)total+=i<curve.length?curve[i]:tail;
+ let total=0;for(let i=0;i<q;i++)total+=marginalAt(i,profile);
  return total/q
 }
-function copyUtility(profile,m){
- const q=portfolioCount(m.name);
- if(profile.kind==='personal-unlock')return averageMarginal(q,[1,.96,.92,.88,.84],.12);
- if(profile.kind==='major-shareable')return averageMarginal(q,[1,.82,.66,.52,.42],.14);
- if(profile.kind==='shareable')return averageMarginal(q,[1,.72,.54,.40,.30],.12);
- return 1
-}
+function copyUtility(profile,m){return averageMarginal(portfolioCount(m.name),profile)}
 function itemIdByName(name){
  const low=String(name||'').toLowerCase();for(const id of modelIds())if(String(model.names.get(id)||'').toLowerCase()===low)return +id;return null
 }
@@ -106,26 +111,29 @@ function componentUtility(profile){
  if(complete>0)return{f:clamp(1.35+.12*Math.min(complete-1,3),1,1.7),label:complete+' complete '+set.label+(complete===1?'':'s')+' assembled by individual group members'};
  return{f:.45+.15*pieces,label:pieces+'/'+set.names.length+' component types represented, but no confirmed complete set on one member'}
 }
+function exactPortfolio(name){return portfolioCount(name)}
+function setCapacity(names){return Math.min(...names.map(exactPortfolio))}
+function matchedFraction(a,b){a=Math.max(0,+a||0);b=Math.max(0,+b||0);return a>0?Math.min(a,b)/a:0}
 function synergyUtility(m,profile){
  const n=String(m.name||'').toLowerCase(),reasons=[];let f=1;
- const tbow=portfolioCount('twisted bow'),dex=portfolioCount('dexterous prayer scroll');
- const shadow=portfolioCount("tumeken's shadow (uncharged)"),scythe=portfolioCount('scythe of vitur (uncharged)');
- const enhanced=portfolioCount('enhanced crystal weapon seed'),armourSeeds=portfolioCount('crystal armour seed');
- const ancestral=sumPortfolio(/^ancestral (hat|robe top|robe bottom)$/),masori=sumPortfolio(/^masori (mask|body|chaps)$/);
- const claws=portfolioCount('dragon claws'),zcb=portfolioCount('zaryte crossbow'),lb=portfolioCount('lightbearer');
- if(n==='twisted bow'&&dex>0){f+=.12;reasons.push('Rigour access in group')}
- if(n==='twisted bow'&&masori>=3){f+=.06;reasons.push('Masori support')}
- if(n==='dexterous prayer scroll'&&tbow>0){f+=.10;reasons.push('Tbow in group')}
- else if(n==='dexterous prayer scroll'&&enhanced>0){f+=.05;reasons.push('Bowfa progression in group')}
- if(n==="tumeken's shadow (uncharged)"&&ancestral>=2){f+=.12;reasons.push('Ancestral support')}
- if(/^ancestral (hat|robe top|robe bottom)$/.test(n)&&shadow>0){f+=.15;reasons.push('Shadow in group')}
- if(/^masori (mask|body|chaps)$/.test(n)&&tbow>0){f+=.12;reasons.push('Tbow in group')}
- if(n==='enhanced crystal weapon seed'&&armourSeeds>=6){f+=.12;reasons.push('full crystal armour access')}
- if(n==='lightbearer'&&(claws>0||zcb>0)){f+=.10;reasons.push('high-impact spec weapon access')}
- if((n==='dragon claws'||n==='zaryte crossbow')&&lb>0){f+=.08;reasons.push('Lightbearer in group')}
- if(n==='avernic defender hilt'&&(scythe>0||portfolioCount("osmumten's fang")>0)){f+=.06;reasons.push('endgame melee weapon support')}
+ const tbow=exactPortfolio('twisted bow'),dex=exactPortfolio('dexterous prayer scroll');
+ const shadow=exactPortfolio("tumeken's shadow (uncharged)"),enhanced=exactPortfolio('enhanced crystal weapon seed'),armourSeeds=exactPortfolio('crystal armour seed');
+ const masoriSet=setCapacity(['masori mask','masori body','masori chaps']);
+ const ancNames=['ancestral hat','ancestral robe top','ancestral robe bottom'],ancPieces=ancNames.reduce((x,name)=>x+Math.min(exactPortfolio(name),Math.max(1,shadow)),0);
+ const claws=exactPortfolio('dragon claws')+exactPortfolio('burning claw'),zcb=exactPortfolio('zaryte crossbow'),lb=exactPortfolio('lightbearer');
+ const spec=Math.max(0,claws+zcb);
+ // Each side receives roughly half of a capped interaction bonus.
+ if(n==='twisted bow'&&dex>0){const x=.06*matchedFraction(tbow,dex);f+=x;if(x>.005)reasons.push('matched Rigour capacity')}
+ if(n==='dexterous prayer scroll'&&tbow>0){const x=.06*matchedFraction(dex,tbow);f+=x;if(x>.005)reasons.push('matched Tbow capacity')}
+ if(n==='twisted bow'&&masoriSet>0){const x=.03*matchedFraction(tbow,masoriSet);f+=x;if(x>.005)reasons.push('complete Masori loadout support')}
+ if(/^masori (mask|body|chaps)$/.test(n)&&tbow>0){const piece=exactPortfolio(n),x=.03*matchedFraction(piece,tbow);f+=x;if(x>.005)reasons.push('Tbow loadout support')}
+ if(n==="tumeken's shadow (uncharged)"&&ancPieces>0){const coverage=shadow>0?Math.min(1,ancPieces/(3*shadow)):0,x=.06*coverage;f+=x;if(x>.005)reasons.push('Ancestral magic-damage support')}
+ if(/^ancestral (hat|robe top|robe bottom)$/.test(n)&&shadow>0){const x=.06*matchedFraction(exactPortfolio(n),shadow);f+=x;if(x>.005)reasons.push('Shadow loadout support')}
+ if(n==='enhanced crystal weapon seed'&&armourSeeds>=6){const sets=Math.floor(armourSeeds/6),x=.06*matchedFraction(enhanced,sets);f+=x;if(x>.005)reasons.push('crystal armour capacity')}
+ if(n==='lightbearer'&&spec>0){const x=.05*matchedFraction(lb,spec);f+=x;if(x>.005)reasons.push('matched special-attack weapon capacity')}
+ if((n==='dragon claws'||n==='burning claw'||n==='zaryte crossbow')&&lb>0){const q=exactPortfolio(n),x=.05*matchedFraction(q,lb);f+=x;if(x>.005)reasons.push('Lightbearer support')}
  const component=componentUtility(profile);f*=component.f;if(component.label)reasons.push(component.label);
- return{f:clamp(f,.35,1.55),label:reasons.join(' · ')||null}
+ return{f:clamp(f,.35,1.30),label:reasons.join(' · ')||null}
 }
 function geModifier(gp){if(!Number.isFinite(+gp)||+gp<=0)return 1;const x=clamp((Math.log10(+gp)-5)/5,0,1);return .94+.12*x}
 function modelConfidence(m){
@@ -141,41 +149,34 @@ function modelConfidence(m){
 }
 function deficitCompensation(profile,m,z){
  if(!(Number.isFinite(z)&&z<0))return{f:1,label:null};
- const q=portfolioCount(m.name),members=Math.max(1,fullGroupPlayers().length);
- if(profile.kind==='personal-unlock'){
-  const coverage=clamp(q/members,0,1),f=1-.82*coverage;
-  return{f,label:coverage>0?'group already covers '+Math.round(coverage*100)+'% of personal unlock capacity':null}
- }
- if(profile.kind==='major-shareable'){
-  const f=q<=0?1:q===1?.48:q===2?.34:q===3?.27:.22;
-  return{f,label:q>0?q+' group cop'+(q===1?'y':'ies')+' already provide shared access':null}
- }
- if(profile.kind==='shareable'){
-  const f=q<=0?1:q===1?.42:q===2?.30:q===3?.24:.20;
-  return{f,label:q>0?q+' group cop'+(q===1?'y':'ies')+' already reduce the practical deficit':null}
- }
  if(profile.kind==='component'&&profile.set&&COMPONENT_SETS[profile.set]){
   const set=COMPONENT_SETS[profile.set],complete=completedUntradeableSets(set);
-  return complete>0?{f:.28,label:'group already has '+complete+' completed '+set.label+(complete===1?'':'s')+' from personal component sets'}:{f:1,label:null}
+  return complete>0?{f:.55,label:'completed '+set.label+' already exists in group'}:{f:1,label:null}
  }
- return{f:1,label:null}
+ if(!['personal-unlock','major-shareable','shareable'].includes(profile.kind))return{f:1,label:null};
+ const q=portfolioCount(m.name),f=marginalAt(q,profile),members=Math.max(1,fullGroupPlayers().length);
+ let label=null;
+ if(profile.kind==='personal-unlock'&&q>0)label=Math.min(q,members)+'/'+members+' group unlock capacity already supplied';
+ else if(q>0)label=q+' existing group cop'+(q===1?'y':'ies')+'; next copy retains '+Math.round(f*100)+'% marginal progression value';
+ return{f,label}
 }
 function impactWeight(m,z=null){
  const p=impactProfile(m),copy=copyUtility(p,m),synergy=synergyUtility(m,p),deficit=deficitCompensation(p,m,z),ge=p.base>=.5?geModifier(price(m.id)):1,confidence=modelConfidence(m);
- const w=clamp(p.base*copy*synergy.f*deficit.f*ge*confidence.f,.03,10.5);
- return{...p,copy,synergy,deficit,ge,confidence,w}
+ const w=clamp(p.base*copy*synergy.f*deficit.f*ge,.03,10.5);
+ return{...p,copy,synergy,deficit,ge,confidence,w,reliability:confidence.f}
 }
 function financialWeight(m){
- const gp=price(m.id);if(!Number.isFinite(gp)||gp<=0)return{gp:0,w:0};
+ const gp=price(m.id);if(!Number.isFinite(gp)||gp<=0)return{gp:0,w:0,reliability:0};
  const confidence=modelConfidence(m),base=clamp(Math.pow(gp/1e6,.28),.12,6.5);
- return{gp,w:base*confidence.f,confidence}
+ return{gp,w:base,reliability:confidence.f,confidence}
 }
 function financialIndex(metrics){
  const rows=metrics.map(m=>({m,z:cappedZ(m.z),...financialWeight(m)})).filter(x=>x.w>0);
- const numerator=rows.reduce((n,x)=>n+x.z*x.w,0),denom=Math.sqrt(rows.reduce((n,x)=>n+x.w*x.w,0));
+ const numerator=rows.reduce((n,x)=>n+x.z*x.w*x.reliability,0),denom=Math.sqrt(rows.reduce((n,x)=>n+x.w*x.w,0));
  const z=denom?numerator/denom:null;
- const deltaGp=rows.reduce((n,x)=>n+(Number.isFinite(x.m.r.expected)?(x.m.r.observed-x.m.r.expected)*x.gp:0),0);
- return{z,numerator,denom,deltaGp,count:rows.length}
+ const deltaRows=rows.filter(x=>Number.isFinite(x.m.r.expected));
+ const deltaGp=deltaRows.reduce((n,x)=>n+(x.m.r.observed-x.m.r.expected)*x.gp,0);
+ return{z,numerator,denom,deltaGp,count:rows.length,deltaCount:deltaRows.length}
 }
 
 const RAID_PORTFOLIOS=[
