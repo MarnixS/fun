@@ -21,13 +21,14 @@ function money(n){if(!Number.isFinite(+n)||+n<=0)return'—';n=+n;return n>=1e9?
 function tone(z){return z>.15?'positive':z<-.15?'negative':'neutral'}
 function sourceText(m){return(m?.r?.sources||[]).map(x=>String(x.label||x.source||'')).join(' ').toLowerCase()}
 const IMPACT_RULES=[
- {w:5,label:'transformative raid weapon',re:/^(twisted bow|tumeken's shadow|scythe of vitur)$/i},
+ {w:6,label:'transformative raid weapon',re:/^(twisted bow|tumeken's shadow(?: \\(uncharged\\))?|scythe of vitur(?: \\(uncharged\\))?)$/i},
  {w:4.8,label:'transformative progression unlock',re:/^enhanced crystal weapon seed$/i},
  {w:4.4,label:'major progression weapon',re:/^(dragon warhammer|elder maul|hydra's claw|hydra claw)$/i},
  {w:4.0,label:'major progression weapon',re:/^(osmumten's fang|bow of faerdhinen)$/i},
  {w:3.6,label:'major account upgrade',re:/^(avernic defender hilt|zamorakian spear|basilisk jaw)$/i},
  {w:3.3,label:'major equipment upgrade',re:/^(araxtye fang|araxyte fang|primordial crystal|zenyte shard)$/i},
- {w:3.0,label:'major raid armour',re:/^(torva full helm|torva platebody|torva platelegs|ancestral hat|ancestral robe top|ancestral robe bottom|masori mask|masori body|masori chaps)$/i},
+ {w:3.2,label:'major raid armour',re:/^(torva full helm|torva platebody|torva platelegs|ancestral hat|ancestral robe top|ancestral robe bottom|masori mask|masori body|masori chaps)$/i},
+ {w:2.6,label:'high-value raid unique',re:/^(kodai insignia|dragon claws|dinh's bulwark|twisted buckler|dragon hunter crossbow)$/i},
  {w:2.8,label:'high-impact equipment',re:/^(bandos chestplate|bandos tassets|dexterous prayer scroll|nightmare staff|inquisitor's mace)$/i},
  {w:2.5,label:'high-impact equipment',re:/^(lightbearer|elidinis' ward|hydra leather|ferocious gloves|occult necklace|venator bow)$/i},
  {w:2.2,label:'meaningful equipment upgrade',re:/^(armadyl crossbow|saradomin sword|staff of the dead|toxic blowpipe|serpentine visage|magic fang)$/i},
@@ -53,7 +54,26 @@ function impactProfile(m){
  return{base:.35,label:'low-impact collection item'}
 }
 function geModifier(gp){if(!Number.isFinite(+gp)||+gp<=0)return 1;const x=clamp((Math.log10(+gp)-5)/5,0,1);return .9+.2*x}
-function impactWeight(m){const p=impactProfile(m),mod=p.base>=.5?geModifier(price(m.id)):1;return{...p,ge:mod,w:clamp(p.base*mod,.03,5)}}
+function impactWeight(m){const p=impactProfile(m),mod=p.base>=.5?geModifier(price(m.id)):1;return{...p,ge:mod,w:clamp(p.base*mod,.03,6.5)}}
+
+const RAID_PORTFOLIOS=[
+ {key:'cox',label:'CoX purple portfolio',weight:9,names:new Set(['Twisted bow','Kodai insignia','Elder maul','Dragon claws','Ancestral hat','Ancestral robe top','Ancestral robe bottom',"Dinh's bulwark",'Dragon hunter crossbow','Twisted buckler','Dexterous prayer scroll','Arcane prayer scroll'])},
+ {key:'toa',label:'ToA purple portfolio',weight:9,names:new Set(["Tumeken's shadow (uncharged)","Osmumten's fang",'Lightbearer',"Elidinis' ward",'Masori mask','Masori body','Masori chaps'])},
+ {key:'tob',label:'ToB purple portfolio',weight:8,names:new Set(['Avernic defender hilt','Ghrazi rapier','Sanguinesti staff (uncharged)','Scythe of Vitur (uncharged)','Justiciar faceguard','Justiciar chestguard','Justiciar legguards'])}
+];
+function raidPortfolio(metrics,def){
+ const rows=metrics.filter(m=>def.names.has(m.name)&&Number.isFinite(m.r.expected)&&Number.isFinite(m.r.observed));
+ const expected=rows.reduce((n,m)=>n+m.r.expected,0),observed=rows.reduce((n,m)=>n+m.r.observed,0);
+ if(!rows.length||expected<=0)return null;
+ const volumeZ=cappedZ((observed-expected)/Math.sqrt(Math.max(.25,expected)));
+ const weighted=rows.map(m=>({m,w:impactWeight(m).w}));
+ const meanW=weighted.reduce((n,x)=>n+x.m.r.expected*x.w,0)/expected;
+ const qNum=weighted.reduce((n,x)=>n+(x.m.r.observed-x.m.r.expected)*(x.w-meanW),0);
+ const qDen=Math.sqrt(weighted.reduce((n,x)=>n+x.m.r.expected*Math.pow(x.w-meanW,2),0));
+ const qualityZ=qDen>.05?cappedZ(qNum/qDen):0;
+ const z=cappedZ((.72*volumeZ+.69*qualityZ)/Math.sqrt(.72*.72+.69*.69));
+ return{...def,rows,observed,expected,volumeZ,qualityZ,z,contribution:z*def.weight}
+}
 function cappedZ(z){return clamp(z,-3.5,3.5)}
 function luckScore(z){if(!Number.isFinite(z))return null;const t=Math.tanh(.35*z);return clamp(z>=0?5+5*t:5+4*t,1,10)}
 function scoreText(v){return Number.isFinite(v)?v.toFixed(1)+'/10':'—'}
@@ -87,10 +107,15 @@ function sample(metrics){const e=exposure(metrics),n=metrics.length;if(n<12||e.a
 function indices(metrics){
  const rawSum=metrics.reduce((n,m)=>n+cappedZ(m.z),0),rawDen=Math.sqrt(metrics.length||0),raw=rawDen?rawSum/rawDen:null;
  const weighted=metrics.map(m=>({m,imp:impactWeight(m)}));
- const numerator=weighted.reduce((n,x)=>n+cappedZ(x.m.z)*x.imp.w,0);
- const denom=Math.sqrt(weighted.reduce((n,x)=>n+x.imp.w*x.imp.w,0));
+ const itemNumerator=weighted.reduce((n,x)=>n+cappedZ(x.m.z)*x.imp.w,0);
+ const itemWeightSq=weighted.reduce((n,x)=>n+x.imp.w*x.imp.w,0);
+ const portfolios=RAID_PORTFOLIOS.map(d=>raidPortfolio(metrics,d)).filter(Boolean);
+ const portfolioNumerator=portfolios.reduce((n,p)=>n+p.contribution,0);
+ const portfolioWeightSq=portfolios.reduce((n,p)=>n+p.weight*p.weight,0);
+ const numerator=itemNumerator+portfolioNumerator;
+ const denom=Math.sqrt(itemWeightSq+portfolioWeightSq);
  const meaningful=denom?numerator/denom:null,score=luckScore(meaningful);
- return{raw,rawSum,rawCount:metrics.length,meaningful,numerator,denom,score,weightedCount:weighted.length}
+ return{raw,rawSum,rawCount:metrics.length,meaningful,numerator,denom,score,weightedCount:weighted.length,portfolios,itemNumerator,portfolioNumerator}
 }
 function entityStats(ps){const metrics=metricsFor(ps),idx=indices(metrics),s=sample(metrics);return{metrics,idx,s}}
 function renderPicker(){
@@ -102,7 +127,7 @@ function overview(){
  if(!ps.length){h.innerHTML='<div class="notice">No selected member has a synced Collection Log.</div>';return}
  const s=entityStats(ps),excluded=excludedFor(ps),names=ps.map(p=>p.name).join(', ');
  h.innerHTML='<div class="clog-luck-kpi"><span>Luck score</span><b class="clog-luck-'+tone(s.idx.meaningful||0)+'">'+scoreText(s.idx.score)+'</b><small>5.0 is statistically ordinary. 1.0 and 10.0 are theoretical extremes. Progression-important RNG counts far more than cosmetics.</small></div>'+
- '<div class="clog-luck-kpi"><span>Combined meaningful RNG</span><b class="clog-luck-'+tone(s.idx.meaningful||0)+'">'+(s.idx.meaningful==null?'—':sig(s.idx.meaningful))+'</b><small>'+((s.idx.meaningful==null)?'No score.':signed(s.idx.numerator)+' weighted σ ÷ '+s.idx.denom.toFixed(2)+' Stouffer denominator.')+' Individual item σ is capped at ±3.50 before combination.</small></div>'+
+ '<div class="clog-luck-kpi"><span>Combined meaningful RNG</span><b class="clog-luck-'+tone(s.idx.meaningful||0)+'">'+(s.idx.meaningful==null?'—':sig(s.idx.meaningful))+'</b><small>'+((s.idx.meaningful==null)?'No score.':signed(s.idx.numerator)+' weighted σ ÷ '+s.idx.denom.toFixed(2)+' Stouffer denominator.')+' Individual item σ is capped at ±3.50. CoX/ToA/ToB also add a pooled raid-portfolio signal so total purple volume and drop quality can compensate across items and selected players.</small></div>'+
  '<div class="clog-luck-kpi"><span>Current selection</span><b>'+fmt(ps.length)+' member'+(ps.length===1?'':'s')+'</b><small>'+esc(names)+' · '+fmt(s.idx.rawCount)+' calculable items · '+fmt(excluded.length)+' excluded/impossible to tell.</small></div>';
  const badge=$('#clogLuckImpossibleCount');if(badge)badge.textContent=fmt(excluded.length)
 }
@@ -118,7 +143,7 @@ function renderLists(){
  const ps=selectedPlayers(),subjectLabel=ps.map(p=>p.name).join(', ')||'no selected members',stats=ps.length?entityStats(ps):null,metrics=stats?.metrics||[],rows=ranked(metrics),lucky=rows.slice(0,8),dry=[...rows].sort((a,b)=>a.sort-b.sort).slice(0,8);
  const formula=$('#clogLuckFormula');
  if(formula){
-  formula.innerHTML=!stats?'':'<b>Final 1–10 score:</b> weighted Stouffer Z = '+signed(stats.idx.numerator)+' ÷ '+stats.idx.denom.toFixed(2)+' = <strong>'+sig(stats.idx.meaningful)+'</strong> → <strong>'+scoreText(stats.idx.score)+'</strong>. Item σ is capped at ±3.50. GE price can adjust a gameplay-impact weight by no more than ±10%.';
+  formula.innerHTML=!stats?'':('<b>Final 1–10 score:</b> weighted item signal '+signed(stats.idx.itemNumerator)+' + pooled raid portfolios '+signed(stats.idx.portfolioNumerator)+' = '+signed(stats.idx.numerator)+' ÷ '+stats.idx.denom.toFixed(2)+' = <strong>'+sig(stats.idx.meaningful)+'</strong> → <strong>'+scoreText(stats.idx.score)+'</strong>. '+(stats.idx.portfolios.length?stats.idx.portfolios.map(p=>p.label+': '+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected, '+sig(p.z)).join(' · '):'No raid portfolio with a usable expected-drop denominator.')+' Item σ is capped at ±3.50; transformative raid weapons have the highest single-item impact.') ;
  }
  $('#clogLuckLuckyTitle').textContent='Luckiest meaningful drops';
  $('#clogLuckDryTitle').textContent='Unluckiest meaningful grinds';
