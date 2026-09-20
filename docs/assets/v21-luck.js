@@ -136,16 +136,35 @@ function synergyUtility(m,profile){
  return{f:clamp(f,.35,1.30),label:reasons.join(' · ')||null}
 }
 function geModifier(gp){if(!Number.isFinite(+gp)||+gp<=0)return 1;const x=clamp((Math.log10(+gp)-5)/5,0,1);return .94+.12*x}
+function rollGroupReliability(g){
+ const src=String(g?.source||''),player=String(g?.player||'').toLowerCase();
+ if(src==='CHAMBERS_OF_XERIC_COMPLETIONS'||src==='CHAMBERS_OF_XERIC_CM_COMPLETIONS')return player==='big dog aura'?.82:.90;
+ if(src==='TOMBS_OF_AMASCUT_COMPLETIONS'||src==='TOMBS_OF_AMASCUT_EXPERT_COMPLETIONS')return .90;
+ if(src==='THEATRE_OF_BLOOD_COMPLETIONS'||src==='THEATRE_OF_BLOOD_HARD_COMPLETIONS')return .85;
+ if(/^(NIGHTMARE_KILLS|HUEYCOATL_KILLS|ROYAL_TITAN_KILLS|CALLISTO_KILLS|VENENATIS_KILLS|VETION_KILLS|ZALCANO_KILLS)$/.test(src))return .78;
+ return 1
+}
 function modelConfidence(m){
- const notes=(m?.r?.notes||[]).join(' | ').toLowerCase();
- if(/pre\/post-rework split unavailable/.test(notes))return{f:.7,label:'historical split uncertain'};
- if(/big dog aura cox caveat/.test(notes))return{f:.82,label:'scaled CoX points estimated'};
- if(/normal cox assumes|cox cm assumes/.test(notes))return{f:.90,label:'CoX points estimated'};
- if(/toa expert uses a fixed|toa normal uses a fixed/.test(notes))return{f:.90,label:'ToA raid level estimated'};
- if(/nightmare assumes|hueycoatl assumes|royal titans assumes|callisto assumes|venenatis assumes|vet'ion assumes|zalcano assumes/.test(notes))return{f:.78,label:'assumed contribution'};
- if(/theatre of blood.*assumes/.test(notes))return{f:.85,label:'assumed raid share'};
- if(/variable stack-size.*approximation/.test(notes))return{f:.9,label:'distribution approximation'};
- return{f:1,label:'direct / accepted model'}
+ const notes=(m?.r?.notes||[]).join(' | ').toLowerCase(),groups=Array.isArray(m?.r?.groups)?m.r.groups:[];
+ if(/pre\/post-rework split unavailable/.test(notes))return{f:.70,label:'historical split uncertain'};
+ let f=1,label='direct / accepted model';
+ if(groups.length){
+  let num=0,den=0,hasEstimated=false,hasBigDog=false;
+  for(const g of groups){
+   const rel=rollGroupReliability(g),mass=Math.max(1e-9,(+g.n||0)*(+g.p||0));
+   num+=rel*mass;den+=mass;if(rel<.999)hasEstimated=true;
+   if(String(g?.player||'').toLowerCase()==='big dog aura'&&String(g?.source||'').startsWith('CHAMBERS_OF_XERIC'))hasBigDog=true
+  }
+  if(den>0)f=num/den;
+  if(hasEstimated)label=hasBigDog?'mixed confidence · Big Dog scaled-CoX share damped separately':'assumption-weighted source confidence'
+ }else{
+  if(/big dog aura cox caveat/.test(notes)){f=.82;label='scaled CoX points estimated'}
+  else if(/normal cox assumes|cox cm assumes|toa expert uses a fixed|toa normal uses a fixed/.test(notes)){f=.90;label='raid points / level estimated'}
+  else if(/nightmare assumes|hueycoatl assumes|royal titans assumes|callisto assumes|venenatis assumes|vet'ion assumes|zalcano assumes/.test(notes)){f=.78;label='assumed contribution'}
+  else if(/theatre of blood.*assumes/.test(notes)){f=.85;label='assumed raid share'}
+ }
+ if(/variable stack-size.*approximation/.test(notes)){f*=.90;label=label==='direct / accepted model'?'distribution approximation':label+' · distribution approximation'}
+ return{f:clamp(f,.5,1),label}
 }
 function memberOnePieceFrom(set,targetName){
  const target=String(targetName||'').toLowerCase(),others=set.names.filter(x=>x!==target),ids=others.map(itemIdByName);
