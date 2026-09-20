@@ -293,24 +293,37 @@ const RAID_PORTFOLIOS=[
  {key:'tob',label:'ToB purple portfolio',weight:8,names:new Set(['Avernic defender hilt','Ghrazi rapier','Sanguinesti staff (uncharged)','Scythe of Vitur (uncharged)','Justiciar faceguard','Justiciar chestguard','Justiciar legguards'])}
 ];
 function intrinsicCommunityWeight(m){return clamp(impactProfile(m).base,.03,10)}
+function raidVolumeMoments(rows){
+ const cohorts=new Map();
+ for(const m of rows)for(const g of m.r.groups||[]){
+  const key=[g.source||'',g.player||'',+g.n||0,+g.kc||0,+g.rolls||0].join('|');
+  const old=cohorts.get(key)||{n:+g.n||0,p:0};old.p+=+g.p||0;cohorts.set(key,old)
+ }
+ let expected=0,variance=0;
+ for(const x of cohorts.values()){
+  const p=clamp(x.p,0,1);expected+=x.n*p;variance+=x.n*p*(1-p)
+ }
+ return{expected,variance,cohorts:cohorts.size}
+}
 function raidPortfolio(metrics,def){
  const rows=metrics.filter(m=>def.names.has(m.name)&&Number.isFinite(m.r.expected)&&Number.isFinite(m.r.observed));
- const expected=rows.reduce((n,m)=>n+m.r.expected,0),observed=rows.reduce((n,m)=>n+m.r.observed,0);
- if(!rows.length||expected<1)return null;
- const volumeZ=cappedZ((observed-expected)/Math.sqrt(Math.max(.25,expected)));
+ if(!rows.length)return null;
+ const observed=rows.reduce((n,m)=>n+m.r.observed,0),volume=raidVolumeMoments(rows),expected=volume.expected||rows.reduce((n,m)=>n+m.r.expected,0);
+ if(expected<1)return null;
+ const volumeSd=Math.sqrt(Math.max(.05,volume.variance||expected)),volumeZ=cappedZ((observed-expected)/volumeSd);
  const weighted=rows.map(m=>({m,w:intrinsicCommunityWeight(m)}));
- const meanW=weighted.reduce((n,x)=>n+x.m.r.expected*x.w,0)/expected;
+ const meanW=weighted.reduce((n,x)=>n+x.m.r.expected*x.w,0)/Math.max(expected,1e-9);
  const qNum=weighted.reduce((n,x)=>n+(x.m.r.observed-x.m.r.expected)*(x.w-meanW),0);
  const qDen=Math.sqrt(weighted.reduce((n,x)=>n+x.m.r.expected*Math.pow(x.w-meanW,2),0));
  const qualityZ=qDen>.05?cappedZ(qNum/qDen):0;
- const cNum=weighted.reduce((n,x)=>{const q=1-Math.exp(-x.m.r.expected),got=x.m.r.observed>0?1:0;return n+x.w*(got-q)},0);
- const cDen=Math.sqrt(weighted.reduce((n,x)=>{const q=1-Math.exp(-x.m.r.expected);return n+x.w*x.w*q*(1-q)},0));
+ const cNum=weighted.reduce((n,x)=>{const q=atLeastOneChance(x.m.r.groups),got=x.m.r.observed>0?1:0;return n+x.w*(got-q)},0);
+ const cDen=Math.sqrt(weighted.reduce((n,x)=>{const q=atLeastOneChance(x.m.r.groups);return n+x.w*x.w*q*(1-q)},0));
  const coverageZ=cDen>.05?cappedZ(cNum/cDen):0;
  const z=cappedZ((.70*volumeZ+.50*qualityZ+.30*coverageZ)/Math.sqrt(.70*.70+.50*.50+.30*.30));
  const confidenceDen=rows.reduce((n,m)=>n+m.r.expected,0);
  const confidenceWeighted=confidenceDen?rows.reduce((n,m)=>n+m.r.expected*modelConfidence(m).f,0)/confidenceDen:1;
  const effectiveWeight=def.weight,contribution=z*effectiveWeight*confidenceWeighted;
- return{...def,rows,observed,expected,volumeZ,qualityZ,coverageZ,z,confidence:confidenceWeighted,effectiveWeight,contribution}
+ return{...def,rows,observed,expected,volumeVariance:volume.variance,volumeCohorts:volume.cohorts,volumeZ,qualityZ,coverageZ,z,confidence:confidenceWeighted,effectiveWeight,contribution}
 }
 
 function atLeastOneChance(groups){
