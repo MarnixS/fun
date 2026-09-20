@@ -3,7 +3,7 @@
 const U=window.UGV21,M=window.UGClogBetaModel,L=window.UGClogLuck;
 if(!U||!M||!L||document.body.dataset.page!=='gim')return;
 const {$,$$,fmt,escapeHtml:esc}=U;
-let doc=null,wom=null,model=null,selected=U.loadMemberSelection(),view='scored',lens='meaningful',prices=null,priceRequest=null,metricCache=new Map(),excludedCache=new Map();
+let doc=null,wom=null,model=null,selected=U.loadMemberSelection(),view='scored',lens='meaningful',prices=null,priceRequest=null,metricCache=new Map(),excludedCache=new Map(),statsCache=new Map(),luckActive=false,renderGeneration=0;
 
 function selectedPlayers(){return U.PLAYERS.filter(p=>selected.has(p.key)&&model?.known.has(p.key))}
 function modelIds(){const ids=new Set(model?.names?.keys?.()||[]);for(const m of model?.counts?.values?.()||[])for(const id of m.keys())ids.add(id);return [...ids]}
@@ -481,10 +481,13 @@ function indices(metrics){
  const meaningful=denom?numerator/denom:null,score=luckScore(meaningful),financial=financialIndex(metrics);
  return{raw:rawInfo.z,rawSum:rawInfo.sum,rawCount:metrics.length,rawFamilies:rawInfo.families.length,meaningful,numerator,denom,score,financial,weightedCount:weighted.length,dependentCollapsed:metrics.length-weighted.length,portfolios,boundPortfolios,itemNumerator,raidNumerator,boundNumerator,portfolioNumerator,sourceSaturated:weighted.filter(x=>x.sourceScale&&x.sourceScale<.999).length}
 }
-function entityStats(ps){const metrics=metricsFor(ps),idx=indices(metrics),s=sample(metrics);return{metrics,idx,s}}
+function entityStats(ps){
+ const key=ps.map(p=>p.key).sort().join('|');if(statsCache.has(key))return statsCache.get(key);
+ const metrics=metricsFor(ps),idx=indices(metrics),s=sample(metrics),out={metrics,idx,s};statsCache.set(key,out);return out
+}
 function renderPicker(){
  const h=$('#clogLuckMembers');if(!h)return;
- U.renderMemberPicker(h,selected,keys=>{const next=new Set(keys);if(U.sameSelection(selected,next))return;selected=next;U.saveMemberSelection(selected);reset();render()},{title:'Members in luck analysis',subtitle:'Add or remove RNG sources. Raw percentiles use exactly those players; the overall-impact score values their drops in the context of the full five-man GIM portfolio, because shared gear and teammate unlocks can compensate for personal deficits.',fallback:U.ALL_KEYS,availability:model.known})
+ U.renderMemberPicker(h,selected,keys=>{const next=new Set(keys);if(U.sameSelection(selected,next))return;selected=next;U.saveMemberSelection(selected);reset();if(luckActive)scheduleLuckRender()},{title:'Members in luck analysis',subtitle:'Add or remove RNG sources. Raw percentiles use exactly those players; overall-impact compensation only uses the members in the selected combination.',fallback:U.ALL_KEYS,availability:model.known})
 }
 function syncHealth(){
  const t=+doc?.fetchedAt,w=+wom?.fetchedAt;if(!Number.isFinite(t)||!Number.isFinite(w))return{key:'unknown',text:'Temple/WOM synchronization time unavailable.'};
@@ -495,12 +498,15 @@ function syncHealth(){
 function overview(){
  const h=$('#clogLuckOverview');if(!h)return;const ps=selectedPlayers();
  if(!ps.length){h.innerHTML='<div class="notice">No selected member has a synced Collection Log.</div>';return}
- const s=entityStats(ps),excluded=excludedFor(ps),names=ps.map(p=>p.name).join(', '),sync=syncHealth();
+ const s=entityStats(ps),names=ps.map(p=>p.name).join(', '),sync=syncHealth();
  h.innerHTML='<div class="clog-luck-kpi"><span>Overall luck score</span><b class="clog-luck-'+tone(s.idx.meaningful||0)+'">'+scoreText(s.idx.score)+'</b><small>The headline score uses probability, gameplay significance, confidence and pooled raid outcomes. It is not a bank-value ranking.</small></div>'+
  '<div class="clog-luck-kpi"><span>Raw drop-rate RNG</span><b class="clog-luck-'+tone(s.idx.raw||0)+'">'+(s.idx.raw==null?'—':sig(s.idx.raw))+'</b><small>Source-family-normalized statistical deviation across '+fmt(s.idx.rawCount)+' calculable entries in '+fmt(s.idx.rawFamilies)+' source families. Correlated component representations are collapsed first.</small></div>'+
  '<div class="clog-luck-kpi"><span>GE-weighted RNG</span><b class="clog-luck-'+tone(s.idx.financial.z||0)+'">'+(s.idx.financial.z==null?'—':signed(s.idx.financial.z))+'</b><small>'+fmt(s.idx.financial.count)+' de-correlated priced evidence units. Direct-count GP delta is '+(s.idx.financial.deltaGp>=0?'+':'−')+money(Math.abs(s.idx.financial.deltaGp))+' gp across '+fmt(s.idx.financial.deltaCount)+' entries with a comparable expected count. This is a value-impact index, not a bank-value total.</small></div>'+
  '<div class="clog-luck-kpi"><span>Data quality</span><b>'+esc(s.s.label)+'</b><small>'+esc(s.s.detail)+' · '+esc(sync.text)+'</small></div>';
- const badge=$('#clogLuckImpossibleCount');if(badge)badge.textContent=fmt(excluded.length)
+ const badge=$('#clogLuckImpossibleCount');if(badge){
+  const key=ps.map(p=>p.key).sort().join('|'),cached=excludedCache.get(key);
+  badge.textContent=cached?fmt(cached.length):'…'
+ }
 }
 function itemRow(m){
  const expected=Number.isFinite(m.r.expected)?m.r.expected:null,actual=fmt(m.r.observed),pct=m.r.text,z=cappedZ(m.z);
@@ -563,9 +569,15 @@ function renderIndividuals(){
   return '<article class="clog-luck-individual"><div class="clog-luck-individual-head"><b>'+esc(p.name)+'</b><strong class="clog-luck-'+tone(x.idx.meaningful||0)+'">'+scoreText(x.idx.score)+'</strong><span class="clog-luck-sample '+x.s.key+'">'+esc(x.s.label)+'</span></div><div class="clog-luck-individual-grid"><span><small>Raw spoon</small><b>'+esc(spoon)+'</b></span><span><small>Raw dry</small><b>'+esc(dry)+'</b></span><span><small>Valuable spoon</small><b>'+esc(vSpoon)+'</b></span><span><small>Valuable dry</small><b>'+esc(vDry)+'</b></span></div><small class="clog-luck-individual-note">'+esc(x.s.detail)+(x.s.key!=='usable'?' · treat this account comparison cautiously until more relevant KC/drop opportunities are recorded':'')+'</small></article>'
  }).join('')||'<div class="clog-luck-empty">No selected synced members.</div>'
 }
-function renderPlayers(){
- const h=$('#clogLuckPlayers');if(!h)return;const ps=selectedPlayers(),rows=combinations(ps);
- h.innerHTML=rows.map((x,i)=>{const names=x.group.map(p=>p.name).join(' + '),all=x.group.length===ps.length&&ps.length>1;return '<article class="clog-luck-player-row"><div class="clog-luck-player-name"><div><b>'+(i+1)+'. '+esc(names)+'</b><small>'+esc(x.s.detail)+(all?' · full selected group':'')+'</small></div></div><div class="clog-luck-player-metric"><span>Luck score</span><b class="clog-luck-'+tone(x.idx.meaningful||0)+'">'+scoreText(x.idx.score)+'</b></div><div class="clog-luck-player-metric"><span>Raw RNG</span><b class="clog-luck-'+tone(x.idx.raw||0)+'">'+(x.idx.raw==null?'—':sig(x.idx.raw))+'</b></div><div class="clog-luck-player-metric"><span>GE RNG</span><b class="clog-luck-'+tone(x.idx.financial.z||0)+'">'+(x.idx.financial.z==null?'—':sig(x.idx.financial.z))+'</b></div><span class="clog-luck-sample '+x.s.key+'">'+x.group.length+' account'+(x.group.length===1?'':'s')+' · '+esc(x.s.label)+'</span></article>'}).join('')||'<div class="clog-luck-empty">No selected synced members.</div>'
+function sortCombinationRows(rows){
+ return rows.sort((a,b)=>(b.idx.score??-99)-(a.idx.score??-99)||a.group.length-b.group.length||a.group.map(p=>p.name).join(', ').localeCompare(b.group.map(p=>p.name).join(', ')))
+}
+function combinationGroups(ps){
+ const out=[];for(let mask=1;mask<(1<<ps.length);mask++){const group=[];for(let i=0;i<ps.length;i++)if(mask&(1<<i))group.push(ps[i]);out.push(group)}return out
+}
+function renderPlayers(rows=null){
+ const h=$('#clogLuckPlayers');if(!h)return;const ps=selectedPlayers(),data=rows||combinations(ps);
+ h.innerHTML=data.map((x,i)=>{const names=x.group.map(p=>p.name).join(' + '),all=x.group.length===ps.length&&ps.length>1;return '<article class="clog-luck-player-row"><div class="clog-luck-player-name"><div><b>'+(i+1)+'. '+esc(names)+'</b><small>'+esc(x.s.detail)+(all?' · full selected group':'')+'</small></div></div><div class="clog-luck-player-metric"><span>Luck score</span><b class="clog-luck-'+tone(x.idx.meaningful||0)+'">'+scoreText(x.idx.score)+'</b></div><div class="clog-luck-player-metric"><span>Raw RNG</span><b class="clog-luck-'+tone(x.idx.raw||0)+'">'+(x.idx.raw==null?'—':sig(x.idx.raw))+'</b></div><div class="clog-luck-player-metric"><span>GE RNG</span><b class="clog-luck-'+tone(x.idx.financial.z||0)+'">'+(x.idx.financial.z==null?'—':signed(x.idx.financial.z))+'</b></div><span class="clog-luck-sample '+x.s.key+'">'+x.group.length+' account'+(x.group.length===1?'':'s')+' · '+esc(x.s.label)+'</span></article>'}).join('')||'<div class="clog-luck-empty">No selected synced members.</div>'
 }
 function renderImpossible(){
  const h=$('#clogLuckImpossible');if(!h)return;const ps=selectedPlayers(),rows=ps.length?excludedFor(ps):[];
@@ -578,15 +590,75 @@ function renderView(){
  if(scored)scored.classList.toggle('hidden',view!=='scored');if(impossible)impossible.classList.toggle('hidden',view!=='impossible');
  $$('[data-luck-view]').forEach(b=>b.classList.toggle('active',b.dataset.luckView===view))
 }
-function render(){if(!model||!wom)return;renderPicker();overview();renderLists();renderIndividuals();renderPlayers();renderImpossible();renderView()}
-function bind(){
- document.querySelectorAll('[data-luck-view]').forEach(b=>b.onclick=()=>{view=b.dataset.luckView;renderView()});
- document.querySelectorAll('[data-luck-lens]').forEach(b=>b.onclick=()=>{lens=b.dataset.luckLens||'meaningful';document.querySelectorAll('[data-luck-lens]').forEach(x=>x.classList.toggle('active',x===b));renderLists()});
- const tab=$('[data-gim-tab="luck"]');if(tab&&!tab.dataset.luckBound){tab.dataset.luckBound='1';tab.addEventListener('click',()=>{render();if(!prices)loadPrices().then(()=>render())})}
+function nextTurn(){return new Promise(resolve=>setTimeout(resolve,0))}
+function setSecondaryLoading(){
+ const a=$('#clogLuckIndividuals'),b=$('#clogLuckPlayers');
+ if(a)a.innerHTML='<div class="clog-luck-empty">Calculating individual account snapshots…</div>';
+ if(b)b.innerHTML='<div class="clog-luck-empty">Preparing account combinations…</div>'
 }
-function reset(){metricCache=new Map();excludedCache=new Map();portfolioCache=new Map()}
-window.addEventListener('ug:members-changed',e=>{const keys=U.cleanSelection(e.detail?.keys,U.ALL_KEYS);if(U.sameSelection(selected,keys))return;selected=keys;reset();render()});
-window.addEventListener('ug:data-updated',async e=>{if(e.detail?.key===U.TKEY){doc=await U.loadClog();model=M.build(doc,U.PLAYERS);reset();render()}else if(e.detail?.key===U.WKEY){wom=await U.loadWom();reset();render()}});
-async function init(){[doc,wom]=await Promise.all([U.loadClog(),U.loadWom()]);model=M.build(doc,U.PLAYERS);bind();render()}
+function renderPrimary(){
+ if(!model||!wom||!luckActive)return;
+ renderPicker();overview();renderLists();renderView();setSecondaryLoading()
+}
+async function renderSecondary(gen){
+ if(!luckActive||gen!==renderGeneration)return;
+ const ps=selectedPlayers();
+ const ih=$('#clogLuckIndividuals'),ph=$('#clogLuckPlayers');
+ for(let i=0;i<ps.length;i++){
+  if(!luckActive||gen!==renderGeneration)return;
+  entityStats([ps[i]]);
+  if(ih)ih.innerHTML='<div class="clog-luck-empty">Calculating individual accounts '+(i+1)+'/'+ps.length+'…</div>';
+  await nextTurn()
+ }
+ if(!luckActive||gen!==renderGeneration)return;
+ renderIndividuals();
+ await nextTurn();
+ const groups=combinationGroups(ps),rows=[];
+ for(let i=0;i<groups.length;i++){
+  if(!luckActive||gen!==renderGeneration)return;
+  const group=groups[i],x=entityStats(group);rows.push({group,...x});
+  if(ph)ph.innerHTML='<div class="clog-luck-empty">Calculating combinations '+(i+1)+'/'+groups.length+'…</div>';
+  await nextTurn()
+ }
+ if(!luckActive||gen!==renderGeneration)return;
+ renderPlayers(sortCombinationRows(rows))
+}
+async function renderImpossibleLazy(gen=renderGeneration){
+ const h=$('#clogLuckImpossible');if(!h||!luckActive||view!=='impossible')return;
+ h.innerHTML='<div class="clog-luck-empty">Checking which entries have a defensible denominator…</div>';
+ await nextTurn();if(!luckActive||gen!==renderGeneration||view!=='impossible')return;
+ renderImpossible();overview()
+}
+function scheduleLuckRender(){
+ if(!luckActive||!model||!wom)return;
+ const gen=++renderGeneration;
+ renderPrimary();
+ setTimeout(()=>{if(luckActive&&gen===renderGeneration)renderSecondary(gen)},0);
+ if(!prices&&!priceRequest)loadPrices().then(p=>{
+  if(!p||!luckActive)return;
+  statsCache=new Map();portfolioCache=new Map();
+  const next=++renderGeneration;renderPrimary();
+  setTimeout(()=>{if(luckActive&&next===renderGeneration)renderSecondary(next)},0)
+ })
+}
+function bind(){
+ document.querySelectorAll('[data-luck-view]').forEach(b=>b.onclick=()=>{view=b.dataset.luckView;renderView();if(view==='impossible')renderImpossibleLazy()});
+ document.querySelectorAll('[data-luck-lens]').forEach(b=>b.onclick=()=>{lens=b.dataset.luckLens||'meaningful';document.querySelectorAll('[data-luck-lens]').forEach(x=>x.classList.toggle('active',x===b));if(luckActive)renderLists()});
+ document.querySelectorAll('[data-gim-tab]').forEach(tab=>tab.addEventListener('click',()=>{
+  if(tab.dataset.gimTab==='luck'){luckActive=true;scheduleLuckRender()}
+  else{luckActive=false;renderGeneration++}
+ }))
+}
+function reset(){metricCache=new Map();excludedCache=new Map();statsCache=new Map();portfolioCache=new Map();renderGeneration++}
+window.addEventListener('ug:members-changed',e=>{const keys=U.cleanSelection(e.detail?.keys,U.ALL_KEYS);if(U.sameSelection(selected,keys))return;selected=keys;reset();if(luckActive)scheduleLuckRender()});
+window.addEventListener('ug:data-updated',async e=>{
+ if(e.detail?.key===U.TKEY){doc=await U.loadClog();model=M.build(doc,U.PLAYERS);reset();if(luckActive)scheduleLuckRender()}
+ else if(e.detail?.key===U.WKEY){wom=await U.loadWom();reset();if(luckActive)scheduleLuckRender()}
+});
+async function init(){
+ [doc,wom]=await Promise.all([U.loadClog(),U.loadWom()]);model=M.build(doc,U.PLAYERS);bind();
+ const tab=$('[data-gim-tab="luck"]');luckActive=!!tab?.classList.contains('active');
+ if(luckActive)scheduleLuckRender()
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
