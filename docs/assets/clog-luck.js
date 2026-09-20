@@ -11,7 +11,7 @@ const COX_REG_WEIGHTS={"dexterous prayer scroll":14,"arcane prayer scroll":14,"t
 const COX_CM_WEIGHTS={"dexterous prayer scroll":12,"arcane prayer scroll":12,"twisted buckler":4,"dragon hunter crossbow":4,"dinh's bulwark":3,"ancestral hat":4,"ancestral robe top":4,"ancestral robe bottom":4,"dragon claws":3,"elder maul":2,"kodai insignia":2,"twisted bow":2};
 const COX_REWORK_AT=Date.parse('2026-08-12T00:00:00Z');
 const TOA_WEIGHTS={"osmumten's fang":7,"lightbearer":7,"elidinis' ward":3,"masori mask":2,"masori body":2,"masori chaps":2,"tumeken's shadow (uncharged)":1};
-const ASSUME={cox:30000,coxCm:62000,toa:15141,toaLevel:150,toaExpert:19000,toaExpertLevel:350,tobShare:.25,tobHmShare:.2,nightmareTeam:5,nightmareShare:.202,nexShare:.204,hueyShare:.367,royalShare:.5,callistoShare:.2,venenatisShare:.5,vetionShare:.5,scurriusMvp:1,zalcanoShare:.25,zalcanoPoints:300};
+const ASSUME={cox:30000,coxCm:62000,toa:16667,toaLevel:150,toaPurple:1/45,toaExpert:21875,toaExpertLevel:350,toaExpertPurple:1/16,tobShare:.25,tobHmShare:.2,nightmareTeam:5,nightmareShare:.202,nexShare:.204,hueyShare:.367,royalShare:.5,callistoShare:.2,venenatisShare:.5,vetionShare:.5,scurriusMvp:1,zalcanoShare:.25,zalcanoPoints:300};
 const F={COX:1,COXCM:2,TOB:4,TOBHM:8,TOAE:16,TOA:32,TOAX:64,NMTEAM:128,NMSHARE:256,NEX:512,HUEY:1024,ROYAL:2048,CALLISTO:4096,VENENATIS:8192,VETION:16384,SCURRIUS:32768,ZALCANO:65536,ZALCANO_PTS:131072,FIRE_CAPES:262144,INFERNAL_CAPES:524288,SKOTIZO_OLD:1048576,KQ_OLD:2097152,KBD_OLD:4194304,NM_OLD:8388608,PNM_OLD:16777216};
 const SPECIAL_UNSUPPORTED=F.FIRE_CAPES|F.INFERNAL_CAPES|F.SKOTIZO_OLD|F.KQ_OLD|F.KBD_OLD|F.NM_OLD|F.PNM_OLD;
 const ACTIVITY={BEGINNER_CLUES_COMPLETED:'clue_scrolls_beginner',EASY_CLUES_COMPLETED:'clue_scrolls_easy',MEDIUM_CLUES_COMPLETED:'clue_scrolls_medium',HARD_CLUES_COMPLETED:'clue_scrolls_hard',ELITE_CLUES_COMPLETED:'clue_scrolls_elite',MASTER_CLUES_COMPLETED:'clue_scrolls_master',TOTAL_CLUES_COMPLETED:'clue_scrolls_all',RIFTS_CLOSED:'guardians_of_the_rift'};
@@ -63,14 +63,14 @@ function chance(rec,roll,name,notes,coxRegime='post'){
  }else if(src==='CHAMBERS_OF_XERIC_COMPLETIONS'&&(flags&F.COX)){p*=clamp(ASSUME.cox/867600);notes.add('Normal CoX assumes 30,000 personal points per completion')}
  else if(src==='CHAMBERS_OF_XERIC_CM_COMPLETIONS'&&(flags&F.COXCM)){p*=clamp(ASSUME.coxCm/867600);notes.add('CoX CM assumes 62,000 personal points per completion')}
  if((src==='TOMBS_OF_AMASCUT_COMPLETIONS'||src==='TOMBS_OF_AMASCUT_EXPERT_COMPLETIONS')&&TOA_WEIGHTS[low]){
-   const expert=src==='TOMBS_OF_AMASCUT_EXPERT_COMPLETIONS',purple=expert?toaPurple(ASSUME.toaExpert,ASSUME.toaExpertLevel):toaPurple(ASSUME.toa,ASSUME.toaLevel);
+   const expert=src==='TOMBS_OF_AMASCUT_EXPERT_COMPLETIONS',purple=expert?ASSUME.toaExpertPurple:ASSUME.toaPurple;
    p=purple*TOA_WEIGHTS[low]/24;
-   notes.add(expert?'ToA Expert assumes about 19,000 points at raid level 350 with skull skipping':'ToA Normal assumes about 15,141 points at raid level 150, deathless, without skull skipping');
+   notes.add(expert?'ToA Expert uses a fixed ~1/16 purple chance: raid level 350, deathless, with skull skipping (about 21,875 equivalent reward points)':'ToA Normal uses a fixed ~1/45 purple chance: raid level 150, deathless, without skull skipping (about 16,667 equivalent reward points)');
  }else if(low==="tumeken's guardian"&&(src==='TOMBS_OF_AMASCUT_COMPLETIONS'||src==='TOMBS_OF_AMASCUT_EXPERT_COMPLETIONS')){
    const expert=src==='TOMBS_OF_AMASCUT_EXPERT_COMPLETIONS';p=expert?toaPet(ASSUME.toaExpert,ASSUME.toaExpertLevel):toaPet(ASSUME.toa,ASSUME.toaLevel);
    notes.add(expert?'ToA pet assumes about 19,000 points at raid level 350 with skull skipping':'ToA pet assumes about 15,141 points at raid level 150, deathless, without skull skipping');
- }else if(src==='TOMBS_OF_AMASCUT_COMPLETIONS'&&(flags&F.TOA)){p*=toaPurple(ASSUME.toa,ASSUME.toaLevel);notes.add('ToA Normal assumes about 15,141 points at raid level 150, deathless, without skull skipping')}
- else if(src==='TOMBS_OF_AMASCUT_EXPERT_COMPLETIONS'&&(flags&F.TOAX)){p*=toaPurple(ASSUME.toaExpert,ASSUME.toaExpertLevel);notes.add('ToA Expert assumes about 19,000 points at raid level 350 with skull skipping')}
+ }else if(src==='TOMBS_OF_AMASCUT_COMPLETIONS'&&(flags&F.TOA)){p*=ASSUME.toaPurple;notes.add('ToA Normal uses a fixed ~1/45 purple chance: raid level 150, deathless, without skull skipping (about 16,667 equivalent reward points)')}
+ else if(src==='TOMBS_OF_AMASCUT_EXPERT_COMPLETIONS'&&(flags&F.TOAX)){p*=ASSUME.toaExpertPurple;notes.add('ToA Expert uses a fixed ~1/16 purple chance: raid level 350, deathless, with skull skipping (about 21,875 equivalent reward points)')}
  if(src==='THEATRE_OF_BLOOD_COMPLETIONS'&&(flags&F.TOB)){p*=ASSUME.tobShare;notes.add('ToB assumes 25% average personal point share')}
  if(src==='THEATRE_OF_BLOOD_HARD_COMPLETIONS'&&(flags&F.TOBHM)){p*=ASSUME.tobHmShare;notes.add('ToB HM assumes 20% average personal point share')}
  if(src==='NIGHTMARE_KILLS'&&(flags&F.NMSHARE)){p*=(1+Math.max(0,Math.min(75,ASSUME.nightmareTeam-5))/100)*ASSUME.nightmareShare;notes.add('Nightmare assumes 5-player teams and 20.2% personal contribution')}
@@ -111,7 +111,7 @@ function calculate(id,name,ps,wom,model,U){
    observed+=playerObserved;lower+=lo;upper+=hi;
    for(const roll of rec.rolls){
      if(roll[0]==='TOMBS_OF_AMASCUT_ENTRY_COMPLETIONS'){notes.add('Entry-mode ToA is omitted because WOM has no separate Entry completion metric');continue}
-     const kc=metric(U,wom,p,roll[0]);if(kc==null)return null;
+     const kc=metric(U,wom,p,roll[0]);if(kc==null)return null;if(p.key==='big dog aura'&&roll[0]==='CHAMBERS_OF_XERIC_COMPLETIONS'&&kc>0)notes.add('Big Dog Aura CoX caveat: a large proportion, probably the majority, of his normal CoX KC was scaled. A roughly 100-screenshot sample indicates his true average personal points were above the 30,000 baseline, so this model likely makes his CoX luck look slightly better than it really was');
      let n=Math.round(kc*roll[2]);if(rec.t==='g'&&rec.param&&kc>=rec.param)n=Math.max(0,n-1);
      if(rec.t==='g'&&rec.param&&kc>=rec.param){observed=Math.max(0,observed-1);lower=Math.max(0,lower-1);upper=Math.max(0,upper-1)}
      if(rec.t==='y'&&rec.param&&kc>=rec.param){notes.add('Pity threshold reached; percentile is neutral once the guaranteed threshold has been reached');return{percentile:.5,text:'50%',observed:own,expected:null,trials:kc,groups:[],notes:[...notes],neutral:true}}
@@ -151,6 +151,6 @@ function finish(percentile,observed,expected,trials,groups,notes,approx){
  return{percentile,pct,text,observed,expected,trials,sources:[...by.values()].map(x=>({...x,label:labelSource(x.source)})),notes:[...notes],approx,band:pct>=90?'lucky':pct<=10?'dry':'normal'}
 }
 function formatPct(p){if(p<.01)return'<0.01%';if(p>99.99)return'>99.99%';if(p<1||p>99)return p.toFixed(2)+'%';return Math.round(p)+'%'}
-function title(x){if(!x)return'';const base='Luck percentile '+x.text+' · 50% is ordinary; higher is luckier, lower is drier';const exp=Number.isFinite(x.expected)?' · '+x.observed+' logged vs '+x.expected.toFixed(x.expected<10?2:1)+' expected':'';return base+exp+(x.approx?' · distribution approximation used for scale':'')}
+function title(x){if(!x)return'';const base='Luck percentile '+x.text+' · position of the observed item count among players with the same estimated eligible rolls';const exp=Number.isFinite(x.expected)?' · '+x.observed+' logged vs '+x.expected.toFixed(x.expected<10?2:1)+' expected':'';return base+exp+(x.approx?' · distribution approximation used for scale':'')}
 return{calculate,formatPct,title,assumptions:ASSUME,rateItems:Object.keys(DATA).length};
 });

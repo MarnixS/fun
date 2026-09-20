@@ -32,3 +32,7 @@
 .beta-luck-note p{margin:5px 0}
 .beta-luck-note b{color:#e2cf9d;font-weight:700}
 @media(max-width:600px){.beta-luck-note{font-size:10px;padding:9px 10px}.beta-luck-note>strong{font-size:11px}}
+
+.beta-luck-method{margin-top:9px;border-top:1px solid #3e3424;padding-top:7px}
+.beta-luck-method summary{cursor:pointer;color:#d8c08c;font-weight:700}
+.beta-luck-method>div{padding:5px 1px 0}.beta-luck-method p{margin:7px 0}
