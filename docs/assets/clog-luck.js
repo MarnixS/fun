@@ -33,15 +33,28 @@ const TRACKING_CAPS={
 function clamp(x,a=0,b=1){return Math.max(a,Math.min(b,x))}
 function erf(x){const s=x<0?-1:1,a=Math.abs(x),t=1/(1+.3275911*a),y=1-(((((1.061405429*t-1.453152027)*t+1.421413741)*t-.284496736)*t+.254829592)*t)*Math.exp(-a*a);return s*y}
 function normalCdf(z){return .5*(1+erf(z/Math.SQRT2))}
+function poissonCdf(lambda,k){
+ if(k<0)return 0;if(lambda<=0)return 1;
+ let term=Math.exp(-lambda),sum=term;
+ for(let i=1;i<=k;i++){term*=lambda/i;sum+=term;if(term<1e-16&&i>lambda)break}
+ return clamp(sum)
+}
 function cdf(groups,k){
  if(k<0)return 0;
  const total=groups.reduce((n,g)=>n+g.n,0);if(k>=total)return 1;if(total<=0)return k>=0?1:0;
  const mean=groups.reduce((n,g)=>n+g.n*g.p,0),variance=groups.reduce((n,g)=>n+g.n*g.p*(1-g.p),0);
  if(variance<1e-12)return k>=Math.round(mean)?1:0;
- if(total>500||mean>100||k>100)return clamp(normalCdf((k+.5-mean)/Math.sqrt(variance)));
- const max=Math.min(k,total),dp=new Float64Array(max+1);dp[0]=1;
- for(const g of groups)for(let r=0;r<g.n;r++){for(let j=max;j>=1;j--)dp[j]=dp[j]*(1-g.p)+dp[j-1]*g.p;dp[0]*=(1-g.p)}
- let sum=0;for(let j=0;j<=max;j++)sum+=dp[j];return clamp(sum)
+ const maxP=Math.max(0,...groups.map(g=>+g.p||0)),p2=groups.reduce((n,g)=>n+g.n*g.p*g.p,0);
+ // Rare drops remain strongly skewed even at very large KC. A Poisson approximation is
+ // materially better than a normal approximation when individual probabilities are tiny.
+ if(mean<30&&maxP<=.02&&p2<=.5)return poissonCdf(mean,k);
+ // Exact DP remains cheap for modest trial counts and preserves discrete tails.
+ if(total<=500&&k<=100){
+  const max=Math.min(k,total),dp=new Float64Array(max+1);dp[0]=1;
+  for(const g of groups)for(let r=0;r<g.n;r++){for(let j=max;j>=1;j--)dp[j]=dp[j]*(1-g.p)+dp[j-1]*g.p;dp[0]*=(1-g.p)}
+  let sum=0;for(let j=0;j<=max;j++)sum+=dp[j];return clamp(sum)
+ }
+ return clamp(normalCdf((k+.5-mean)/Math.sqrt(variance)))
 }
 function sourceKey(source){
  if(BOSS_ALIAS[source])return BOSS_ALIAS[source];
