@@ -127,10 +127,31 @@ function modelConfidence(m){
  if(/variable stack-size.*approximation/.test(notes))return{f:.9,label:'distribution approximation'};
  return{f:1,label:'direct / accepted model'}
 }
-function impactWeight(m){
- const p=impactProfile(m),copy=copyUtility(p,m),synergy=synergyUtility(m,p),ge=p.base>=.5?geModifier(price(m.id)):1,confidence=modelConfidence(m);
- const w=clamp(p.base*copy*synergy.f*ge*confidence.f,.03,10.5);
- return{...p,copy,synergy,ge,confidence,w}
+function deficitCompensation(profile,m,z){
+ if(!(Number.isFinite(z)&&z<0))return{f:1,label:null};
+ const q=portfolioCount(m.name),members=Math.max(1,fullGroupPlayers().length);
+ if(profile.kind==='personal-unlock'){
+  const coverage=clamp(q/members,0,1),f=1-.82*coverage;
+  return{f,label:coverage>0?'group already covers '+Math.round(coverage*100)+'% of personal unlock capacity':null}
+ }
+ if(profile.kind==='major-shareable'){
+  const f=q<=0?1:q===1?.48:q===2?.34:q===3?.27:.22;
+  return{f,label:q>0?q+' group cop'+(q===1?'y':'ies')+' already provide shared access':null}
+ }
+ if(profile.kind==='shareable'){
+  const f=q<=0?1:q===1?.42:q===2?.30:q===3?.24:.20;
+  return{f,label:q>0?q+' group cop'+(q===1?'y':'ies')+' already reduce the practical deficit':null}
+ }
+ if(profile.kind==='component'&&profile.set&&COMPONENT_SETS[profile.set]){
+  const set=COMPONENT_SETS[profile.set],complete=Math.min(...set.names.map(portfolioCount));
+  return complete>0?{f:.28,label:'group already has '+complete+' complete '+set.label+(complete===1?'':'s')}:{f:1,label:null}
+ }
+ return{f:1,label:null}
+}
+function impactWeight(m,z=null){
+ const p=impactProfile(m),copy=copyUtility(p,m),synergy=synergyUtility(m,p),deficit=deficitCompensation(p,m,z),ge=p.base>=.5?geModifier(price(m.id)):1,confidence=modelConfidence(m);
+ const w=clamp(p.base*copy*synergy.f*deficit.f*ge*confidence.f,.03,10.5);
+ return{...p,copy,synergy,deficit,ge,confidence,w}
 }
 function financialWeight(m){
  const gp=price(m.id);if(!Number.isFinite(gp)||gp<=0)return{gp:0,w:0};
@@ -208,8 +229,8 @@ function independentUnits(metrics){
  }
  const units=[];
  for(const [key,rows] of groups){
-  if(rows.length===1){const m=rows[0],imp=impactWeight(m),residual=portfolioResidual(m);units.push({key,rows,m,z:cappedZ(m.z),imp,residual,w:imp.w*residual});continue}
-  const parts=rows.map(m=>({m,imp:impactWeight(m),residual:portfolioResidual(m),z:cappedZ(m.z)}));
+  if(rows.length===1){const m=rows[0],imp=impactWeight(m,cappedZ(m.z)),residual=portfolioResidual(m);units.push({key,rows,m,z:cappedZ(m.z),imp,residual,w:imp.w*residual});continue}
+  const parts=rows.map(m=>({m,imp:impactWeight(m,cappedZ(m.z)),residual:portfolioResidual(m),z:cappedZ(m.z)}));
   const sumW=parts.reduce((n,x)=>n+x.imp.w*x.residual,0);
   const z=sumW?parts.reduce((n,x)=>n+x.z*x.imp.w*x.residual,0)/sumW:0;
   const strongest=parts.reduce((a,b)=>b.imp.w*b.residual>a.imp.w*a.residual?b:a);
@@ -263,7 +284,7 @@ function indices(metrics){
 function entityStats(ps){const metrics=metricsFor(ps),idx=indices(metrics),s=sample(metrics);return{metrics,idx,s}}
 function renderPicker(){
  const h=$('#clogLuckMembers');if(!h)return;
- U.renderMemberPicker(h,selected,keys=>{const next=new Set(keys);if(U.sameSelection(selected,next))return;selected=next;U.saveMemberSelection(selected);reset();render()},{title:'Members in luck analysis',subtitle:'Add or remove usernames. Percentiles, progression weighting, the 1–10 score and every selected-account combination recalculate for exactly this selection.',fallback:U.ALL_KEYS,availability:model.known})
+ U.renderMemberPicker(h,selected,keys=>{const next=new Set(keys);if(U.sameSelection(selected,next))return;selected=next;U.saveMemberSelection(selected);reset();render()},{title:'Members in luck analysis',subtitle:'Add or remove RNG sources. Raw percentiles use exactly those players; the overall-impact score values their drops in the context of the full five-man GIM portfolio, because shared gear and teammate unlocks can compensate for personal deficits.',fallback:U.ALL_KEYS,availability:model.known})
 }
 function syncHealth(){
  const t=+doc?.fetchedAt,w=+wom?.fetchedAt;if(!Number.isFinite(t)||!Number.isFinite(w))return{key:'unknown',text:'Temple/WOM synchronization time unavailable.'};
@@ -292,8 +313,13 @@ function itemRow(m){
   const sub=actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile · GE '+money(fw.gp)+' gp'+(delta==null?'':' · Δ '+(delta>=0?'+':'−')+money(Math.abs(delta))+' gp');
   return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(contribution)+'">'+signed(contribution)+'</strong><small>'+sig(z)+' × '+fw.w.toFixed(2)+' value weight</small></div></article>'
  }
- const imp=impactWeight(m),contribution=z*imp.w;
- const sub=actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile · '+imp.label+(imp.confidence.f<1?' · '+Math.round(imp.confidence.f*100)+'% model confidence':'');
+ const imp=impactWeight(m,z),contribution=z*imp.w;
+ const modifiers=[];
+ if(imp.copy<.98)modifiers.push('duplicate utility '+Math.round(imp.copy*100)+'%');
+ if(imp.synergy?.label)modifiers.push(imp.synergy.label);
+ if(imp.deficit?.f<.98&&imp.deficit.label)modifiers.push('dryness softened: '+imp.deficit.label);
+ if(imp.confidence.f<1)modifiers.push(Math.round(imp.confidence.f*100)+'% model confidence');
+ const sub=actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile · '+imp.label+(modifiers.length?' · '+modifiers.join(' · '):'');
  return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(contribution)+'">'+signed(contribution)+'</strong><small>'+sig(z)+' × '+imp.w.toFixed(2)+' impact</small></div></article>'
 }
 function ranked(metrics){
@@ -301,7 +327,7 @@ function ranked(metrics){
   const z=cappedZ(m.z);
   if(lens==='raw')return{...m,sort:z};
   if(lens==='value'){const fw=financialWeight(m);return{...m,fw,sort:z*fw.w}}
-  const imp=impactWeight(m);return{...m,imp,sort:z*imp.w}
+  const imp=impactWeight(m,z);return{...m,imp,sort:z*imp.w}
  }).filter(m=>lens!=='value'||m.fw?.w>0).sort((a,b)=>b.sort-a.sort)
 }
 function renderLists(){
@@ -311,7 +337,7 @@ function renderLists(){
   if(!stats)formula.innerHTML='';
   else if(lens==='raw')formula.innerHTML='<b>Raw drop-rate view:</b> items are ordered only by their percentile-derived σ deviation. No GE price or gameplay-importance weighting is used in this list. The aggregate raw signal is <strong>'+sig(stats.idx.raw)+'</strong>.';
   else if(lens==='value')formula.innerHTML='<b>Financial-impact view:</b> probability deviation is multiplied by a log-scaled live GE weight. The aggregate priced-item signal is <strong>'+sig(stats.idx.financial.z)+'</strong>, with an approximate observed-minus-expected value of <strong>'+(stats.idx.financial.deltaGp>=0?'+':'−')+money(Math.abs(stats.idx.financial.deltaGp))+' gp</strong>. This is deliberately separate from the final overall luck score.';
-  else formula.innerHTML='<b>Final 1–10 score:</b> weighted item signal '+signed(stats.idx.itemNumerator)+' + pooled raid portfolios '+signed(stats.idx.portfolioNumerator)+' = '+signed(stats.idx.numerator)+' ÷ '+stats.idx.denom.toFixed(2)+' = <strong>'+sig(stats.idx.meaningful)+'</strong> → <strong>'+scoreText(stats.idx.score)+'</strong>. '+(stats.idx.portfolios.length?stats.idx.portfolios.map(p=>p.label+': '+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected · volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)).join(' · '):'No raid portfolio with a usable expected-drop denominator.')+' Assumption-heavy mechanics are confidence-damped, including the fixed CoX/ToA point assumptions. Raid items already represented in a pooled portfolio keep only 30% of their ordinary item-level weight, or 55% for transformative raid weapons, to avoid counting the same evidence twice. Large source tables are L2-capped so having more Collection Log slots does not create more statistical power. Item σ is capped at ±3.50.';
+  else formula.innerHTML='<b>Final 1–10 score:</b> weighted item signal '+signed(stats.idx.itemNumerator)+' + pooled raid portfolios '+signed(stats.idx.portfolioNumerator)+' = '+signed(stats.idx.numerator)+' ÷ '+stats.idx.denom.toFixed(2)+' = <strong>'+sig(stats.idx.meaningful)+'</strong> → <strong>'+scoreText(stats.idx.score)+'</strong>. '+(stats.idx.portfolios.length?stats.idx.portfolios.map(p=>p.label+': '+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected · volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)).join(' · '):'No raid portfolio with a usable expected-drop denominator.')+' Assumption-heavy mechanics are confidence-damped, including the fixed CoX/ToA point assumptions. Overall-impact weights are portfolio-aware: community progression value comes first, early useful group copies are worth more than redundant copies, complementary gear can add a capped synergy bonus, and a personal dry streak is softened when teammates have already solved that slot for the GIM. Raid items already represented in a pooled portfolio retain only part of their ordinary item-level weight to avoid counting the same evidence twice. Large source tables are L2-capped so having more Collection Log slots does not create more statistical power. Item σ is capped at ±3.50.';
  }
  const titles=lens==='raw'?['Most statistically lucky','Most statistically unlucky']:lens==='value'?['Biggest valuable spoons','Biggest valuable dry streaks']:['Luckiest meaningful drops','Unluckiest meaningful grinds'];
  $('#clogLuckLuckyTitle').textContent=titles[0];$('#clogLuckDryTitle').textContent=titles[1];
