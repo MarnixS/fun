@@ -95,7 +95,7 @@ function indices(metrics){
 function entityStats(ps){const metrics=metricsFor(ps),idx=indices(metrics),s=sample(metrics);return{metrics,idx,s}}
 function renderPicker(){
  const h=$('#clogLuckMembers');if(!h)return;
- U.renderMemberPicker(h,selected,keys=>{const next=new Set(keys);if(U.sameSelection(selected,next))return;selected=next;U.saveMemberSelection(selected);reset();render()},{title:'Members in luck analysis',subtitle:'Add or remove usernames. Percentiles, combined rolls and both luck rankings recalculate for exactly this selection.',fallback:U.ALL_KEYS,availability:model.known})
+ U.renderMemberPicker(h,selected,keys=>{const next=new Set(keys);if(U.sameSelection(selected,next))return;selected=next;U.saveMemberSelection(selected);reset();render()},{title:'Members in luck analysis',subtitle:'Add or remove usernames. Percentiles, progression weighting, the 1–10 score and every selected-account combination recalculate for exactly this selection.',fallback:U.ALL_KEYS,availability:model.known})
 }
 function overview(){
  const h=$('#clogLuckOverview');if(!h)return;const ps=selectedPlayers();
