@@ -64,14 +64,14 @@ const RAID_PORTFOLIOS=[
 function raidPortfolio(metrics,def){
  const rows=metrics.filter(m=>def.names.has(m.name)&&Number.isFinite(m.r.expected)&&Number.isFinite(m.r.observed));
  const expected=rows.reduce((n,m)=>n+m.r.expected,0),observed=rows.reduce((n,m)=>n+m.r.observed,0);
- if(!rows.length||expected<=0)return null;
+ if(!rows.length||expected<1)return null;
  const volumeZ=cappedZ((observed-expected)/Math.sqrt(Math.max(.25,expected)));
  const weighted=rows.map(m=>({m,w:impactWeight(m).w}));
  const meanW=weighted.reduce((n,x)=>n+x.m.r.expected*x.w,0)/expected;
  const qNum=weighted.reduce((n,x)=>n+(x.m.r.observed-x.m.r.expected)*(x.w-meanW),0);
  const qDen=Math.sqrt(weighted.reduce((n,x)=>n+x.m.r.expected*Math.pow(x.w-meanW,2),0));
  const qualityZ=qDen>.05?cappedZ(qNum/qDen):0;
- const z=cappedZ((.72*volumeZ+.69*qualityZ)/Math.sqrt(.72*.72+.69*.69));
+ const z=cappedZ(.80*volumeZ+.60*qualityZ);
  return{...def,rows,observed,expected,volumeZ,qualityZ,z,contribution:z*def.weight}
 }
 function cappedZ(z){return clamp(z,-3.5,3.5)}
