@@ -139,8 +139,8 @@ function utilityIntegral(x,profile){
 function deviationUtility(profile,m,z){
  if(profile.kind==='bound-unlock')return boundUnlockUtility(m);
  if(profile.kind==='component')return 1;
- const actual=+m?.r?.observed,expected=+m?.r?.expected;
- if(Number.isFinite(actual)&&Number.isFinite(expected)&&Math.abs(actual-expected)>.05){
+ const rawActual=m?.r?.observed,rawExpected=m?.r?.expected,actual=Number(rawActual),expected=Number(rawExpected);
+ if(Number.isFinite(rawActual)&&Number.isFinite(rawExpected)&&Number.isFinite(actual)&&Number.isFinite(expected)&&Math.abs(actual-expected)>.05){
   const direction=Math.sign(actual-expected);
   if(!Number.isFinite(z)||Math.sign(z)===direction||Math.abs(z)<.15){
    const u=Math.abs(utilityIntegral(actual,profile)-utilityIntegral(expected,profile))/Math.abs(actual-expected);
