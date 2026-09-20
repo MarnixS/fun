@@ -147,21 +147,29 @@ function modelConfidence(m){
  if(/variable stack-size.*approximation/.test(notes))return{f:.9,label:'distribution approximation'};
  return{f:1,label:'direct / accepted model'}
 }
+function memberOnePieceFrom(set,targetName){
+ const target=String(targetName||'').toLowerCase(),others=set.names.filter(x=>x!==target),ids=others.map(itemIdByName);
+ if(ids.some(x=>x==null))return false;
+ return fullGroupPlayers().some(p=>ids.every(id=>(model.counts.get(p.key)?.get(+id)||0)>0))
+}
 function deficitCompensation(profile,m,z){
  if(!(Number.isFinite(z)&&z<0))return{f:1,label:null};
  if(profile.kind==='component'&&profile.set&&COMPONENT_SETS[profile.set]){
   const set=COMPONENT_SETS[profile.set],complete=completedUntradeableSets(set);
-  return complete>0?{f:.55,label:'completed '+set.label+' already exists in group'}:{f:1,label:null}
+  if(complete>0)return{f:.55,label:'completed '+set.label+' already exists in group'};
+  if(memberOnePieceFrom(set,String(m.name||'').toLowerCase()))return{f:1.22,label:'this component can complete a personal '+set.label+' set'};
+  return{f:1,label:null}
  }
  if(!['personal-unlock','major-shareable','shareable'].includes(profile.kind))return{f:1,label:null};
  const q=portfolioCount(m.name),f=marginalAt(q,profile),members=Math.max(1,fullGroupPlayers().length);
  let label=null;
- if(profile.kind==='personal-unlock'&&q>0)label=Math.min(q,members)+'/'+members+' group unlock capacity already supplied';
+ if(profile.kind==='personal-unlock'&&q>0)label=Math.min(q,members)+'/'+members+' group unlock capacity already supplied; next unlock retains '+Math.round(f*100)+'% marginal value';
  else if(q>0)label=q+' existing group cop'+(q===1?'y':'ies')+'; next copy retains '+Math.round(f*100)+'% marginal progression value';
  return{f,label}
 }
 function impactWeight(m,z=null){
- const p=impactProfile(m),copy=copyUtility(p,m),synergy=synergyUtility(m,p),deficit=deficitCompensation(p,m,z),ge=p.base>=.5?geModifier(price(m.id)):1,confidence=modelConfidence(m);
+ const p=impactProfile(m),isDry=Number.isFinite(z)&&z<0;
+ const copy=isDry?1:copyUtility(p,m),synergy=isDry?{f:1,label:null}:synergyUtility(m,p),deficit=deficitCompensation(p,m,z),ge=p.base>=.5?geModifier(price(m.id)):1,confidence=modelConfidence(m);
  const w=clamp(p.base*copy*synergy.f*deficit.f*ge,.03,10.5);
  return{...p,copy,synergy,deficit,ge,confidence,w,reliability:confidence.f}
 }
@@ -184,12 +192,13 @@ const RAID_PORTFOLIOS=[
  {key:'toa',label:'ToA purple portfolio',weight:9,names:new Set(["Tumeken's shadow (uncharged)","Osmumten's fang",'Lightbearer',"Elidinis' ward",'Masori mask','Masori body','Masori chaps'])},
  {key:'tob',label:'ToB purple portfolio',weight:8,names:new Set(['Avernic defender hilt','Ghrazi rapier','Sanguinesti staff (uncharged)','Scythe of Vitur (uncharged)','Justiciar faceguard','Justiciar chestguard','Justiciar legguards'])}
 ];
+function intrinsicCommunityWeight(m){return clamp(impactProfile(m).base,.03,10)}
 function raidPortfolio(metrics,def){
  const rows=metrics.filter(m=>def.names.has(m.name)&&Number.isFinite(m.r.expected)&&Number.isFinite(m.r.observed));
  const expected=rows.reduce((n,m)=>n+m.r.expected,0),observed=rows.reduce((n,m)=>n+m.r.observed,0);
  if(!rows.length||expected<1)return null;
  const volumeZ=cappedZ((observed-expected)/Math.sqrt(Math.max(.25,expected)));
- const weighted=rows.map(m=>({m,w:impactWeight(m).w}));
+ const weighted=rows.map(m=>({m,w:intrinsicCommunityWeight(m)}));
  const meanW=weighted.reduce((n,x)=>n+x.m.r.expected*x.w,0)/expected;
  const qNum=weighted.reduce((n,x)=>n+(x.m.r.observed-x.m.r.expected)*(x.w-meanW),0);
  const qDen=Math.sqrt(weighted.reduce((n,x)=>n+x.m.r.expected*Math.pow(x.w-meanW,2),0));
@@ -200,8 +209,8 @@ function raidPortfolio(metrics,def){
  const z=cappedZ((.70*volumeZ+.50*qualityZ+.30*coverageZ)/Math.sqrt(.70*.70+.50*.50+.30*.30));
  const confidenceDen=rows.reduce((n,m)=>n+m.r.expected,0);
  const confidenceWeighted=confidenceDen?rows.reduce((n,m)=>n+m.r.expected*modelConfidence(m).f,0)/confidenceDen:1;
- const effectiveWeight=def.weight*confidenceWeighted;
- return{...def,rows,observed,expected,volumeZ,qualityZ,coverageZ,z,confidence:confidenceWeighted,effectiveWeight,contribution:z*effectiveWeight}
+ const effectiveWeight=def.weight,contribution=z*effectiveWeight*confidenceWeighted;
+ return{...def,rows,observed,expected,volumeZ,qualityZ,coverageZ,z,confidence:confidenceWeighted,effectiveWeight,contribution}
 }
 
 function portfolioResidual(m){
@@ -235,19 +244,21 @@ function saturateSourceFamilies(units){
 function independentUnits(metrics){
  const groups=new Map();
  for(const m of metrics){
-  const dep=L.dependencyKey?.(m.id);
-  const key=dep||('item:'+m.id);
-  if(!groups.has(key))groups.set(key,[]);
-  groups.get(key).push(m);
+  const dep=L.dependencyKey?.(m.id),key=dep||('item:'+m.id);
+  if(!groups.has(key))groups.set(key,[]);groups.get(key).push(m)
  }
  const units=[];
  for(const [key,rows] of groups){
-  if(rows.length===1){const m=rows[0],imp=impactWeight(m,cappedZ(m.z)),residual=portfolioResidual(m);units.push({key,rows,m,z:cappedZ(m.z),imp,residual,w:imp.w*residual});continue}
+  if(rows.length===1){
+   const m=rows[0],imp=impactWeight(m,cappedZ(m.z)),residual=portfolioResidual(m);
+   units.push({key,rows,m,z:cappedZ(m.z),imp,residual,w:imp.w*residual,reliability:imp.reliability});continue
+  }
   const parts=rows.map(m=>({m,imp:impactWeight(m,cappedZ(m.z)),residual:portfolioResidual(m),z:cappedZ(m.z)}));
   const sumW=parts.reduce((n,x)=>n+x.imp.w*x.residual,0);
   const z=sumW?parts.reduce((n,x)=>n+x.z*x.imp.w*x.residual,0)/sumW:0;
+  const reliability=sumW?parts.reduce((n,x)=>n+x.imp.reliability*x.imp.w*x.residual,0)/sumW:1;
   const strongest=parts.reduce((a,b)=>b.imp.w*b.residual>a.imp.w*a.residual?b:a);
-  units.push({key,rows,m:strongest.m,z:cappedZ(z),imp:{...strongest.imp,label:strongest.imp.label+' · shared roll group'},residual:strongest.residual,w:strongest.imp.w*strongest.residual});
+  units.push({key,rows,m:strongest.m,z:cappedZ(z),imp:{...strongest.imp,label:strongest.imp.label+' · shared roll group'},residual:strongest.residual,w:strongest.imp.w*strongest.residual,reliability})
  }
  return saturateSourceFamilies(units)
 }
