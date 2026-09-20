@@ -25,3 +25,10 @@
 .beta-item .beta-item-pie{z-index:2}
 .beta-item .beta-quantity{z-index:3}
 @media(max-width:600px){.beta-item .beta-luck{right:0;top:0;min-width:22px;padding:1px 2px;font-size:7px}}
+
+/* Full statistical explanation for Classic CLog luck percentiles. */
+.beta-luck-note{max-width:760px;margin:12px auto 0;padding:11px 13px;border:1px solid #4b402c;background:#17140f;text-align:left;color:#b8ae9b;font-size:11px;line-height:1.55}
+.beta-luck-note>strong{display:block;margin-bottom:5px;color:#dcc48e;font:700 12px Georgia,serif}
+.beta-luck-note p{margin:5px 0}
+.beta-luck-note b{color:#e2cf9d;font-weight:700}
+@media(max-width:600px){.beta-luck-note{font-size:10px;padding:9px 10px}.beta-luck-note>strong{font-size:11px}}
