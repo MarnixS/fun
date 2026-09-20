@@ -80,7 +80,7 @@ function portfolioCount(name,m){return portfolioCounts(m).get(String(name||'').t
 function sumPortfolio(regex,m){let n=0;for(const [name,q] of portfolioCounts(m))if(regex.test(name))n+=q;return n}
 function impactProfile(m){
  const name=String(m?.name||'').trim();
- for(const r of COMMUNITY_RULES)if(r.re.test(name))return{base:r.w,label:r.label,kind:r.kind||'shareable',set:r.set||null,required:r.required||null};
+ for(const r of COMMUNITY_RULES)if(r.re.test(name))return{base:r.w,label:r.label,kind:r.kind||'shareable',set:r.set||null,required:r.required||null,curated:true};
  const src=sourceText(m),clue=/clue/.test(src);
  if(clue)return{base:.04,label:'clue reward / cosmetic',kind:'cosmetic'};
  if(PET_RE.test(name)||/\bpet\b/i.test(name))return{base:.18,label:'pet / vanity chase',kind:'vanity'};
@@ -239,7 +239,7 @@ function deficitCompensation(profile,m,z){
 }
 function impactWeight(m,z=null){
  const p=impactProfile(m),isDry=Number.isFinite(z)&&z<0;
- const copy=isDry?1:copyUtility(p,m),synergy=isDry?{f:1,label:null}:synergyUtility(m,p),deficit=deficitCompensation(p,m,z),substitution=substitutionUtility(p,m),ge=p.base>=.5?geModifier(price(m.id)):1,confidence=modelConfidence(m);
+ const copy=isDry?1:copyUtility(p,m),synergy=isDry?{f:1,label:null}:synergyUtility(m,p),deficit=deficitCompensation(p,m,z),substitution=substitutionUtility(p,m),ge=p.curated===true?1:(p.base>=.5?geModifier(price(m.id)):1),confidence=modelConfidence(m);
  const w=clamp(p.base*copy*synergy.f*deficit.f*substitution.f*ge,.03,10.5);
  return{...p,copy,synergy,deficit,substitution,ge,confidence,w,reliability:confidence.f}
 }
