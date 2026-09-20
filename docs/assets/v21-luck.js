@@ -3,8 +3,47 @@
 const U=window.UGV21,M=window.UGClogBetaModel,L=window.UGClogLuck;
 if(!U||!M||!L||document.body.dataset.page!=='gim')return;
 const {$,$$,fmt,escapeHtml:esc}=U;
-let doc=null,wom=null,model=null,selected=U.loadMemberSelection(),view='scored',lens='meaningful',prices=null,priceRequest=null,metricCache=new Map(),excludedCache=new Map(),statsCache=new Map(),luckActive=false,renderGeneration=0;
+let doc=null,wom=null,model=null,selected=U.loadMemberSelection(),view='scored',lens='meaningful',prices=null,priceRequest=null,metricCache=new Map(),excludedCache=new Map(),statsCache=new Map(),luckActive=false,renderGeneration=0,dataRequest=null;
 
+function showLuckStatus(message,error=false){
+ const h=$('#clogLuckOverview');if(h)h.innerHTML='<div class="notice'+(error?' warn':'')+'">'+esc(message)+'</div>'
+}
+async function staticJsonFast(path,timeout=12000){
+ const r=await fetch(path,{cache:'no-store',headers:{Accept:'application/json'},signal:AbortSignal.timeout(timeout)});
+ if(!r.ok)throw new Error('HTTP '+r.status);return r.json()
+}
+async function firstValid(loaders,field){
+ return new Promise((resolve,reject)=>{
+  let pending=loaders.length,last=null,done=false;
+  for(const fn of loaders)Promise.resolve().then(fn).then(x=>{
+   if(done)return;if(x&&x[field]&&typeof x[field]==='object'){done=true;resolve(x);return}
+   last=new Error('Invalid '+field+' data');if(--pending===0)reject(last)
+  }).catch(e=>{last=e;if(--pending===0&&!done)reject(last||new Error('Data unavailable'))})
+ })
+}
+async function ensureLuckData(){
+ if(model&&wom)return true;if(dataRequest)return dataRequest;
+ dataRequest=(async()=>{
+  try{
+   showLuckStatus('Loading Collection Log and WOM data…');
+   const [d,w]=await Promise.all([
+    firstValid([()=>U.loadClog(),()=>staticJsonFast('data/temple-clog.json',10000)],'players'),
+    firstValid([()=>U.loadWom(),()=>staticJsonFast('data/wom-cache.json',12000)],'profiles')
+   ]);
+   doc=d;wom=w;model=M.build(doc,U.PLAYERS);reset();return true
+  }catch(e){
+   console.error('Lucky or Not data load failed',e);
+   showLuckStatus('Lucky or Not could not load its saved Collection Log/WOM data. Reload the page to retry.',true);
+   return false
+  }finally{dataRequest=null}
+ })();
+ return dataRequest
+}
+async function activateLuck(){
+ luckActive=true;
+ const ok=await ensureLuckData();
+ if(luckActive&&ok)scheduleLuckRender()
+}
 function selectedPlayers(){return U.PLAYERS.filter(p=>selected.has(p.key)&&model?.known.has(p.key))}
 function modelIds(){const ids=new Set(model?.names?.keys?.()||[]);for(const m of model?.counts?.values?.()||[])for(const id of m.keys())ids.add(id);return [...ids]}
 function clamp(x,a,b){return Math.max(a,Math.min(b,x))}
@@ -642,23 +681,24 @@ function scheduleLuckRender(){
  })
 }
 function bind(){
- document.querySelectorAll('[data-luck-view]').forEach(b=>b.onclick=()=>{view=b.dataset.luckView;renderView();if(view==='impossible')renderImpossibleLazy()});
- document.querySelectorAll('[data-luck-lens]').forEach(b=>b.onclick=()=>{lens=b.dataset.luckLens||'meaningful';document.querySelectorAll('[data-luck-lens]').forEach(x=>x.classList.toggle('active',x===b));if(luckActive)renderLists()});
+ document.querySelectorAll('[data-luck-view]').forEach(b=>b.onclick=()=>{view=b.dataset.luckView;renderView();if(view==='impossible'&&model&&wom)renderImpossibleLazy()});
+ document.querySelectorAll('[data-luck-lens]').forEach(b=>b.onclick=()=>{lens=b.dataset.luckLens||'meaningful';document.querySelectorAll('[data-luck-lens]').forEach(x=>x.classList.toggle('active',x===b));if(luckActive&&model&&wom)renderLists()});
  document.querySelectorAll('[data-gim-tab]').forEach(tab=>tab.addEventListener('click',()=>{
-  if(tab.dataset.gimTab==='luck'){luckActive=true;scheduleLuckRender()}
+  if(tab.dataset.gimTab==='luck')activateLuck();
   else{luckActive=false;renderGeneration++}
  }))
 }
 function reset(){metricCache=new Map();excludedCache=new Map();statsCache=new Map();portfolioCache=new Map();renderGeneration++}
 window.addEventListener('ug:members-changed',e=>{const keys=U.cleanSelection(e.detail?.keys,U.ALL_KEYS);if(U.sameSelection(selected,keys))return;selected=keys;reset();if(luckActive)scheduleLuckRender()});
-window.addEventListener('ug:data-updated',async e=>{
- if(e.detail?.key===U.TKEY){doc=await U.loadClog();model=M.build(doc,U.PLAYERS);reset();if(luckActive)scheduleLuckRender()}
- else if(e.detail?.key===U.WKEY){wom=await U.loadWom();reset();if(luckActive)scheduleLuckRender()}
+window.addEventListener('ug:data-updated',e=>{
+ if(!luckActive&&!model)return;
+ if(e.detail?.key===U.TKEY&&e.detail?.document){doc=e.detail.document;model=M.build(doc,U.PLAYERS);reset();if(luckActive&&wom)scheduleLuckRender()}
+ else if(e.detail?.key===U.WKEY&&e.detail?.document){wom=e.detail.document;reset();if(luckActive&&model)scheduleLuckRender()}
 });
-async function init(){
- [doc,wom]=await Promise.all([U.loadClog(),U.loadWom()]);model=M.build(doc,U.PLAYERS);bind();
+function init(){
+ bind();
  const tab=$('[data-gim-tab="luck"]');luckActive=!!tab?.classList.contains('active');
- if(luckActive)scheduleLuckRender()
+ if(luckActive)activateLuck()
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
