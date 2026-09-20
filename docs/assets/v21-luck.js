@@ -20,40 +20,102 @@ function signed(n){return(n>0?'+':'')+n.toFixed(2)}
 function money(n){if(!Number.isFinite(+n)||+n<=0)return'—';n=+n;return n>=1e9?(n/1e9).toFixed(2)+'b':n>=1e6?(n/1e6).toFixed(1)+'m':n>=1e3?(n/1e3).toFixed(1)+'k':fmt(n)}
 function tone(z){return z>.15?'positive':z<-.15?'negative':'neutral'}
 function sourceText(m){return(m?.r?.sources||[]).map(x=>String(x.label||x.source||'')).join(' ').toLowerCase()}
-const IMPACT_RULES=[
- {w:6,label:'transformative raid weapon',re:/^(twisted bow|tumeken's shadow(?: \\(uncharged\\))?|scythe of vitur(?: \\(uncharged\\))?)$/i},
- {w:4.8,label:'transformative progression unlock',re:/^enhanced crystal weapon seed$/i},
- {w:4.4,label:'major progression weapon',re:/^(dragon warhammer|elder maul|hydra's claw|hydra claw)$/i},
- {w:4.0,label:'major progression weapon',re:/^(osmumten's fang|bow of faerdhinen)$/i},
- {w:3.6,label:'major account upgrade',re:/^(avernic defender hilt|zamorakian spear|basilisk jaw)$/i},
- {w:3.3,label:'major equipment upgrade',re:/^(araxtye fang|araxyte fang|primordial crystal|zenyte shard)$/i},
- {w:3.2,label:'major raid armour',re:/^(torva full helm|torva platebody|torva platelegs|ancestral hat|ancestral robe top|ancestral robe bottom|masori mask|masori body|masori chaps)$/i},
- {w:2.6,label:'high-value raid unique',re:/^(kodai insignia|dragon claws|dinh's bulwark|twisted buckler|dragon hunter crossbow)$/i},
- {w:2.8,label:'high-impact equipment',re:/^(bandos chestplate|bandos tassets|dexterous prayer scroll|nightmare staff|inquisitor's mace)$/i},
- {w:2.5,label:'high-impact equipment',re:/^(lightbearer|elidinis' ward|hydra leather|ferocious gloves|occult necklace|venator bow)$/i},
- {w:2.2,label:'meaningful equipment upgrade',re:/^(armadyl crossbow|saradomin sword|staff of the dead|toxic blowpipe|serpentine visage|magic fang)$/i},
- {w:1.55,label:'Noxious halberd component',re:/^(noxious point|noxious blade|noxious pommel)$/i},
- {w:1.35,label:'Soulreaper axe component',re:/^(eye of the duke|siren's staff|leviathan's lure|executioner's axe head)$/i},
- {w:1.8,label:'meaningful equipment upgrade',re:/^(ultor vestige|magus vestige|venator vestige|bellator vestige|virtus mask|virtus robe top|virtus robe bottom)$/i},
- {w:1.6,label:'useful equipment upgrade',re:/^(ranger boots|berserker ring|archers ring|seers ring|warrior ring|berserker ring \(i\))$/i}
+const COMMUNITY_RULES=[
+ {w:10.0,label:'iconic megarare · account-defining',kind:'major-shareable',re:/^(twisted bow|tumeken's shadow(?: \\(uncharged\\))?)$/i},
+ {w:9.0,label:'iconic megarare · account-defining',kind:'major-shareable',re:/^scythe of vitur(?: \\(uncharged\\))?$/i},
+ {w:7.6,label:'progression-defining ranged unlock',kind:'major-shareable',re:/^enhanced crystal weapon seed$/i},
+ {w:7.0,label:'permanent ranged progression unlock',kind:'personal-unlock',re:/^dexterous prayer scroll$/i},
+ {w:6.5,label:'major raid / defence progression tool',kind:'major-shareable',re:/^(elder maul|dragon warhammer)$/i},
+ {w:6.1,label:'high-breadth raid weapon',kind:'major-shareable',re:/^osmumten's fang$/i},
+ {w:5.8,label:'high-impact special-attack weapon',kind:'major-shareable',re:/^dragon claws$/i},
+ {w:5.5,label:'progression-opening demonbane choice',kind:'major-shareable',re:/^tormented synapse$/i},
+ {w:5.4,label:'high-breadth utility ring',kind:'shareable',re:/^lightbearer$/i},
+ {w:5.0,label:'major specialist weapon',kind:'major-shareable',re:/^(dragon hunter crossbow|kodai insignia|hydra's claw|hydra claw)$/i},
+ {w:4.7,label:'major account upgrade',kind:'shareable',re:/^(zamorakian spear|basilisk jaw)$/i},
+ {w:4.5,label:'high-impact raid armour',kind:'shareable',re:/^(ancestral hat|ancestral robe top|ancestral robe bottom)$/i},
+ {w:4.2,label:'high-impact ranged armour',kind:'shareable',re:/^(masori mask|masori body|masori chaps)$/i},
+ {w:4.1,label:'major melee upgrade',kind:'shareable',re:/^(avernic defender hilt|araxtye fang|araxyte fang|primordial crystal|zenyte shard)$/i},
+ {w:4.0,label:'major raid armour',kind:'shareable',re:/^(torva full helm|torva platebody|torva platelegs)$/i},
+ {w:3.8,label:'high-value raid unique',kind:'shareable',re:/^(dinh's bulwark|twisted buckler)$/i},
+ {w:3.4,label:'meaningful PvM equipment',kind:'shareable',re:/^(bandos chestplate|bandos tassets|nightmare staff|inquisitor's mace|elidinis' ward|hydra leather|ferocious gloves|occult necklace|venator bow)$/i},
+ {w:3.0,label:'Noxious halberd component',kind:'component',set:'nox',re:/^(noxious point|noxious blade|noxious pommel)$/i},
+ {w:2.7,label:'Soulreaper axe component',kind:'component',set:'soulreaper',re:/^(eye of the duke|siren's staff|leviathan's lure|executioner's axe head)$/i},
+ {w:2.8,label:'meaningful equipment upgrade',kind:'shareable',re:/^(ultor vestige|magus vestige|venator vestige|bellator vestige|virtus mask|virtus robe top|virtus robe bottom)$/i},
+ {w:2.6,label:'useful equipment upgrade',kind:'shareable',re:/^(armadyl crossbow|saradomin sword|staff of the dead|toxic blowpipe|serpentine visage|magic fang|ranger boots)$/i}
 ];
 const PET_RE=/^(nid|noon|midnight|muphin|butch|smolcano|herbi|chompy chick|youngllef|gauntlet pet|ikkle hydra|lil' zik|tumeken's guardian|toa pet|olmlet|sraracha|mole pet|kalphite princess|prince black dragon|pet chaos elemental|pet dagannoth|pet snakeling|abyssal orphan|hellpuppy|skotos|jal-nib-rek|baby chinchompa|rocky|tangleroot|rift guardian|heron|beaver|giant squirrel|rock golem|phoenix)$/i;
+const COMPONENT_SETS={
+ nox:{names:['noxious point','noxious blade','noxious pommel'],label:'Noxious halberd'},
+ soulreaper:{names:['eye of the duke',"siren's staff","leviathan's lure","executioner's axe head"],label:'Soulreaper axe'}
+};
+let portfolioCache=null;
+function fullGroupPlayers(){return U.PLAYERS.filter(p=>model?.known.has(p.key))}
+function portfolioCounts(){
+ if(portfolioCache)return portfolioCache;
+ const map=new Map(),ps=fullGroupPlayers();
+ for(const id of modelIds()){
+  const name=String(model.names.get(id)||'').trim().toLowerCase();if(!name)continue;
+  const q=countFor(id,ps);map.set(name,(map.get(name)||0)+q)
+ }
+ portfolioCache=map;return map
+}
+function portfolioCount(name){return portfolioCounts().get(String(name||'').toLowerCase())||0}
+function sumPortfolio(regex){let n=0;for(const [name,q] of portfolioCounts())if(regex.test(name))n+=q;return n}
 function impactProfile(m){
  const name=String(m?.name||'').trim();
- for(const r of IMPACT_RULES)if(r.re.test(name))return{base:r.w,label:r.label};
+ for(const r of COMMUNITY_RULES)if(r.re.test(name))return{base:r.w,label:r.label,kind:r.kind||'shareable',set:r.set||null};
  const src=sourceText(m),clue=/clue/.test(src);
- if(clue)return{base:.04,label:'clue reward / cosmetic'};
- if(PET_RE.test(name)||/\bpet\b/i.test(name))return{base:.18,label:'pet / vanity chase'};
- if(/^(jar of |.* ornament kit$|.* kit$)/i.test(name)||/ornament|cosmetic|transmog/i.test(name))return{base:.08,label:'cosmetic / vanity'};
- if(/^(heads?|jars?)$/i.test(name)||/\bhead$|stuffed/i.test(name))return{base:.12,label:'trophy / cosmetic'};
- if(/chambers of xeric|tombs of amascut|theatre of blood|theater of blood/.test(src))return{base:1.65,label:'raid unique'};
- if(/barrows/.test(src))return{base:.65,label:'replaceable equipment'};
- if(/gauntlet/.test(src))return{base:1.1,label:'PvM equipment'};
- if(/kills|completion|kc|boss|slayer/.test(src))return{base:.9,label:'PvM unique'};
- if(/sword|bow|staff|mace|spear|halberd|axe|claw|fang|helm|mask|body|plate|robe|legs|chaps|tassets|boots|gloves|ring|amulet|necklace|shield|ward|defender|hilt|seed|crystal/i.test(name))return{base:.85,label:'equipment / progression'};
- return{base:.35,label:'low-impact collection item'}
+ if(clue)return{base:.04,label:'clue reward / cosmetic',kind:'cosmetic'};
+ if(PET_RE.test(name)||/\bpet\b/i.test(name))return{base:.18,label:'pet / vanity chase',kind:'vanity'};
+ if(/^(jar of |.* ornament kit$|.* kit$)/i.test(name)||/ornament|cosmetic|transmog/i.test(name))return{base:.08,label:'cosmetic / vanity',kind:'cosmetic'};
+ if(/^(heads?|jars?)$/i.test(name)||/\bhead$|stuffed/i.test(name))return{base:.12,label:'trophy / cosmetic',kind:'cosmetic'};
+ if(/chambers of xeric|tombs of amascut|theatre of blood|theater of blood/.test(src))return{base:2.2,label:'raid unique',kind:'shareable'};
+ if(/barrows/.test(src))return{base:.65,label:'replaceable equipment',kind:'shareable'};
+ if(/gauntlet/.test(src))return{base:1.2,label:'PvM equipment',kind:'shareable'};
+ if(/kills|completion|kc|boss|slayer/.test(src))return{base:.95,label:'PvM unique',kind:'shareable'};
+ if(/sword|bow|staff|mace|spear|halberd|axe|claw|fang|helm|mask|body|plate|robe|legs|chaps|tassets|boots|gloves|ring|amulet|necklace|shield|ward|defender|hilt|seed|crystal/i.test(name))return{base:.9,label:'equipment / progression',kind:'shareable'};
+ return{base:.35,label:'low-impact collection item',kind:'low-impact'}
 }
-function geModifier(gp){if(!Number.isFinite(+gp)||+gp<=0)return 1;const x=clamp((Math.log10(+gp)-5)/5,0,1);return .9+.2*x}
+function averageMarginal(q,curve,tail=.12){
+ q=Math.max(0,Math.floor(+q||0));if(q<=0)return 1;
+ let total=0;for(let i=0;i<q;i++)total+=i<curve.length?curve[i]:tail;
+ return total/q
+}
+function copyUtility(profile,m){
+ const q=portfolioCount(m.name);
+ if(profile.kind==='personal-unlock')return averageMarginal(q,[1,.96,.92,.88,.84],.12);
+ if(profile.kind==='major-shareable')return averageMarginal(q,[1,.82,.66,.52,.42],.14);
+ if(profile.kind==='shareable')return averageMarginal(q,[1,.72,.54,.40,.30],.12);
+ return 1
+}
+function componentUtility(profile){
+ if(!profile.set||!COMPONENT_SETS[profile.set])return{f:1,label:null};
+ const set=COMPONENT_SETS[profile.set],counts=set.names.map(portfolioCount),complete=Math.min(...counts),pieces=counts.filter(x=>x>0).length;
+ if(complete>0)return{f:clamp(1.35+.12*Math.min(complete-1,3),1,1.7),label:set.label+' completed as a group'};
+ return{f:.45+.15*pieces,label:pieces+'/'+set.names.length+' '+set.label+' components represented'}
+}
+function synergyUtility(m,profile){
+ const n=String(m.name||'').toLowerCase(),reasons=[];let f=1;
+ const tbow=portfolioCount('twisted bow'),dex=portfolioCount('dexterous prayer scroll');
+ const shadow=portfolioCount("tumeken's shadow (uncharged)"),scythe=portfolioCount('scythe of vitur (uncharged)');
+ const enhanced=portfolioCount('enhanced crystal weapon seed'),armourSeeds=portfolioCount('crystal armour seed');
+ const ancestral=sumPortfolio(/^ancestral (hat|robe top|robe bottom)$/),masori=sumPortfolio(/^masori (mask|body|chaps)$/);
+ const claws=portfolioCount('dragon claws'),zcb=portfolioCount('zaryte crossbow'),lb=portfolioCount('lightbearer');
+ if(n==='twisted bow'&&dex>0){f+=.12;reasons.push('Rigour access in group')}
+ if(n==='twisted bow'&&masori>=3){f+=.06;reasons.push('Masori support')}
+ if(n==='dexterous prayer scroll'&&tbow>0){f+=.10;reasons.push('Tbow in group')}
+ else if(n==='dexterous prayer scroll'&&enhanced>0){f+=.05;reasons.push('Bowfa progression in group')}
+ if(n==="tumeken's shadow (uncharged)"&&ancestral>=2){f+=.12;reasons.push('Ancestral support')}
+ if(/^ancestral (hat|robe top|robe bottom)$/.test(n)&&shadow>0){f+=.15;reasons.push('Shadow in group')}
+ if(/^masori (mask|body|chaps)$/.test(n)&&tbow>0){f+=.12;reasons.push('Tbow in group')}
+ if(n==='enhanced crystal weapon seed'&&armourSeeds>=6){f+=.12;reasons.push('full crystal armour access')}
+ if(n==='lightbearer'&&(claws>0||zcb>0)){f+=.10;reasons.push('high-impact spec weapon access')}
+ if((n==='dragon claws'||n==='zaryte crossbow')&&lb>0){f+=.08;reasons.push('Lightbearer in group')}
+ if(n==='avernic defender hilt'&&(scythe>0||portfolioCount("osmumten's fang")>0)){f+=.06;reasons.push('endgame melee weapon support')}
+ const component=componentUtility(profile);f*=component.f;if(component.label)reasons.push(component.label);
+ return{f:clamp(f,.35,1.55),label:reasons.join(' · ')||null}
+}
+function geModifier(gp){if(!Number.isFinite(+gp)||+gp<=0)return 1;const x=clamp((Math.log10(+gp)-5)/5,0,1);return .94+.12*x}
 function modelConfidence(m){
  const notes=(m?.r?.notes||[]).join(' | ').toLowerCase();
  if(/pre\/post-rework split unavailable/.test(notes))return{f:.7,label:'historical split uncertain'};
@@ -65,7 +127,11 @@ function modelConfidence(m){
  if(/variable stack-size.*approximation/.test(notes))return{f:.9,label:'distribution approximation'};
  return{f:1,label:'direct / accepted model'}
 }
-function impactWeight(m){const p=impactProfile(m),mod=p.base>=.5?geModifier(price(m.id)):1,confidence=modelConfidence(m);return{...p,ge:mod,confidence,w:clamp(p.base*mod*confidence.f,.03,6.5)}}
+function impactWeight(m){
+ const p=impactProfile(m),copy=copyUtility(p,m),synergy=synergyUtility(m,p),ge=p.base>=.5?geModifier(price(m.id)):1,confidence=modelConfidence(m);
+ const w=clamp(p.base*copy*synergy.f*ge*confidence.f,.03,10.5);
+ return{...p,copy,synergy,ge,confidence,w}
+}
 function financialWeight(m){
  const gp=price(m.id);if(!Number.isFinite(gp)||gp<=0)return{gp:0,w:0};
  const confidence=modelConfidence(m),base=clamp(Math.pow(gp/1e6,.28),.12,6.5);
@@ -107,7 +173,7 @@ function raidPortfolio(metrics,def){
 function portfolioResidual(m){
  const d=RAID_PORTFOLIOS.find(x=>x.names.has(m.name));
  if(!d)return 1;
- return impactProfile(m).base>=5?.55:.30
+ return impactProfile(m).base>=8?.62:impactProfile(m).base>=5?.42:.28
 }
 function sourceFamilyKey(rows){
  const src=new Set();
@@ -290,7 +356,7 @@ function bind(){
  $('[data-luck-lens]').forEach(b=>b.onclick=()=>{lens=b.dataset.luckLens||'meaningful';$('[data-luck-lens]').forEach(x=>x.classList.toggle('active',x===b));renderLists()});
  const tab=$('[data-gim-tab="luck"]');if(tab&&!tab.dataset.luckBound){tab.dataset.luckBound='1';tab.addEventListener('click',()=>{render();if(!prices)loadPrices().then(()=>render())})}
 }
-function reset(){metricCache=new Map();excludedCache=new Map()}
+function reset(){metricCache=new Map();excludedCache=new Map();portfolioCache=null}
 window.addEventListener('ug:members-changed',e=>{const keys=U.cleanSelection(e.detail?.keys,U.ALL_KEYS);if(U.sameSelection(selected,keys))return;selected=keys;reset();render()});
 window.addEventListener('ug:data-updated',async e=>{if(e.detail?.key===U.TKEY){doc=await U.loadClog();model=M.build(doc,U.PLAYERS);reset();render()}else if(e.detail?.key===U.WKEY){wom=await U.loadWom();reset();render()}});
 async function init(){[doc,wom]=await Promise.all([U.loadClog(),U.loadWom()]);model=M.build(doc,U.PLAYERS);bind();render()}
