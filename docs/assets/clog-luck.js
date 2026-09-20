@@ -150,14 +150,14 @@ function calculate(id,name,ps,wom,model,U){
        const preKc=coxPreReworkKc(wom,p,roll[0],kc);
        if(preKc!=null){
          const preN=Math.round(preKc*roll[2]),postN=Math.max(0,n-preN),split=coxSplit.get(roll[0])||{pre:0,post:0};split.pre+=preKc;split.post+=Math.max(0,kc-preKc);coxSplit.set(roll[0],split);
-         for(const [regime,gn,gkc] of [['pre',preN,preKc],['post',postN,Math.max(0,kc-preKc)]])if(gn>0){let prob=chance(rec,roll,name,notes,regime);if(rec.t==='d')prob=clamp(prob*(rec.set?.length||1));else if(rec.t==='q'){const past=(rec.set||[]).some(x=>(itemCount(model,p,x)||0)>1);if(!past)prob=clamp(prob*(rec.set?.length||1))}groups.push({n:gn,p:prob,source:roll[0],kc:gkc,rolls:roll[2]});rawTrials+=gn}
+         for(const [regime,gn,gkc] of [['pre',preN,preKc],['post',postN,Math.max(0,kc-preKc)]])if(gn>0){let prob=chance(rec,roll,name,notes,regime);if(rec.t==='d')prob=clamp(prob*(rec.set?.length||1));else if(rec.t==='q'){const past=(rec.set||[]).some(x=>(itemCount(model,p,x)||0)>1);if(!past)prob=clamp(prob*(rec.set?.length||1))}groups.push({n:gn,p:prob,source:roll[0],kc:gkc,rolls:roll[2],player:p.key});rawTrials+=gn}
          continue;
        }else notes.add('CoX pre/post-rework split unavailable for at least one selected member; current table used for that member');
      }
      let prob=chance(rec,roll,name,notes,'post');
      if(rec.t==='d')prob=clamp(prob*(rec.set?.length||1));
      else if(rec.t==='q'){const past=(rec.set||[]).some(x=>(itemCount(model,p,x)||0)>1);if(!past)prob=clamp(prob*(rec.set?.length||1))}
-     groups.push({n,p:prob,source:roll[0],kc,rolls:roll[2]});rawTrials+=n;
+     groups.push({n,p:prob,source:roll[0],kc,rolls:roll[2],player:p.key});rawTrials+=n;
    }
  }
  for(const [src,s] of coxSplit){const label=src==='CHAMBERS_OF_XERIC_CM_COMPLETIONS'?'CoX CM':'Normal CoX';notes.add(`${label} historical split: ${Math.round(s.pre)} completions before the 12 Aug 2026 rework and ${Math.round(s.post)} after it`)}
