@@ -180,6 +180,12 @@ function finish(percentile,observed,expected,trials,groups,notes,approx){
  return{percentile,pct,text,observed,expected,trials,sources:[...by.values()].map(x=>({...x,label:labelSource(x.source)})),notes:[...notes],approx,band:pct>=90?'lucky':pct<=10?'dry':'normal'}
 }
 function formatPct(p){if(p<.01)return'<0.01%';if(p>99.99)return'>99.99%';if(p<1||p>99)return p.toFixed(2)+'%';return Math.round(p)+'%'}
+function dependencyKey(id){
+ const raw=DATA[+id];if(!raw)return null;
+ const t=raw[0],set=raw[3];
+ if(!['d','i','j','q'].includes(t)||!Array.isArray(set)||!set.length)return null;
+ return t+':'+[...set].map(Number).sort((a,b)=>a-b).join(',');
+}
 function title(x){if(!x)return'';const base='Luck percentile '+x.text+' · position of the observed item count among players with the same estimated eligible rolls';const exp=Number.isFinite(x.expected)?' · '+x.observed+' logged vs '+x.expected.toFixed(x.expected<10?2:1)+' expected':'';return base+exp+(x.approx?' · distribution approximation used for scale':'')}
-return{calculate,exclusion,formatPct,title,assumptions:ASSUME,trackingCaps:TRACKING_CAPS,rateItems:Object.keys(DATA).length};
+return{calculate,exclusion,formatPct,title,dependencyKey,assumptions:ASSUME,trackingCaps:TRACKING_CAPS,rateItems:Object.keys(DATA).length};
 });
