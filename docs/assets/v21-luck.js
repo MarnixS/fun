@@ -390,8 +390,8 @@ function renderView(){
 }
 function render(){if(!model||!wom)return;renderPicker();overview();renderLists();renderIndividuals();renderPlayers();renderImpossible();renderView()}
 function bind(){
- $('[data-luck-view]').forEach(b=>b.onclick=()=>{view=b.dataset.luckView;renderView()});
- $('[data-luck-lens]').forEach(b=>b.onclick=()=>{lens=b.dataset.luckLens||'meaningful';$('[data-luck-lens]').forEach(x=>x.classList.toggle('active',x===b));renderLists()});
+ document.querySelectorAll('[data-luck-view]').forEach(b=>b.onclick=()=>{view=b.dataset.luckView;renderView()});
+ document.querySelectorAll('[data-luck-lens]').forEach(b=>b.onclick=()=>{lens=b.dataset.luckLens||'meaningful';document.querySelectorAll('[data-luck-lens]').forEach(x=>x.classList.toggle('active',x===b));renderLists()});
  const tab=$('[data-gim-tab="luck"]');if(tab&&!tab.dataset.luckBound){tab.dataset.luckBound='1';tab.addEventListener('click',()=>{render();if(!prices)loadPrices().then(()=>render())})}
 }
 function reset(){metricCache=new Map();excludedCache=new Map();portfolioCache=null}
