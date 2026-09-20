@@ -3,7 +3,7 @@
 const U=window.UGV21,M=window.UGClogBetaModel,L=window.UGClogLuck;
 if(!U||!M||!L||document.body.dataset.page!=='gim')return;
 const {$,$$,fmt,escapeHtml:esc}=U;
-let doc=null,wom=null,model=null,selected=U.loadMemberSelection(),view='scored',prices=null,priceRequest=null,metricCache=new Map(),excludedCache=new Map();
+let doc=null,wom=null,model=null,selected=U.loadMemberSelection(),view='scored',lens='meaningful',prices=null,priceRequest=null,metricCache=new Map(),excludedCache=new Map();
 
 function selectedPlayers(){return U.PLAYERS.filter(p=>selected.has(p.key)&&model?.known.has(p.key))}
 function modelIds(){const ids=new Set(model?.names?.keys?.()||[]);for(const m of model?.counts?.values?.()||[])for(const id of m.keys())ids.add(id);return [...ids]}
@@ -66,6 +66,18 @@ function modelConfidence(m){
  return{f:1,label:'direct / accepted model'}
 }
 function impactWeight(m){const p=impactProfile(m),mod=p.base>=.5?geModifier(price(m.id)):1,confidence=modelConfidence(m);return{...p,ge:mod,confidence,w:clamp(p.base*mod*confidence.f,.03,6.5)}}
+function financialWeight(m){
+ const gp=price(m.id);if(!Number.isFinite(gp)||gp<=0)return{gp:0,w:0};
+ const confidence=modelConfidence(m),base=clamp(Math.pow(gp/1e6,.28),.12,6.5);
+ return{gp,w:base*confidence.f,confidence}
+}
+function financialIndex(metrics){
+ const rows=metrics.map(m=>({m,z:cappedZ(m.z),...financialWeight(m)})).filter(x=>x.w>0);
+ const numerator=rows.reduce((n,x)=>n+x.z*x.w,0),denom=Math.sqrt(rows.reduce((n,x)=>n+x.w*x.w,0));
+ const z=denom?numerator/denom:null;
+ const deltaGp=rows.reduce((n,x)=>n+(Number.isFinite(x.m.r.expected)?(x.m.r.observed-x.m.r.expected)*x.gp:0),0);
+ return{z,numerator,denom,deltaGp,count:rows.length}
+}
 
 const RAID_PORTFOLIOS=[
  {key:'cox',label:'CoX purple portfolio',weight:9,names:new Set(['Twisted bow','Kodai insignia','Elder maul','Dragon claws','Ancestral hat','Ancestral robe top','Ancestral robe bottom',"Dinh's bulwark",'Dragon hunter crossbow','Twisted buckler','Dexterous prayer scroll','Arcane prayer scroll'])},
@@ -179,8 +191,8 @@ function indices(metrics){
  const portfolioWeightSq=portfolios.reduce((n,p)=>n+p.effectiveWeight*p.effectiveWeight,0);
  const numerator=itemNumerator+portfolioNumerator;
  const denom=Math.sqrt(itemWeightSq+portfolioWeightSq);
- const meaningful=denom?numerator/denom:null,score=luckScore(meaningful);
- return{raw,rawSum,rawCount:metrics.length,meaningful,numerator,denom,score,weightedCount:weighted.length,dependentCollapsed:metrics.length-weighted.length,portfolios,itemNumerator,portfolioNumerator,sourceSaturated:weighted.filter(x=>x.sourceScale&&x.sourceScale<.999).length}
+ const meaningful=denom?numerator/denom:null,score=luckScore(meaningful),financial=financialIndex(metrics);
+ return{raw,rawSum,rawCount:metrics.length,meaningful,numerator,denom,score,financial,weightedCount:weighted.length,dependentCollapsed:metrics.length-weighted.length,portfolios,itemNumerator,portfolioNumerator,sourceSaturated:weighted.filter(x=>x.sourceScale&&x.sourceScale<.999).length}
 }
 function entityStats(ps){const metrics=metricsFor(ps),idx=indices(metrics),s=sample(metrics);return{metrics,idx,s}}
 function renderPicker(){
@@ -197,27 +209,46 @@ function overview(){
  const h=$('#clogLuckOverview');if(!h)return;const ps=selectedPlayers();
  if(!ps.length){h.innerHTML='<div class="notice">No selected member has a synced Collection Log.</div>';return}
  const s=entityStats(ps),excluded=excludedFor(ps),names=ps.map(p=>p.name).join(', '),sync=syncHealth();
- h.innerHTML='<div class="clog-luck-kpi"><span>Luck score</span><b class="clog-luck-'+tone(s.idx.meaningful||0)+'">'+scoreText(s.idx.score)+'</b><small>5.0 is statistically ordinary. 1.0 and 10.0 are theoretical extremes. Progression-important RNG counts far more than cosmetics.</small></div>'+
- '<div class="clog-luck-kpi"><span>Combined meaningful RNG</span><b class="clog-luck-'+tone(s.idx.meaningful||0)+'">'+(s.idx.meaningful==null?'—':sig(s.idx.meaningful))+'</b><small>'+((s.idx.meaningful==null)?'No score.':signed(s.idx.numerator)+' weighted σ ÷ '+s.idx.denom.toFixed(2)+' Stouffer denominator.')+' Individual item σ is capped at ±3.50. CoX/ToA/ToB add pooled volume, quality and coverage. '+fmt(s.idx.dependentCollapsed)+' correlated component entries are collapsed; '+fmt(s.idx.sourceSaturated)+' item-units are source-family saturated so large log tables cannot manufacture extra evidence.</small></div>'+
+ h.innerHTML='<div class="clog-luck-kpi"><span>Overall luck score</span><b class="clog-luck-'+tone(s.idx.meaningful||0)+'">'+scoreText(s.idx.score)+'</b><small>The headline score uses probability, gameplay significance, confidence and pooled raid outcomes. It is not a bank-value ranking.</small></div>'+
+ '<div class="clog-luck-kpi"><span>Raw drop-rate RNG</span><b class="clog-luck-'+tone(s.idx.raw||0)+'">'+(s.idx.raw==null?'—':sig(s.idx.raw))+'</b><small>Unweighted statistical deviation across '+fmt(s.idx.rawCount)+' calculable Collection Log entries. This answers pure spoon-versus-dry probability.</small></div>'+
+ '<div class="clog-luck-kpi"><span>GE-weighted RNG</span><b class="clog-luck-'+tone(s.idx.financial.z||0)+'">'+(s.idx.financial.z==null?'—':sig(s.idx.financial.z))+'</b><small>'+fmt(s.idx.financial.count)+' priced entries · approximate observed-minus-expected value '+(s.idx.financial.deltaGp>=0?'+':'−')+money(Math.abs(s.idx.financial.deltaGp))+' gp. Price is log-scaled so one ultra-expensive item matters much more without becoming the whole score.</small></div>'+
  '<div class="clog-luck-kpi"><span>Data quality</span><b>'+esc(s.s.label)+'</b><small>'+esc(s.s.detail)+' · '+esc(sync.text)+'</small></div>';
  const badge=$('#clogLuckImpossibleCount');if(badge)badge.textContent=fmt(excluded.length)
 }
 function itemRow(m){
- const imp=impactWeight(m),expected=Number.isFinite(m.r.expected)?m.r.expected:null,actual=fmt(m.r.observed),pct=m.r.text,z=cappedZ(m.z),contribution=z*imp.w;
+ const expected=Number.isFinite(m.r.expected)?m.r.expected:null,actual=fmt(m.r.observed),pct=m.r.text,z=cappedZ(m.z);
+ if(lens==='raw'){
+  const sub=actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile';
+  return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(z)+'">'+sig(z)+'</strong><small>pure statistical deviation</small></div></article>'
+ }
+ if(lens==='value'){
+  const fw=financialWeight(m),delta=expected==null?null:(m.r.observed-expected)*fw.gp,contribution=z*fw.w;
+  const sub=actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile · GE '+money(fw.gp)+' gp'+(delta==null?'':' · Δ '+(delta>=0?'+':'−')+money(Math.abs(delta))+' gp');
+  return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(contribution)+'">'+signed(contribution)+'</strong><small>'+sig(z)+' × '+fw.w.toFixed(2)+' value weight</small></div></article>'
+ }
+ const imp=impactWeight(m),contribution=z*imp.w;
  const sub=actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile · '+imp.label+(imp.confidence.f<1?' · '+Math.round(imp.confidence.f*100)+'% model confidence':'');
  return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(contribution)+'">'+signed(contribution)+'</strong><small>'+sig(z)+' × '+imp.w.toFixed(2)+' impact</small></div></article>'
 }
 function ranked(metrics){
- return metrics.map(m=>{const imp=impactWeight(m);return{...m,imp,sort:cappedZ(m.z)*imp.w}}).sort((a,b)=>b.sort-a.sort)
+ return metrics.map(m=>{
+  const z=cappedZ(m.z);
+  if(lens==='raw')return{...m,sort:z};
+  if(lens==='value'){const fw=financialWeight(m);return{...m,fw,sort:z*fw.w}}
+  const imp=impactWeight(m);return{...m,imp,sort:z*imp.w}
+ }).filter(m=>lens!=='value'||m.fw?.w>0).sort((a,b)=>b.sort-a.sort)
 }
 function renderLists(){
  const ps=selectedPlayers(),subjectLabel=ps.map(p=>p.name).join(', ')||'no selected members',stats=ps.length?entityStats(ps):null,metrics=stats?.metrics||[],rows=ranked(metrics),lucky=rows.slice(0,8),dry=[...rows].sort((a,b)=>a.sort-b.sort).slice(0,8);
  const formula=$('#clogLuckFormula');
  if(formula){
-  formula.innerHTML=!stats?'':('<b>Final 1–10 score:</b> weighted item signal '+signed(stats.idx.itemNumerator)+' + pooled raid portfolios '+signed(stats.idx.portfolioNumerator)+' = '+signed(stats.idx.numerator)+' ÷ '+stats.idx.denom.toFixed(2)+' = <strong>'+sig(stats.idx.meaningful)+'</strong> → <strong>'+scoreText(stats.idx.score)+'</strong>. '+(stats.idx.portfolios.length?stats.idx.portfolios.map(p=>p.label+': '+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected · volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)).join(' · '):'No raid portfolio with a usable expected-drop denominator.')+' Assumption-heavy mechanics are confidence-damped, including the fixed CoX/ToA point assumptions. Raid items already represented in a pooled portfolio keep only 30% of their ordinary item-level weight, or 55% for transformative raid weapons, to avoid counting the same evidence twice. Large source tables are L2-capped so having more Collection Log slots does not create more statistical power. Item σ is capped at ±3.50.') ;
+  if(!stats)formula.innerHTML='';
+  else if(lens==='raw')formula.innerHTML='<b>Raw drop-rate view:</b> items are ordered only by their percentile-derived σ deviation. No GE price or gameplay-importance weighting is used in this list. The aggregate raw signal is <strong>'+sig(stats.idx.raw)+'</strong>.';
+  else if(lens==='value')formula.innerHTML='<b>Financial-impact view:</b> probability deviation is multiplied by a log-scaled live GE weight. The aggregate priced-item signal is <strong>'+sig(stats.idx.financial.z)+'</strong>, with an approximate observed-minus-expected value of <strong>'+(stats.idx.financial.deltaGp>=0?'+':'−')+money(Math.abs(stats.idx.financial.deltaGp))+' gp</strong>. This is deliberately separate from the final overall luck score.';
+  else formula.innerHTML='<b>Final 1–10 score:</b> weighted item signal '+signed(stats.idx.itemNumerator)+' + pooled raid portfolios '+signed(stats.idx.portfolioNumerator)+' = '+signed(stats.idx.numerator)+' ÷ '+stats.idx.denom.toFixed(2)+' = <strong>'+sig(stats.idx.meaningful)+'</strong> → <strong>'+scoreText(stats.idx.score)+'</strong>. '+(stats.idx.portfolios.length?stats.idx.portfolios.map(p=>p.label+': '+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected · volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)).join(' · '):'No raid portfolio with a usable expected-drop denominator.')+' Assumption-heavy mechanics are confidence-damped, including the fixed CoX/ToA point assumptions. Raid items already represented in a pooled portfolio keep only 30% of their ordinary item-level weight, or 55% for transformative raid weapons, to avoid counting the same evidence twice. Large source tables are L2-capped so having more Collection Log slots does not create more statistical power. Item σ is capped at ±3.50.';
  }
- $('#clogLuckLuckyTitle').textContent='Luckiest meaningful drops';
- $('#clogLuckDryTitle').textContent='Unluckiest meaningful grinds';
+ const titles=lens==='raw'?['Most statistically lucky','Most statistically unlucky']:lens==='value'?['Biggest valuable spoons','Biggest valuable dry streaks']:['Luckiest meaningful drops','Unluckiest meaningful grinds'];
+ $('#clogLuckLuckyTitle').textContent=titles[0];$('#clogLuckDryTitle').textContent=titles[1];
  $('#clogLuckLuckySub').textContent=subjectLabel;$('#clogLuckDrySub').textContent=subjectLabel;
  $('#clogLuckLucky').innerHTML=lucky.length?lucky.map(itemRow).join(''):'<div class="clog-luck-empty">No calculable items for this selection.</div>';
  $('#clogLuckDry').innerHTML=dry.length?dry.map(itemRow).join(''):'<div class="clog-luck-empty">No calculable items for this selection.</div>'
@@ -226,9 +257,21 @@ function combinations(ps){
  const out=[];for(let mask=1;mask<(1<<ps.length);mask++){const group=[];for(let i=0;i<ps.length;i++)if(mask&(1<<i))group.push(ps[i]);const x=entityStats(group);out.push({group,...x})}
  return out.sort((a,b)=>(b.idx.score??-99)-(a.idx.score??-99)||a.group.length-b.group.length||a.group.map(p=>p.name).join(', ').localeCompare(b.group.map(p=>p.name).join(', ')))
 }
+function bestWorst(metrics,mode){
+ const prev=lens;lens=mode;const r=ranked(metrics);lens=prev;
+ return{best:r[0]||null,worst:r.length?[...r].sort((a,b)=>a.sort-b.sort)[0]:null}
+}
+function renderIndividuals(){
+ const h=$('#clogLuckIndividuals');if(!h)return;const ps=selectedPlayers();
+ h.innerHTML=ps.map(p=>{
+  const x=entityStats([p]),raw=bestWorst(x.metrics,'raw'),val=bestWorst(x.metrics,'value');
+  const spoon=raw.best?raw.best.name:'—',dry=raw.worst?raw.worst.name:'—',vSpoon=val.best?val.best.name:'—',vDry=val.worst?val.worst.name:'—';
+  return '<article class="clog-luck-individual"><div class="clog-luck-individual-head"><b>'+esc(p.name)+'</b><strong class="clog-luck-'+tone(x.idx.meaningful||0)+'">'+scoreText(x.idx.score)+'</strong><span class="clog-luck-sample '+x.s.key+'">'+esc(x.s.label)+'</span></div><div class="clog-luck-individual-grid"><span><small>Raw spoon</small><b>'+esc(spoon)+'</b></span><span><small>Raw dry</small><b>'+esc(dry)+'</b></span><span><small>Valuable spoon</small><b>'+esc(vSpoon)+'</b></span><span><small>Valuable dry</small><b>'+esc(vDry)+'</b></span></div><small class="clog-luck-individual-note">'+esc(x.s.detail)+(x.s.key!=='usable'?' · treat this account comparison cautiously until more relevant KC/drop opportunities are recorded':'')+'</small></article>'
+ }).join('')||'<div class="clog-luck-empty">No selected synced members.</div>'
+}
 function renderPlayers(){
  const h=$('#clogLuckPlayers');if(!h)return;const ps=selectedPlayers(),rows=combinations(ps);
- h.innerHTML=rows.map((x,i)=>{const names=x.group.map(p=>p.name).join(' + '),all=x.group.length===ps.length&&ps.length>1;return '<article class="clog-luck-player-row"><div class="clog-luck-player-name"><div><b>'+(i+1)+'. '+esc(names)+'</b><small>'+esc(x.s.detail)+(all?' · full selected group':'')+'</small></div></div><div class="clog-luck-player-metric"><span>Luck score</span><b class="clog-luck-'+tone(x.idx.meaningful||0)+'">'+scoreText(x.idx.score)+'</b></div><div class="clog-luck-player-metric"><span>Meaningful RNG</span><b class="clog-luck-'+tone(x.idx.meaningful||0)+'">'+(x.idx.meaningful==null?'—':sig(x.idx.meaningful))+'</b></div><span class="clog-luck-sample '+x.s.key+'">'+x.group.length+' account'+(x.group.length===1?'':'s')+' · '+esc(x.s.label)+'</span></article>'}).join('')||'<div class="clog-luck-empty">No selected synced members.</div>'
+ h.innerHTML=rows.map((x,i)=>{const names=x.group.map(p=>p.name).join(' + '),all=x.group.length===ps.length&&ps.length>1;return '<article class="clog-luck-player-row"><div class="clog-luck-player-name"><div><b>'+(i+1)+'. '+esc(names)+'</b><small>'+esc(x.s.detail)+(all?' · full selected group':'')+'</small></div></div><div class="clog-luck-player-metric"><span>Luck score</span><b class="clog-luck-'+tone(x.idx.meaningful||0)+'">'+scoreText(x.idx.score)+'</b></div><div class="clog-luck-player-metric"><span>Raw RNG</span><b class="clog-luck-'+tone(x.idx.raw||0)+'">'+(x.idx.raw==null?'—':sig(x.idx.raw))+'</b></div><div class="clog-luck-player-metric"><span>GE RNG</span><b class="clog-luck-'+tone(x.idx.financial.z||0)+'">'+(x.idx.financial.z==null?'—':sig(x.idx.financial.z))+'</b></div><span class="clog-luck-sample '+x.s.key+'">'+x.group.length+' account'+(x.group.length===1?'':'s')+' · '+esc(x.s.label)+'</span></article>'}).join('')||'<div class="clog-luck-empty">No selected synced members.</div>'
 }
 function renderImpossible(){
  const h=$('#clogLuckImpossible');if(!h)return;const ps=selectedPlayers(),rows=ps.length?excludedFor(ps):[];
@@ -241,9 +284,10 @@ function renderView(){
  if(scored)scored.classList.toggle('hidden',view!=='scored');if(impossible)impossible.classList.toggle('hidden',view!=='impossible');
  $$('[data-luck-view]').forEach(b=>b.classList.toggle('active',b.dataset.luckView===view))
 }
-function render(){if(!model||!wom)return;renderPicker();overview();renderLists();renderPlayers();renderImpossible();renderView()}
+function render(){if(!model||!wom)return;renderPicker();overview();renderLists();renderIndividuals();renderPlayers();renderImpossible();renderView()}
 function bind(){
- $$('[data-luck-view]').forEach(b=>b.onclick=()=>{view=b.dataset.luckView;renderView()});
+ $('[data-luck-view]').forEach(b=>b.onclick=()=>{view=b.dataset.luckView;renderView()});
+ $('[data-luck-lens]').forEach(b=>b.onclick=()=>{lens=b.dataset.luckLens||'meaningful';$('[data-luck-lens]').forEach(x=>x.classList.toggle('active',x===b));renderLists()});
  const tab=$('[data-gim-tab="luck"]');if(tab&&!tab.dataset.luckBound){tab.dataset.luckBound='1';tab.addEventListener('click',()=>{render();if(!prices)loadPrices().then(()=>render())})}
 }
 function reset(){metricCache=new Map();excludedCache=new Map()}
