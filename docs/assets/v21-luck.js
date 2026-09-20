@@ -57,6 +57,9 @@ function geModifier(gp){if(!Number.isFinite(+gp)||+gp<=0)return 1;const x=clamp(
 function modelConfidence(m){
  const notes=(m?.r?.notes||[]).join(' | ').toLowerCase();
  if(/pre\/post-rework split unavailable/.test(notes))return{f:.7,label:'historical split uncertain'};
+ if(/big dog aura cox caveat/.test(notes))return{f:.82,label:'scaled CoX points estimated'};
+ if(/normal cox assumes|cox cm assumes/.test(notes))return{f:.90,label:'CoX points estimated'};
+ if(/toa expert uses a fixed|toa normal uses a fixed/.test(notes))return{f:.90,label:'ToA raid level estimated'};
  if(/nightmare assumes|hueycoatl assumes|royal titans assumes|callisto assumes|venenatis assumes|vet'ion assumes|zalcano assumes/.test(notes))return{f:.78,label:'assumed contribution'};
  if(/theatre of blood.*assumes/.test(notes))return{f:.85,label:'assumed raid share'};
  if(/variable stack-size.*approximation/.test(notes))return{f:.9,label:'distribution approximation'};
@@ -83,9 +86,40 @@ function raidPortfolio(metrics,def){
  const cDen=Math.sqrt(weighted.reduce((n,x)=>{const q=1-Math.exp(-x.m.r.expected);return n+x.w*x.w*q*(1-q)},0));
  const coverageZ=cDen>.05?cappedZ(cNum/cDen):0;
  const z=cappedZ((.70*volumeZ+.50*qualityZ+.30*coverageZ)/Math.sqrt(.70*.70+.50*.50+.30*.30));
- return{...def,rows,observed,expected,volumeZ,qualityZ,coverageZ,z,contribution:z*def.weight}
+ const confidenceDen=rows.reduce((n,m)=>n+m.r.expected,0);
+ const confidenceWeighted=confidenceDen?rows.reduce((n,m)=>n+m.r.expected*modelConfidence(m).f,0)/confidenceDen:1;
+ const effectiveWeight=def.weight*confidenceWeighted;
+ return{...def,rows,observed,expected,volumeZ,qualityZ,coverageZ,z,confidence:confidenceWeighted,effectiveWeight,contribution:z*effectiveWeight}
 }
 
+function portfolioResidual(m){
+ const d=RAID_PORTFOLIOS.find(x=>x.names.has(m.name));
+ if(!d)return 1;
+ return impactProfile(m).base>=5?.55:.30
+}
+function sourceFamilyKey(rows){
+ const src=new Set();
+ for(const m of rows)for(const s of m.r.sources||[])src.add(String(s.source||''));
+ return [...src].sort().join('|')||'unknown';
+}
+function sourceFamilyCap(key){
+ const low=key.toLowerCase();
+ if(/clue/.test(low))return .70;
+ if(/barrows/.test(low))return 2.50;
+ if(/chambers_of_xeric|tombs_of_amascut|theatre_of_blood/.test(low))return 5.50;
+ return 4.25;
+}
+function saturateSourceFamilies(units){
+ const fam=new Map();
+ for(const u of units){const key=sourceFamilyKey(u.rows),arr=fam.get(key)||[];arr.push(u);fam.set(key,arr)}
+ for(const [key,arr] of fam){
+  const norm=Math.sqrt(arr.reduce((n,u)=>n+u.w*u.w,0)),cap=sourceFamilyCap(key);
+  if(norm<=cap||norm<=0)continue;
+  const scale=cap/norm;
+  for(const u of arr){u.w*=scale;u.sourceScale=scale}
+ }
+ return units
+}
 function independentUnits(metrics){
  const groups=new Map();
  for(const m of metrics){
@@ -96,14 +130,14 @@ function independentUnits(metrics){
  }
  const units=[];
  for(const [key,rows] of groups){
-  if(rows.length===1){const m=rows[0],imp=impactWeight(m);units.push({key,rows,m,z:cappedZ(m.z),imp,w:imp.w});continue}
-  const parts=rows.map(m=>({m,imp:impactWeight(m),z:cappedZ(m.z)}));
-  const sumW=parts.reduce((n,x)=>n+x.imp.w,0);
-  const z=sumW?parts.reduce((n,x)=>n+x.z*x.imp.w,0)/sumW:0;
-  const strongest=parts.reduce((a,b)=>b.imp.w>a.imp.w?b:a);
-  units.push({key,rows,m:strongest.m,z:cappedZ(z),imp:{...strongest.imp,label:strongest.imp.label+' · shared roll group'},w:strongest.imp.w});
+  if(rows.length===1){const m=rows[0],imp=impactWeight(m),residual=portfolioResidual(m);units.push({key,rows,m,z:cappedZ(m.z),imp,residual,w:imp.w*residual});continue}
+  const parts=rows.map(m=>({m,imp:impactWeight(m),residual:portfolioResidual(m),z:cappedZ(m.z)}));
+  const sumW=parts.reduce((n,x)=>n+x.imp.w*x.residual,0);
+  const z=sumW?parts.reduce((n,x)=>n+x.z*x.imp.w*x.residual,0)/sumW:0;
+  const strongest=parts.reduce((a,b)=>b.imp.w*b.residual>a.imp.w*a.residual?b:a);
+  units.push({key,rows,m:strongest.m,z:cappedZ(z),imp:{...strongest.imp,label:strongest.imp.label+' · shared roll group'},residual:strongest.residual,w:strongest.imp.w*strongest.residual});
  }
- return units
+ return saturateSourceFamilies(units)
 }
 function cappedZ(z){return clamp(z,-3.5,3.5)}
 function luckScore(z){if(!Number.isFinite(z))return null;const t=Math.tanh(.35*z);return clamp(z>=0?5+5*t:5+4*t,1,10)}
@@ -142,11 +176,11 @@ function indices(metrics){
  const itemWeightSq=weighted.reduce((n,x)=>n+x.w*x.w,0);
  const portfolios=RAID_PORTFOLIOS.map(d=>raidPortfolio(metrics,d)).filter(Boolean);
  const portfolioNumerator=portfolios.reduce((n,p)=>n+p.contribution,0);
- const portfolioWeightSq=portfolios.reduce((n,p)=>n+p.weight*p.weight,0);
+ const portfolioWeightSq=portfolios.reduce((n,p)=>n+p.effectiveWeight*p.effectiveWeight,0);
  const numerator=itemNumerator+portfolioNumerator;
  const denom=Math.sqrt(itemWeightSq+portfolioWeightSq);
  const meaningful=denom?numerator/denom:null,score=luckScore(meaningful);
- return{raw,rawSum,rawCount:metrics.length,meaningful,numerator,denom,score,weightedCount:weighted.length,dependentCollapsed:metrics.length-weighted.length,portfolios,itemNumerator,portfolioNumerator}
+ return{raw,rawSum,rawCount:metrics.length,meaningful,numerator,denom,score,weightedCount:weighted.length,dependentCollapsed:metrics.length-weighted.length,portfolios,itemNumerator,portfolioNumerator,sourceSaturated:weighted.filter(x=>x.sourceScale&&x.sourceScale<.999).length}
 }
 function entityStats(ps){const metrics=metricsFor(ps),idx=indices(metrics),s=sample(metrics);return{metrics,idx,s}}
 function renderPicker(){
@@ -164,7 +198,7 @@ function overview(){
  if(!ps.length){h.innerHTML='<div class="notice">No selected member has a synced Collection Log.</div>';return}
  const s=entityStats(ps),excluded=excludedFor(ps),names=ps.map(p=>p.name).join(', '),sync=syncHealth();
  h.innerHTML='<div class="clog-luck-kpi"><span>Luck score</span><b class="clog-luck-'+tone(s.idx.meaningful||0)+'">'+scoreText(s.idx.score)+'</b><small>5.0 is statistically ordinary. 1.0 and 10.0 are theoretical extremes. Progression-important RNG counts far more than cosmetics.</small></div>'+
- '<div class="clog-luck-kpi"><span>Combined meaningful RNG</span><b class="clog-luck-'+tone(s.idx.meaningful||0)+'">'+(s.idx.meaningful==null?'—':sig(s.idx.meaningful))+'</b><small>'+((s.idx.meaningful==null)?'No score.':signed(s.idx.numerator)+' weighted σ ÷ '+s.idx.denom.toFixed(2)+' Stouffer denominator.')+' Individual item σ is capped at ±3.50. CoX/ToA/ToB add pooled volume, quality and coverage. '+fmt(s.idx.dependentCollapsed)+' correlated component entries are collapsed.</small></div>'+
+ '<div class="clog-luck-kpi"><span>Combined meaningful RNG</span><b class="clog-luck-'+tone(s.idx.meaningful||0)+'">'+(s.idx.meaningful==null?'—':sig(s.idx.meaningful))+'</b><small>'+((s.idx.meaningful==null)?'No score.':signed(s.idx.numerator)+' weighted σ ÷ '+s.idx.denom.toFixed(2)+' Stouffer denominator.')+' Individual item σ is capped at ±3.50. CoX/ToA/ToB add pooled volume, quality and coverage. '+fmt(s.idx.dependentCollapsed)+' correlated component entries are collapsed; '+fmt(s.idx.sourceSaturated)+' item-units are source-family saturated so large log tables cannot manufacture extra evidence.</small></div>'+
  '<div class="clog-luck-kpi"><span>Data quality</span><b>'+esc(s.s.label)+'</b><small>'+esc(s.s.detail)+' · '+esc(sync.text)+'</small></div>';
  const badge=$('#clogLuckImpossibleCount');if(badge)badge.textContent=fmt(excluded.length)
 }
@@ -180,7 +214,7 @@ function renderLists(){
  const ps=selectedPlayers(),subjectLabel=ps.map(p=>p.name).join(', ')||'no selected members',stats=ps.length?entityStats(ps):null,metrics=stats?.metrics||[],rows=ranked(metrics),lucky=rows.slice(0,8),dry=[...rows].sort((a,b)=>a.sort-b.sort).slice(0,8);
  const formula=$('#clogLuckFormula');
  if(formula){
-  formula.innerHTML=!stats?'':('<b>Final 1–10 score:</b> weighted item signal '+signed(stats.idx.itemNumerator)+' + pooled raid portfolios '+signed(stats.idx.portfolioNumerator)+' = '+signed(stats.idx.numerator)+' ÷ '+stats.idx.denom.toFixed(2)+' = <strong>'+sig(stats.idx.meaningful)+'</strong> → <strong>'+scoreText(stats.idx.score)+'</strong>. '+(stats.idx.portfolios.length?stats.idx.portfolios.map(p=>p.label+': '+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected · volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)).join(' · '):'No raid portfolio with a usable expected-drop denominator.')+' Assumption-heavy contribution mechanics are confidence-damped; explicit CoX/ToA baselines remain fully weighted. Item σ is capped at ±3.50; transformative raid weapons have the highest single-item impact.') ;
+  formula.innerHTML=!stats?'':('<b>Final 1–10 score:</b> weighted item signal '+signed(stats.idx.itemNumerator)+' + pooled raid portfolios '+signed(stats.idx.portfolioNumerator)+' = '+signed(stats.idx.numerator)+' ÷ '+stats.idx.denom.toFixed(2)+' = <strong>'+sig(stats.idx.meaningful)+'</strong> → <strong>'+scoreText(stats.idx.score)+'</strong>. '+(stats.idx.portfolios.length?stats.idx.portfolios.map(p=>p.label+': '+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected · volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)).join(' · '):'No raid portfolio with a usable expected-drop denominator.')+' Assumption-heavy mechanics are confidence-damped, including the fixed CoX/ToA point assumptions. Raid items already represented in a pooled portfolio keep only 30% of their ordinary item-level weight, or 55% for transformative raid weapons, to avoid counting the same evidence twice. Large source tables are L2-capped so having more Collection Log slots does not create more statistical power. Item σ is capped at ±3.50.') ;
  }
  $('#clogLuckLuckyTitle').textContent='Luckiest meaningful drops';
  $('#clogLuckDryTitle').textContent='Unluckiest meaningful grinds';
