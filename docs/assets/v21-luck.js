@@ -290,20 +290,54 @@ function excludedFor(ps){
  }
  excludedCache.set(key,out);return out
 }
-function exposure(metrics){const src=new Map();for(const m of metrics)for(const s of m.r.sources||[]){const old=src.get(s.source)||0;src.set(s.source,Math.max(old,+s.kc||0))}return{attempts:[...src.values()].reduce((a,b)=>a+b,0),sources:src.size}}
-function sample(metrics){const e=exposure(metrics),n=metrics.length;if(n<12||e.attempts<75)return{key:'insufficient',label:'insufficient sample',detail:n+' scored items · '+fmt(e.attempts)+' source attempts'};if(n<35||e.attempts<350)return{key:'limited',label:'limited sample',detail:n+' scored items · '+fmt(e.attempts)+' source attempts'};return{key:'usable',label:'usable sample',detail:n+' scored items · '+fmt(e.attempts)+' source attempts'}}
+function exposure(metrics){
+ const src=new Map();for(const m of metrics)for(const x of m.r.sources||[]){const old=src.get(x.source)||0;src.set(x.source,Math.max(old,+x.kc||0))}
+ return{attempts:[...src.values()].reduce((a,b)=>a+b,0),sources:src.size}
+}
+function dependencyGroups(metrics){
+ const groups=new Map();
+ for(const m of metrics){const dep=L.dependencyKey?.(m.id),key=dep||('item:'+m.id);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(m)}
+ return [...groups.values()]
+}
+function rawIndex(metrics){
+ const depUnits=dependencyGroups(metrics).map(rows=>({rows,z:cappedZ(rows.reduce((n,m)=>n+cappedZ(m.z),0)/Math.max(1,rows.length))}));
+ const fam=new Map();
+ for(const u of depUnits){const key=sourceFamilyKey(u.rows),arr=fam.get(key)||[];arr.push(u);fam.set(key,arr)}
+ const families=[];
+ for(const [key,arr] of fam){
+  const z=cappedZ(arr.reduce((n,u)=>n+u.z,0)/Math.sqrt(Math.max(1,arr.length)));
+  families.push({key,z,count:arr.length})
+ }
+ const sum=families.reduce((n,x)=>n+x.z,0),den=Math.sqrt(families.length||0),z=den?sum/den:null;
+ return{z,sum,den,families,depCount:depUnits.length}
+}
+function expectedFor(m){return(m.r.sources||[]).reduce((n,x)=>n+(Number.isFinite(+x.expected)?+x.expected:0),0)}
+function evidenceMass(metrics){
+ const fam=new Map();
+ for(const rows of dependencyGroups(metrics)){
+  const expected=Math.max(0,...rows.map(expectedFor)),base=Math.max(...rows.map(intrinsicCommunityWeight));
+  const mass=Math.min(3,expected)*clamp(base/3,.03,2),key=sourceFamilyKey(rows);
+  fam.set(key,(fam.get(key)||0)+mass)
+ }
+ return[...fam.values()].reduce((n,x)=>n+Math.min(6,x),0)
+}
+function sample(metrics){
+ const e=exposure(metrics),raw=rawIndex(metrics),mass=evidenceMass(metrics),families=raw.families.length,n=metrics.length;
+ const detail=n+' scored items · '+families+' source families · '+mass.toFixed(1)+' meaningful expected-drop evidence · '+fmt(e.attempts)+' source attempts';
+ if(n<8||families<2||mass<.8)return{key:'insufficient',label:'insufficient sample',detail};
+ if(families<4||mass<2.5)return{key:'limited',label:'limited sample',detail};
+ return{key:'usable',label:'usable sample',detail}
+}
 function indices(metrics){
- const rawSum=metrics.reduce((n,m)=>n+cappedZ(m.z),0),rawDen=Math.sqrt(metrics.length||0),raw=rawDen?rawSum/rawDen:null;
- const weighted=independentUnits(metrics);
- const itemNumerator=weighted.reduce((n,x)=>n+x.z*x.w,0);
+ const rawInfo=rawIndex(metrics),weighted=independentUnits(metrics);
+ const itemNumerator=weighted.reduce((n,x)=>n+x.z*x.w*x.reliability,0);
  const itemWeightSq=weighted.reduce((n,x)=>n+x.w*x.w,0);
  const portfolios=RAID_PORTFOLIOS.map(d=>raidPortfolio(metrics,d)).filter(Boolean);
  const portfolioNumerator=portfolios.reduce((n,p)=>n+p.contribution,0);
  const portfolioWeightSq=portfolios.reduce((n,p)=>n+p.effectiveWeight*p.effectiveWeight,0);
- const numerator=itemNumerator+portfolioNumerator;
- const denom=Math.sqrt(itemWeightSq+portfolioWeightSq);
+ const numerator=itemNumerator+portfolioNumerator,denom=Math.sqrt(itemWeightSq+portfolioWeightSq);
  const meaningful=denom?numerator/denom:null,score=luckScore(meaningful),financial=financialIndex(metrics);
- return{raw,rawSum,rawCount:metrics.length,meaningful,numerator,denom,score,financial,weightedCount:weighted.length,dependentCollapsed:metrics.length-weighted.length,portfolios,itemNumerator,portfolioNumerator,sourceSaturated:weighted.filter(x=>x.sourceScale&&x.sourceScale<.999).length}
+ return{raw:rawInfo.z,rawSum:rawInfo.sum,rawCount:metrics.length,rawFamilies:rawInfo.families.length,meaningful,numerator,denom,score,financial,weightedCount:weighted.length,dependentCollapsed:metrics.length-weighted.length,portfolios,itemNumerator,portfolioNumerator,sourceSaturated:weighted.filter(x=>x.sourceScale&&x.sourceScale<.999).length}
 }
 function entityStats(ps){const metrics=metricsFor(ps),idx=indices(metrics),s=sample(metrics);return{metrics,idx,s}}
 function renderPicker(){
