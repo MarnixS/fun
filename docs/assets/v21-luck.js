@@ -24,14 +24,24 @@ const COMMUNITY_RULES=[
  {w:10.0,label:'iconic megarare · account-defining',kind:'major-shareable',re:/^(twisted bow|tumeken's shadow(?: \\(uncharged\\))?)$/i},
  {w:9.0,label:'iconic megarare · account-defining',kind:'major-shareable',re:/^scythe of vitur(?: \\(uncharged\\))?$/i},
  {w:7.6,label:'progression-defining ranged unlock',kind:'major-shareable',re:/^enhanced crystal weapon seed$/i},
- {w:7.0,label:'permanent ranged progression unlock',kind:'personal-unlock',re:/^dexterous prayer scroll$/i},
+ {w:7.0,label:'permanent ranged progression unlock',kind:'allocatable-unlock',re:/^dexterous prayer scroll$/i},
+ {w:4.6,label:'permanent magic progression unlock',kind:'allocatable-unlock',re:/^arcane prayer scroll$/i},
  {w:6.5,label:'major raid / defence progression tool',kind:'major-shareable',re:/^(elder maul|dragon warhammer)$/i},
  {w:6.1,label:'high-breadth raid weapon',kind:'major-shareable',re:/^osmumten's fang$/i},
  {w:5.8,label:'high-impact special-attack weapon',kind:'major-shareable',re:/^dragon claws$/i},
  {w:5.5,label:'progression-opening demonbane choice',kind:'major-shareable',re:/^tormented synapse$/i},
  {w:5.8,label:'major magic progression / rare permanent utility',kind:'major-shareable',re:/^(imbued heart|saturated heart)$/i},
- {w:4.8,label:'high-impact special-attack progression',kind:'major-shareable',re:/^burning claw$/i},
+ {w:4.4,label:'Burning claws component',kind:'pair-component',required:2,re:/^burning claw$/i},
  {w:5.4,label:'high-breadth utility ring',kind:'shareable',re:/^lightbearer$/i},
+ {w:6.7,label:'near-endgame powered magic weapon',kind:'major-shareable',re:/^eye of ayak(?: \(uncharged\))?$/i},
+ {w:4.9,label:'permanent ranged prayer progression',kind:'bound-unlock',re:/^deadeye prayer scroll$/i},
+ {w:4.7,label:'permanent magic prayer progression',kind:'bound-unlock',re:/^mystic vigour prayer scroll$/i},
+ {w:4.7,label:'endgame hybrid boot upgrade',kind:'shareable',re:/^avernic treads$/i},
+ {w:3.9,label:'high-level melee armour',kind:'shareable',re:/^oathplate (?:helm|chest|legs)$/i},
+ {w:3.7,label:'specialist high-level weapon component',kind:'shareable',re:/^soulflame horn$/i},
+ {w:3.6,label:'specialist dragon-hunting weapon',kind:'major-shareable',re:/^dragon hunter wand$/i},
+ {w:2.4,label:'useful midgame stab progression',kind:'shareable',re:/^belle's folly \(tarnished\)$/i},
+ {w:.7,label:'Oathplate bad-luck-protection currency',kind:'progress-currency',re:/^oathplate shards$/i},
  {w:5.0,label:'major specialist weapon',kind:'major-shareable',re:/^(dragon hunter crossbow|kodai insignia|hydra's claw|hydra claw)$/i},
  {w:4.7,label:'major account upgrade',kind:'shareable',re:/^(zamorakian spear|basilisk jaw)$/i},
  {w:4.5,label:'high-impact raid armour',kind:'shareable',re:/^(ancestral hat|ancestral robe top|ancestral robe bottom)$/i},
@@ -70,21 +80,25 @@ function portfolioCount(name,m){return portfolioCounts(m).get(String(name||'').t
 function sumPortfolio(regex,m){let n=0;for(const [name,q] of portfolioCounts(m))if(regex.test(name))n+=q;return n}
 function impactProfile(m){
  const name=String(m?.name||'').trim();
- for(const r of COMMUNITY_RULES)if(r.re.test(name))return{base:r.w,label:r.label,kind:r.kind||'shareable',set:r.set||null};
+ for(const r of COMMUNITY_RULES)if(r.re.test(name))return{base:r.w,label:r.label,kind:r.kind||'shareable',set:r.set||null,required:r.required||null};
  const src=sourceText(m),clue=/clue/.test(src);
  if(clue)return{base:.04,label:'clue reward / cosmetic',kind:'cosmetic'};
  if(PET_RE.test(name)||/\bpet\b/i.test(name))return{base:.18,label:'pet / vanity chase',kind:'vanity'};
  if(/^(jar of |.* ornament kit$|.* kit$)/i.test(name)||/ornament|cosmetic|transmog/i.test(name))return{base:.08,label:'cosmetic / vanity',kind:'cosmetic'};
  if(/^(heads?|jars?)$/i.test(name)||/\bhead$|stuffed/i.test(name))return{base:.12,label:'trophy / cosmetic',kind:'cosmetic'};
- if(/chambers of xeric|tombs of amascut|theatre of blood|theater of blood/.test(src))return{base:2.2,label:'raid unique',kind:'shareable'};
+ const gear=/sword|bow|staff|mace|spear|halberd|axe|claw|fang|helm|mask|body|plate|robe|legs|chaps|tassets|boots|gloves|ring|amulet|necklace|shield|ward|defender|hilt|seed|crystal/i.test(name);
+ const bossish=/chambers of xeric|tombs of amascut|theatre of blood|theater of blood|kills|completion|kc|boss|slayer/.test(src);
+ const gp=price(m?.id),floor=gp>=250e6?4:gp>=100e6?3.5:gp>=30e6?2.7:gp>=10e6?2:0;
+ if(/chambers of xeric|tombs of amascut|theatre of blood|theater of blood/.test(src))return{base:Math.max(2.2,floor),label:floor>2.2?'unclassified raid progression · conservative value floor':'raid unique',kind:'shareable'};
  if(/barrows/.test(src))return{base:.65,label:'replaceable equipment',kind:'shareable'};
- if(/gauntlet/.test(src))return{base:1.2,label:'PvM equipment',kind:'shareable'};
- if(/kills|completion|kc|boss|slayer/.test(src))return{base:.95,label:'PvM unique',kind:'shareable'};
- if(/sword|bow|staff|mace|spear|halberd|axe|claw|fang|helm|mask|body|plate|robe|legs|chaps|tassets|boots|gloves|ring|amulet|necklace|shield|ward|defender|hilt|seed|crystal/i.test(name))return{base:.9,label:'equipment / progression',kind:'shareable'};
+ if(/gauntlet/.test(src))return{base:Math.max(1.2,floor),label:floor>1.2?'unclassified Gauntlet progression · conservative value floor':'PvM equipment',kind:'shareable'};
+ if(bossish&&gear)return{base:Math.max(.95,floor),label:floor>.95?'unclassified PvM progression · conservative value floor':'PvM unique',kind:'shareable'};
+ if(bossish)return{base:.95,label:'PvM unique',kind:'shareable'};
+ if(gear)return{base:Math.max(.9,floor),label:floor>.9?'unclassified equipment · conservative value floor':'equipment / progression',kind:'shareable'};
  return{base:.35,label:'low-impact collection item',kind:'low-impact'}
 }
 function marginalCurve(profile){
- if(profile.kind==='personal-unlock')return{curve:[1,1,1,1,1],tail:.04};
+ if(profile.kind==='allocatable-unlock')return{curve:[1,1,1,1,1],tail:.04};
  if(profile.kind==='major-shareable')return{curve:[1,.86,.74,.63,.53],tail:.16};
  if(profile.kind==='shareable')return{curve:[1,.74,.57,.44,.34],tail:.12};
  return{curve:[1],tail:1}
@@ -189,10 +203,10 @@ function deficitCompensation(profile,m,z){
   if(memberOnePieceFrom(set,String(m.name||'').toLowerCase(),m))return{f:1.22,label:'this component can complete a personal '+set.label+' set'};
   return{f:1,label:null}
  }
- if(!['personal-unlock','major-shareable','shareable'].includes(profile.kind))return{f:1,label:null};
+ if(!['allocatable-unlock','major-shareable','shareable'].includes(profile.kind))return{f:1,label:null};
  const q=portfolioCount(m.name,m),f=marginalAt(q,profile),members=Math.max(1,fullGroupPlayers().length);
  let label=null;
- if(profile.kind==='personal-unlock'&&q>0)label=Math.min(q,members)+'/'+members+' group unlock capacity already supplied; next unlock retains '+Math.round(f*100)+'% marginal value';
+ if(profile.kind==='allocatable-unlock'&&q>0)label=Math.min(q,members)+'/'+members+' group unlock capacity already supplied; next unlock retains '+Math.round(f*100)+'% marginal value';
  else if(q>0)label=q+' existing group cop'+(q===1?'y':'ies')+'; next copy retains '+Math.round(f*100)+'% marginal progression value';
  return{f,label}
 }
