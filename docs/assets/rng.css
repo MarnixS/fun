@@ -1,0 +1,596 @@
+/* RNG Index — dedicated feature styling.
+   This page uses the existing United Gimps visual language, but has its own
+   hierarchy because the RNG analysis is substantially denser than a normal tab. */
+
+.rng-index-shell{max-width:100%}
+.rng-index-shell .section-head{align-items:flex-end}
+.rng-index-shell .section-note{max-width:860px;line-height:1.5}
+.rng-index-shell .data-actions{align-items:center}
+
+.clog-luck-filter-note{
+ margin:0 0 12px;
+ padding:11px 13px;
+ border:1px solid #5f492f;
+ border-left:3px solid #b18a49;
+ background:linear-gradient(90deg,#181109,#110d09);
+ color:#b8aa90;
+ font-size:11px;
+ line-height:1.55;
+}
+.clog-luck-filter-note b{color:#ecd291}
+
+#clogLuckMembers{margin:0 0 12px}
+#clogLuckMembers .v21-member-fieldset{background:linear-gradient(#18120c,#110d09);border-color:#5d472e}
+#clogLuckMembers .v21-member-list label{min-width:145px}
+#clogLuckMembers .v21-member-help{max-width:1000px}
+
+.clog-luck-subtabs{
+ display:inline-flex;
+ align-items:stretch;
+ margin:0 0 12px;
+ border:1px solid #5c452b;
+ background:#0e0a07;
+}
+.clog-luck-subtabs button{
+ min-height:38px;
+ border:0;
+ border-right:1px solid #40301e;
+ background:#15100b;
+ color:#a99a80;
+ padding:0 13px;
+ font:700 10px Arial,sans-serif;
+ cursor:pointer;
+}
+.clog-luck-subtabs button:last-child{border-right:0}
+.clog-luck-subtabs button:hover{background:#21170f;color:#ddc68f}
+.clog-luck-subtabs button.active{
+ background:linear-gradient(#3a2917,#24180f);
+ color:#f1d894;
+ box-shadow:inset 0 -2px #c79a4b;
+}
+.clog-luck-subtabs span{
+ margin-left:5px;
+ padding:1px 5px;
+ border:1px solid #675033;
+ color:#cbb68b;
+ font-size:9px;
+}
+
+.clog-luck-overview{
+ display:grid;
+ grid-template-columns:repeat(4,minmax(0,1fr));
+ gap:8px;
+ margin:0 0 12px;
+}
+.clog-luck-kpi{
+ min-width:0;
+ padding:13px 14px 12px;
+ border:1px solid #5b452d;
+ border-top:2px solid #8e6b3b;
+ background:linear-gradient(180deg,#1e160e,#120e09);
+ box-shadow:inset 0 0 0 1px #0b0806;
+}
+.clog-luck-kpi>span{
+ display:block;
+ margin-bottom:5px;
+ color:#8f8069;
+ font-size:8px;
+ font-weight:800;
+ letter-spacing:.11em;
+ text-transform:uppercase;
+}
+.clog-luck-kpi>b{
+ display:block;
+ min-height:28px;
+ margin-bottom:5px;
+ color:#e9d4a1;
+ font:800 22px Georgia,serif;
+ line-height:1.05;
+}
+.clog-luck-kpi>small{
+ display:block;
+ color:#a99b82;
+ font-size:9.5px;
+ line-height:1.45;
+}
+.clog-luck-positive{color:#93c37f!important}
+.clog-luck-negative{color:#d8776f!important}
+.clog-luck-neutral{color:#d9c392!important}
+
+.clog-luck-toolbar{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:14px;
+ margin:0 0 8px;
+ padding:10px 12px;
+ border:1px solid #4f3c27;
+ background:#120e09;
+}
+.clog-luck-toolbar>div:first-child b{
+ display:block;
+ color:#e0c88d;
+ font:700 12px Georgia,serif;
+}
+.clog-luck-toolbar>div:first-child small{
+ display:block;
+ margin-top:2px;
+ color:#8f826e;
+ font-size:9.5px;
+ line-height:1.35;
+}
+.clog-luck-toggle{
+ display:flex;
+ border:1px solid #5d472c;
+ background:#0c0906;
+ flex:0 0 auto;
+}
+.clog-luck-toggle button{
+ min-height:34px;
+ border:0;
+ border-right:1px solid #493720;
+ background:transparent;
+ color:#a89a81;
+ padding:0 11px;
+ font-size:9.5px;
+ cursor:pointer;
+}
+.clog-luck-toggle button:last-child{border-right:0}
+.clog-luck-toggle button:hover{color:#e0ca98;background:#1b140d}
+.clog-luck-toggle button.active{
+ color:#f0d58f;
+ background:#332413;
+ box-shadow:inset 0 -2px #be9144;
+}
+
+.clog-luck-formula{
+ margin:0 0 12px;
+ border:1px solid #5a452c;
+ background:linear-gradient(180deg,#19120c,#100c08);
+ color:#a99b83;
+}
+.rng-formula-summary{
+ display:grid;
+ grid-template-columns:minmax(0,1fr) auto;
+ column-gap:12px;
+ row-gap:2px;
+ align-items:end;
+ padding:12px 14px;
+ border-bottom:1px solid #3e2f1f;
+}
+.rng-formula-summary>span{
+ color:#998970;
+ font-size:8px;
+ font-weight:800;
+ letter-spacing:.11em;
+ text-transform:uppercase;
+}
+.rng-formula-summary>strong{
+ grid-row:1/3;
+ grid-column:2;
+ color:#efd495;
+ font:800 24px Georgia,serif;
+}
+.rng-formula-summary>small{
+ color:#b8aa90;
+ font-size:10px;
+}
+.clog-luck-formula>p{
+ margin:0;
+ padding:10px 14px;
+ color:#9f917a;
+ font-size:10px;
+ line-height:1.5;
+}
+.rng-formula-equation{
+ display:grid;
+ grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;
+ gap:7px;
+ align-items:center;
+ padding:10px 14px;
+ border-bottom:1px solid #3d2e1e;
+ background:#0e0a07;
+}
+.rng-formula-equation>span{
+ display:flex;
+ flex-direction:column;
+ min-width:0;
+ gap:2px;
+}
+.rng-formula-equation small{
+ color:#776b5a;
+ font-size:8px;
+ text-transform:uppercase;
+ letter-spacing:.07em;
+}
+.rng-formula-equation b{
+ color:#ddc384;
+ font:700 13px Georgia,serif;
+}
+.rng-formula-equation em{
+ color:#8a714a;
+ font-style:normal;
+ font-weight:700;
+ text-align:center;
+}
+.rng-formula-detail{border-top:0}
+.rng-formula-detail>summary{
+ list-style:none;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ padding:9px 14px;
+ cursor:pointer;
+ color:#bca97e;
+ font-size:9.5px;
+ font-weight:700;
+}
+.rng-formula-detail>summary::-webkit-details-marker{display:none}
+.rng-formula-detail>summary:after{content:"+";color:#c39a51;font-size:15px}
+.rng-formula-detail[open]>summary:after{content:"−"}
+.rng-formula-detail>summary:hover{background:#181109;color:#e2ca92}
+.rng-formula-detail>div{
+ padding:0 14px 12px;
+ border-top:1px solid #2e2318;
+ color:#9f917b;
+ font-size:9.5px;
+ line-height:1.5;
+}
+.rng-formula-detail p{margin:10px 0}
+.rng-formula-detail ul{
+ list-style:none;
+ margin:8px 0;
+ padding:0;
+ display:grid;
+ gap:5px;
+}
+.rng-formula-detail li{
+ display:grid;
+ grid-template-columns:150px 1fr;
+ gap:8px 12px;
+ padding:7px 9px;
+ border:1px solid #35291c;
+ background:#0d0906;
+}
+.rng-formula-detail li b{color:#d7bd7e}
+.rng-formula-detail li span{color:#b6a78d}
+.rng-formula-detail li small{grid-column:2;color:#827563}
+
+.clog-luck-columns{
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:10px;
+ align-items:start;
+ margin:0 0 12px;
+}
+.clog-luck-columns>.card{
+ padding:0;
+ overflow:hidden;
+ border-color:#60492f;
+ background:linear-gradient(#1b140d,#110d09);
+}
+.clog-luck-list-head{
+ display:flex;
+ align-items:flex-end;
+ justify-content:space-between;
+ gap:12px;
+ padding:12px 13px 10px;
+ border-bottom:1px solid #3e2f20;
+ background:#17110b;
+}
+.clog-luck-list-head span{
+ display:block;
+ margin-bottom:3px;
+ color:#81745f;
+ font-size:8px;
+ font-weight:800;
+ letter-spacing:.1em;
+ text-transform:uppercase;
+}
+.clog-luck-list-head h3{
+ margin:0;
+ color:#e5cb8e;
+ font:700 15px Georgia,serif;
+}
+.clog-luck-list-head>small{
+ max-width:48%;
+ color:#7f7361;
+ font-size:8.5px;
+ text-align:right;
+ line-height:1.3;
+}
+.clog-luck-list{display:grid}
+.clog-luck-item{
+ display:grid;
+ grid-template-columns:42px minmax(0,1fr) minmax(100px,135px);
+ gap:10px;
+ align-items:center;
+ min-height:64px;
+ padding:9px 11px;
+ border-bottom:1px solid #33271a;
+ background:#120e09;
+}
+.clog-luck-item:last-child{border-bottom:0}
+.clog-luck-item:hover{background:#18110b}
+.clog-luck-item>img{
+ width:38px;
+ height:38px;
+ object-fit:contain;
+ image-rendering:pixelated;
+ filter:drop-shadow(1px 2px 1px #000a);
+}
+.clog-luck-item-copy{min-width:0}
+.clog-luck-item-copy>b{
+ display:block;
+ margin-bottom:3px;
+ color:#dbc38d;
+ font:700 11px Georgia,serif;
+}
+.clog-luck-item-copy b a{color:inherit}
+.clog-luck-item-copy>small{
+ display:block;
+ color:#94866f;
+ font-size:8.5px;
+ line-height:1.4;
+}
+.clog-luck-item-score{
+ min-width:0;
+ text-align:right;
+ padding-left:8px;
+ border-left:1px solid #332719;
+}
+.clog-luck-item-score>strong{
+ display:block;
+ font:800 15px Georgia,serif;
+ line-height:1.1;
+}
+.clog-luck-item-score>small{
+ display:block;
+ margin-top:3px;
+ color:#776b5b;
+ font-size:7.8px;
+ line-height:1.35;
+}
+.clog-luck-empty{
+ padding:16px;
+ color:#8f826e;
+ font-size:10px;
+ text-align:center;
+}
+
+.clog-luck-player-shell{
+ margin:10px 0 0;
+ border:1px solid #59442c;
+ background:#100c08;
+}
+.clog-luck-player-shell>.clog-deep-head{
+ display:flex;
+ justify-content:space-between;
+ gap:12px;
+ align-items:flex-end;
+ padding:12px 14px 10px;
+ border-bottom:1px solid #3b2d1e;
+ background:#17110b;
+}
+.clog-luck-player-shell>.clog-deep-head h3{
+ margin:0 0 3px;
+ color:#dfc687;
+ font:700 14px Georgia,serif;
+}
+.clog-luck-player-shell>.clog-deep-head p{
+ margin:0;
+ max-width:900px;
+ color:#8f826e;
+ font-size:9px;
+ line-height:1.4;
+}
+
+.clog-luck-individual-list{
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:1px;
+ background:#382b1d;
+}
+.clog-luck-individual{
+ min-width:0;
+ padding:11px 12px;
+ background:#120e09;
+}
+.clog-luck-individual-head{
+ display:grid;
+ grid-template-columns:minmax(0,1fr) auto;
+ grid-template-areas:"name score" "sample score";
+ gap:2px 10px;
+ align-items:center;
+ margin-bottom:8px;
+}
+.clog-luck-individual-head>b{
+ grid-area:name;
+ color:#dfc78d;
+ font:700 12px Georgia,serif;
+}
+.clog-luck-individual-head>strong{
+ grid-area:score;
+ font:800 18px Georgia,serif;
+}
+.clog-luck-individual-head>.clog-luck-sample{grid-area:sample;justify-self:start}
+.clog-luck-individual-grid{
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:5px;
+}
+.clog-luck-individual-grid>span{
+ min-width:0;
+ padding:7px 8px;
+ border:1px solid #332719;
+ background:#0e0a07;
+}
+.clog-luck-individual-grid small{
+ display:block;
+ color:#736857;
+ font-size:7.5px;
+ text-transform:uppercase;
+ letter-spacing:.05em;
+}
+.clog-luck-individual-grid b{
+ display:block;
+ margin-top:2px;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ white-space:nowrap;
+ color:#bbaa8a;
+ font-size:9.5px;
+}
+.clog-luck-individual-note{
+ display:block;
+ margin-top:7px;
+ color:#786d5d;
+ font-size:8px;
+ line-height:1.35;
+}
+
+.clog-luck-sample{
+ display:inline-flex;
+ align-items:center;
+ min-height:18px;
+ padding:2px 6px;
+ border:1px solid #4b3a28;
+ background:#181109;
+ color:#9f917a;
+ font-size:7.5px;
+ font-weight:700;
+ text-transform:uppercase;
+ letter-spacing:.05em;
+}
+.clog-luck-sample.usable{border-color:#4f6843;color:#9dbc8e;background:#10160e}
+.clog-luck-sample.limited{border-color:#75603b;color:#c2a96c;background:#19140c}
+.clog-luck-sample.insufficient{border-color:#6d453f;color:#c58d83;background:#1b100e}
+
+.clog-luck-player-list{display:grid}
+.clog-luck-player-row{
+ display:grid;
+ grid-template-columns:minmax(220px,1.7fr) 92px 92px 92px minmax(140px,.9fr);
+ gap:8px;
+ align-items:center;
+ min-height:56px;
+ padding:8px 12px;
+ border-bottom:1px solid #322619;
+ background:#120e09;
+}
+.clog-luck-player-row:last-child{border-bottom:0}
+.clog-luck-player-row:hover{background:#18110b}
+.clog-luck-player-name{min-width:0}
+.clog-luck-player-name b{
+ display:block;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ white-space:nowrap;
+ color:#d8c18a;
+ font:700 10.5px Georgia,serif;
+}
+.clog-luck-player-name small{
+ display:block;
+ margin-top:2px;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ white-space:nowrap;
+ color:#796e5e;
+ font-size:8px;
+}
+.clog-luck-player-metric{
+ min-width:0;
+ text-align:right;
+}
+.clog-luck-player-metric span{
+ display:block;
+ color:#716655;
+ font-size:7px;
+ text-transform:uppercase;
+ letter-spacing:.04em;
+}
+.clog-luck-player-metric b{
+ display:block;
+ margin-top:2px;
+ font:700 11px Georgia,serif;
+}
+
+.clog-luck-impossible-list{
+ display:grid;
+ border:1px solid #4e3c28;
+ background:#100c08;
+}
+.clog-luck-impossible-summary{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:14px;
+ padding:10px 12px;
+ border-bottom:1px solid #3a2c1d;
+ background:#18110b;
+}
+.clog-luck-impossible-summary b{color:#d6be85;font:700 12px Georgia,serif}
+.clog-luck-impossible-summary span{color:#817563;font-size:8.5px;text-align:right}
+.clog-luck-impossible-row{
+ display:grid;
+ grid-template-columns:38px minmax(0,1fr) minmax(180px,.75fr);
+ gap:10px;
+ align-items:center;
+ padding:9px 11px;
+ border-bottom:1px solid #302519;
+ background:#120e09;
+}
+.clog-luck-impossible-row:last-child{border-bottom:0}
+.clog-luck-impossible-row img{width:34px;height:34px;object-fit:contain;image-rendering:pixelated}
+.clog-luck-impossible-row b{color:#cdb687;font:700 10px Georgia,serif}
+.clog-luck-impossible-row small{display:block;margin-top:2px;color:#7d7160;font-size:8px;line-height:1.35}
+.clog-luck-impossible-row strong{display:block;color:#ad9d81;font-size:9px}
+
+#clogLuckImpossiblePanel>.card{padding:0!important;overflow:hidden}
+#clogLuckImpossiblePanel .clog-deep-head{
+ padding:12px 14px 10px;
+ border-bottom:1px solid #3d2e1f;
+ background:#17110b;
+}
+#clogLuckImpossiblePanel .clog-deep-head h3{margin:0 0 3px;color:#dfc687;font:700 14px Georgia,serif}
+#clogLuckImpossiblePanel .clog-deep-head p{margin:0;color:#8e816d;font-size:9px;line-height:1.4}
+
+@media(max-width:980px){
+ .clog-luck-overview{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .clog-luck-columns{grid-template-columns:1fr}
+ .clog-luck-player-row{grid-template-columns:minmax(190px,1fr) repeat(3,78px)}
+ .clog-luck-player-row>.clog-luck-sample{grid-column:1/-1;justify-self:start}
+}
+@media(max-width:700px){
+ .rng-index-shell .section-head{align-items:flex-start;flex-direction:column}
+ .rng-index-shell .data-actions{margin-left:0}
+ .clog-luck-overview{grid-template-columns:1fr 1fr}
+ .clog-luck-kpi>b{font-size:18px}
+ .clog-luck-toolbar{align-items:flex-start;flex-direction:column}
+ .clog-luck-toggle{width:100%}
+ .clog-luck-toggle button{flex:1}
+ .rng-formula-equation{grid-template-columns:1fr 1fr}
+ .rng-formula-equation>em{display:none}
+ .rng-formula-detail li{grid-template-columns:1fr}
+ .rng-formula-detail li small{grid-column:1}
+ .clog-luck-item{grid-template-columns:36px minmax(0,1fr)}
+ .clog-luck-item>img{width:32px;height:32px}
+ .clog-luck-item-score{grid-column:2;text-align:left;border-left:0;padding-left:0}
+ .clog-luck-individual-list{grid-template-columns:1fr}
+ .clog-luck-player-row{grid-template-columns:minmax(0,1fr) repeat(3,64px);gap:5px;padding:8px}
+ .clog-luck-player-name small{white-space:normal}
+ .clog-luck-player-metric b{font-size:9.5px}
+ .clog-luck-impossible-row{grid-template-columns:34px minmax(0,1fr)}
+ .clog-luck-impossible-row>div:last-child{grid-column:2}
+ .clog-luck-impossible-summary{align-items:flex-start;flex-direction:column}
+ .clog-luck-impossible-summary span{text-align:left}
+}
+@media(max-width:500px){
+ .clog-luck-overview{grid-template-columns:1fr}
+ .clog-luck-subtabs{display:flex;width:100%}
+ .clog-luck-subtabs button{flex:1}
+ .clog-luck-list-head{align-items:flex-start;flex-direction:column}
+ .clog-luck-list-head>small{max-width:none;text-align:left}
+ .clog-luck-player-row{grid-template-columns:1fr 1fr 1fr}
+ .clog-luck-player-name{grid-column:1/-1}
+ .clog-luck-player-row>.clog-luck-sample{grid-column:1/-1}
+}
