@@ -209,7 +209,7 @@ function raidPortfolio(metrics,def){
 }
 
 function portfolioResidual(m){
- const d=RAID_PORTFOLIOS.find(x=>x.names.has(m.name));
+ const d=RAID_PORTFOLIOS.find(x=>x.names.has(String(m.name||'').toLowerCase()));
  if(!d)return 1;
  return impactProfile(m).base>=8?.62:impactProfile(m).base>=5?.42:.28
 }
