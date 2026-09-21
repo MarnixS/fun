@@ -204,7 +204,7 @@ function calculate(id,name,ps,wom,model,U){
 function finish(percentile,observed,expected,trials,groups,notes,approx){
  const pct=percentile*100,text=formatPct(pct);
  const by=new Map();for(const g of groups){const old=by.get(g.source)||{source:g.source,kc:0,rolls:0,expected:0};old.kc+=g.kc;old.rolls+=g.n;old.expected+=g.n*g.p;by.set(g.source,old)}
- return{percentile,pct,text,observed,expected,trials,sources:[...by.values()].map(x=>({...x,label:labelSource(x.source)})),notes:[...notes],approx,band:pct>=90?'lucky':pct<=10?'dry':'normal'}
+ return{percentile,pct,text,observed,expected,trials,groups,sources:[...by.values()].map(x=>({...x,label:labelSource(x.source)})),notes:[...notes],approx,band:pct>=90?'lucky':pct<=10?'dry':'normal'}
 }
 function formatPct(p){if(p<.01)return'<0.01%';if(p>99.99)return'>99.99%';if(p<1||p>99)return p.toFixed(2)+'%';return Math.round(p)+'%'}
 function dependencyKey(id){
