@@ -365,3 +365,61 @@
 @media(max-width:620px){
  .mast-stat-level img{width:32px;height:32px}
 }
+
+
+/* Five-cell masthead: Collection Log trio + progression pair. */
+.mast-status.mast-status-five{
+ grid-template-columns:minmax(170px,.9fr) minmax(260px,1.35fr) minmax(225px,1.15fr) minmax(155px,.78fr) minmax(210px,1.05fr);
+}
+.mast-status-five .mast-stat{min-width:0}
+.mast-status-five .mast-stat-clog{
+ background:linear-gradient(180deg,#21170e,#160f0a);
+ box-shadow:inset 0 2px #5d472b;
+}
+.mast-status-five .mast-stat-clog-end{
+ border-right:2px solid #8f6c3a;
+ box-shadow:inset 0 2px #5d472b,6px 0 12px -11px #d5a450;
+}
+.mast-status-five .mast-stat-value{padding:7px 10px}
+.mast-status-five .mast-value-wrap{gap:9px}
+.mast-status-five .mast-value-pie{width:50px;height:50px;flex-basis:50px}
+.mast-status-five .mast-value-pie>i{inset:10px}
+.mast-status-five .mast-value-head b{font-size:15px}
+.mast-status-five .mast-value-legend{column-gap:7px;row-gap:2px}
+.mast-status-five .mast-value-person{font-size:7px!important}
+.mast-status-five .mast-value-person strong{font-size:7px}
+.mast-status-five .mast-stat-drop{gap:8px}
+.mast-status-five .mast-stat-drop img{width:34px;height:34px}
+.mast-stat-level{
+ flex-direction:row;
+ align-items:center;
+ gap:9px;
+}
+.mast-stat-level img{
+ width:42px;
+ height:54px;
+ flex:0 0 42px;
+ object-fit:cover;
+ object-position:top center;
+ border:1px solid #5e482e;
+ background:#0d0906;
+ box-shadow:0 2px 6px #0009;
+}
+.mast-stat-level>div{min-width:0}
+.mast-stat-level b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:1100px){
+ .mast-status.mast-status-five{grid-template-columns:1fr 1.35fr 1.15fr 1fr 1.1fr}
+ .mast-status-five .mast-value-legend{display:none}
+}
+@media(max-width:900px){
+ .mast-status.mast-status-five{grid-template-columns:1fr 1fr}
+ .mast-status-five .mast-stat-clog-end{border-right:0}
+ .mast-status-five .mast-stat-level{grid-column:1/-1}
+ .mast-status-five .mast-value-legend{display:grid}
+}
+@media(max-width:620px){
+ .mast-status.mast-status-five{grid-template-columns:1fr}
+ .mast-status-five .mast-stat{border-right:0;border-top:1px solid #49351f}
+ .mast-status-five .mast-stat:first-child{border-top:0}
+ .mast-status-five .mast-stat-level{grid-column:auto}
+}
