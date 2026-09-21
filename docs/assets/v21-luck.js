@@ -48,19 +48,24 @@ const COMPONENT_SETS={
  nox:{names:['noxious point','noxious blade','noxious pommel'],label:'Noxious halberd'},
  soulreaper:{names:['eye of the duke',"siren's staff","leviathan's lure","executioner's axe head"],label:'Soulreaper axe'}
 };
-let portfolioCache=null;
+let portfolioCache=new Map();
 function fullGroupPlayers(){return U.PLAYERS.filter(p=>model?.known.has(p.key))}
-function portfolioCounts(){
- if(portfolioCache)return portfolioCache;
- const map=new Map(),ps=fullGroupPlayers();
+function contextPlayers(m){
+ const keys=new Set(Array.isArray(m?.players)?m.players:[]);
+ return keys.size?fullGroupPlayers().filter(p=>keys.has(p.key)):fullGroupPlayers()
+}
+function portfolioCounts(m){
+ const ps=contextPlayers(m),key=ps.map(p=>p.key).sort().join('|')||'none';
+ if(portfolioCache.has(key))return portfolioCache.get(key);
+ const map=new Map();
  for(const id of modelIds()){
   const name=String(model.names.get(id)||'').trim().toLowerCase();if(!name)continue;
   const q=countFor(id,ps);map.set(name,(map.get(name)||0)+q)
  }
- portfolioCache=map;return map
+ portfolioCache.set(key,map);return map
 }
-function portfolioCount(name){return portfolioCounts().get(String(name||'').toLowerCase())||0}
-function sumPortfolio(regex){let n=0;for(const [name,q] of portfolioCounts())if(regex.test(name))n+=q;return n}
+function portfolioCount(name,m){return portfolioCounts(m).get(String(name||'').toLowerCase())||0}
+function sumPortfolio(regex,m){let n=0;for(const [name,q] of portfolioCounts(m))if(regex.test(name))n+=q;return n}
 function impactProfile(m){
  const name=String(m?.name||'').trim();
  for(const r of COMMUNITY_RULES)if(r.re.test(name))return{base:r.w,label:r.label,kind:r.kind||'shareable',set:r.set||null};
@@ -82,7 +87,7 @@ function averageMarginal(q,curve,tail=.12){
  return total/q
 }
 function copyUtility(profile,m){
- const q=portfolioCount(m.name);
+ const q=portfolioCount(m.name,m);
  if(profile.kind==='personal-unlock')return averageMarginal(q,[1,.96,.92,.88,.84],.12);
  if(profile.kind==='major-shareable')return averageMarginal(q,[1,.82,.66,.52,.42],.14);
  if(profile.kind==='shareable')return averageMarginal(q,[1,.72,.54,.40,.30],.12);
@@ -91,28 +96,28 @@ function copyUtility(profile,m){
 function itemIdByName(name){
  const low=String(name||'').toLowerCase();for(const id of modelIds())if(String(model.names.get(id)||'').toLowerCase()===low)return +id;return null
 }
-function completedUntradeableSets(set){
+function completedUntradeableSets(set,m){
  const ids=set.names.map(itemIdByName);if(ids.some(x=>x==null))return 0;
  let complete=0;
- for(const p of fullGroupPlayers()){
+ for(const p of contextPlayers(m)){
   const counts=ids.map(id=>model.counts.get(p.key)?.get(+id)||0);
   complete+=Math.min(...counts)
  }
  return complete
 }
-function componentUtility(profile){
+function componentUtility(profile,m){
  if(!profile.set||!COMPONENT_SETS[profile.set])return{f:1,label:null};
- const set=COMPONENT_SETS[profile.set],complete=completedUntradeableSets(set),pieces=set.names.filter(n=>portfolioCount(n)>0).length;
+ const set=COMPONENT_SETS[profile.set],complete=completedUntradeableSets(set,m),pieces=set.names.filter(n=>portfolioCount(n,m)>0).length;
  if(complete>0)return{f:clamp(1.35+.12*Math.min(complete-1,3),1,1.7),label:complete+' complete '+set.label+(complete===1?'':'s')+' assembled by individual group members'};
  return{f:.45+.15*pieces,label:pieces+'/'+set.names.length+' component types represented, but no confirmed complete set on one member'}
 }
 function synergyUtility(m,profile){
  const n=String(m.name||'').toLowerCase(),reasons=[];let f=1;
- const tbow=portfolioCount('twisted bow'),dex=portfolioCount('dexterous prayer scroll');
- const shadow=portfolioCount("tumeken's shadow (uncharged)"),scythe=portfolioCount('scythe of vitur (uncharged)');
- const enhanced=portfolioCount('enhanced crystal weapon seed'),armourSeeds=portfolioCount('crystal armour seed');
- const ancestral=sumPortfolio(/^ancestral (hat|robe top|robe bottom)$/),masori=sumPortfolio(/^masori (mask|body|chaps)$/);
- const claws=portfolioCount('dragon claws'),zcb=portfolioCount('zaryte crossbow'),lb=portfolioCount('lightbearer');
+ const tbow=portfolioCount('twisted bow',m),dex=portfolioCount('dexterous prayer scroll',m);
+ const shadow=portfolioCount("tumeken's shadow (uncharged)",m),scythe=portfolioCount('scythe of vitur (uncharged)',m);
+ const enhanced=portfolioCount('enhanced crystal weapon seed',m),armourSeeds=portfolioCount('crystal armour seed',m);
+ const ancestral=sumPortfolio(/^ancestral (hat|robe top|robe bottom)$/,m),masori=sumPortfolio(/^masori (mask|body|chaps)$/,m);
+ const claws=portfolioCount('dragon claws',m),zcb=portfolioCount('zaryte crossbow',m),lb=portfolioCount('lightbearer',m);
  if(n==='twisted bow'&&dex>0){f+=.12;reasons.push('Rigour access in group')}
  if(n==='twisted bow'&&masori>=3){f+=.06;reasons.push('Masori support')}
  if(n==='dexterous prayer scroll'&&tbow>0){f+=.10;reasons.push('Tbow in group')}
@@ -123,8 +128,8 @@ function synergyUtility(m,profile){
  if(n==='enhanced crystal weapon seed'&&armourSeeds>=6){f+=.12;reasons.push('full crystal armour access')}
  if(n==='lightbearer'&&(claws>0||zcb>0)){f+=.10;reasons.push('high-impact spec weapon access')}
  if((n==='dragon claws'||n==='zaryte crossbow')&&lb>0){f+=.08;reasons.push('Lightbearer in group')}
- if(n==='avernic defender hilt'&&(scythe>0||portfolioCount("osmumten's fang")>0)){f+=.06;reasons.push('endgame melee weapon support')}
- const component=componentUtility(profile);f*=component.f;if(component.label)reasons.push(component.label);
+ if(n==='avernic defender hilt'&&(scythe>0||portfolioCount("osmumten's fang",m)>0)){f+=.06;reasons.push('endgame melee weapon support')}
+ const component=componentUtility(profile,m);f*=component.f;if(component.label)reasons.push(component.label);
  return{f:clamp(f,.35,1.55),label:reasons.join(' · ')||null}
 }
 function geModifier(gp){if(!Number.isFinite(+gp)||+gp<=0)return 1;const x=clamp((Math.log10(+gp)-5)/5,0,1);return .94+.12*x}
@@ -141,7 +146,7 @@ function modelConfidence(m){
 }
 function deficitCompensation(profile,m,z){
  if(!(Number.isFinite(z)&&z<0))return{f:1,label:null};
- const q=portfolioCount(m.name),members=Math.max(1,fullGroupPlayers().length);
+ const q=portfolioCount(m.name,m),members=Math.max(1,contextPlayers(m).length);
  if(profile.kind==='personal-unlock'){
   const coverage=clamp(q/members,0,1),f=1-.82*coverage;
   return{f,label:coverage>0?'group already covers '+Math.round(coverage*100)+'% of personal unlock capacity':null}
@@ -155,7 +160,7 @@ function deficitCompensation(profile,m,z){
   return{f,label:q>0?q+' group cop'+(q===1?'y':'ies')+' already reduce the practical deficit':null}
  }
  if(profile.kind==='component'&&profile.set&&COMPONENT_SETS[profile.set]){
-  const set=COMPONENT_SETS[profile.set],complete=completedUntradeableSets(set);
+  const set=COMPONENT_SETS[profile.set],complete=completedUntradeableSets(set,m);
   return complete>0?{f:.28,label:'group already has '+complete+' completed '+set.label+(complete===1?'':'s')+' from personal component sets'}:{f:1,label:null}
  }
  return{f:1,label:null}
@@ -264,7 +269,7 @@ function countFor(id,ps){let n=0;for(const p of ps){const v=model.counts.get(p.k
 function metricsFor(ps){
  const key=ps.map(p=>p.key).sort().join('|');if(metricCache.has(key))return metricCache.get(key);
  const out=[];
- for(const id of modelIds()){const name=model.names.get(id)||'Item '+id;let r=null;try{r=L.calculate(id,name,ps,wom,model,U)}catch{}if(!r||!Number.isFinite(r.percentile))continue;const z=invNorm(r.percentile);if(Number.isFinite(z))out.push({id,name,r,z})}
+ for(const id of modelIds()){const name=model.names.get(id)||'Item '+id;let r=null;try{r=L.calculate(id,name,ps,wom,model,U)}catch{}if(!r||!Number.isFinite(r.percentile))continue;const z=invNorm(r.percentile);if(Number.isFinite(z))out.push({id,name,r,z,players:ps.map(p=>p.key)})}
  metricCache.set(key,out);return out
 }
 function excludedFor(ps){
@@ -296,7 +301,7 @@ function indices(metrics){
 function entityStats(ps){const metrics=metricsFor(ps),idx=indices(metrics),s=sample(metrics);return{metrics,idx,s}}
 function renderPicker(){
  const h=$('#clogLuckMembers');if(!h)return;
- U.renderMemberPicker(h,selected,keys=>{const next=new Set(keys);if(U.sameSelection(selected,next))return;selected=next;U.saveMemberSelection(selected);reset();render()},{title:'Members in luck analysis',subtitle:'Add or remove RNG sources. Raw percentiles use exactly those players; the overall-impact score values their drops in the context of the full five-man GIM portfolio, because shared gear and teammate unlocks can compensate for personal deficits.',fallback:U.ALL_KEYS,availability:model.known})
+ U.renderMemberPicker(h,selected,keys=>{const next=new Set(keys);if(U.sameSelection(selected,next))return;selected=next;U.saveMemberSelection(selected);reset();render()},{title:'Members in luck analysis',subtitle:'Add or remove RNG sources. Raw percentiles and the overall-impact portfolio use exactly those players. Teammate compensation and synergy only apply when that teammate is included in the selected combination.',fallback:U.ALL_KEYS,availability:model.known})
 }
 function syncHealth(){
  const t=+doc?.fetchedAt,w=+wom?.fetchedAt;if(!Number.isFinite(t)||!Number.isFinite(w))return{key:'unknown',text:'Temple/WOM synchronization time unavailable.'};
@@ -394,7 +399,7 @@ function bind(){
  document.querySelectorAll('[data-luck-lens]').forEach(b=>b.onclick=()=>{lens=b.dataset.luckLens||'meaningful';document.querySelectorAll('[data-luck-lens]').forEach(x=>x.classList.toggle('active',x===b));renderLists()});
  const tab=$('[data-gim-tab="luck"]');if(tab&&!tab.dataset.luckBound){tab.dataset.luckBound='1';tab.addEventListener('click',()=>{render();if(!prices)loadPrices().then(()=>render())})}
 }
-function reset(){metricCache=new Map();excludedCache=new Map();portfolioCache=null}
+function reset(){metricCache=new Map();excludedCache=new Map();portfolioCache=new Map()}
 window.addEventListener('ug:members-changed',e=>{const keys=U.cleanSelection(e.detail?.keys,U.ALL_KEYS);if(U.sameSelection(selected,keys))return;selected=keys;reset();render()});
 window.addEventListener('ug:data-updated',async e=>{if(e.detail?.key===U.TKEY){doc=await U.loadClog();model=M.build(doc,U.PLAYERS);reset();render()}else if(e.detail?.key===U.WKEY){wom=await U.loadWom();reset();render()}});
 async function init(){[doc,wom]=await Promise.all([U.loadClog(),U.loadWom()]);model=M.build(doc,U.PLAYERS);bind();render()}
