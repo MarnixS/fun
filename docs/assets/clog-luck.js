@@ -78,7 +78,7 @@ function toaPurple(points,level){const rl=level<=400?level:400+(Math.min(level,5
 function toaPet(points,level){const rl=Math.min(level,550),per1=350000-700*rl;return per1<=0?1:clamp(points/(100*per1))}
 function zShardBoost(points){return 1+clamp((points-150)/(1000-150))}
 function chance(rec,roll,name,notes,coxRegime='post'){
- let p=roll[1],src=roll[0],flags=rec[4]||0,low=String(name||'').toLowerCase();
+ let p=roll[1],src=roll[0],flags=rec.flags||0,low=String(name||'').toLowerCase();
  if(src==='CHAMBERS_OF_XERIC_COMPLETIONS'&&(coxRegime==='pre'?COX_OLD_WEIGHTS[low]:COX_REG_WEIGHTS[low])){
    const table=coxRegime==='pre'?COX_OLD_WEIGHTS:COX_REG_WEIGHTS,total=coxRegime==='pre'?69:60;
    p=clamp(ASSUME.cox/867600)*table[low]/total;
