@@ -341,12 +341,19 @@ function itemRow(m){
 }
 function meaningfulRank(m,z=null){
  z=z==null?cappedZ(m.z):cappedZ(z);
- const imp=impactWeight(m,z),severity=Math.abs(z);
- // Ranking lists are evidence-first. Gameplay impact may at most roughly double
- // a statistically unusual result; it cannot manufacture a spoon/dry streak.
- const impactFactor=.75+1.25*(1-Math.exp(-imp.w/3));
- const evidence=severity*severity;
- return{imp,impactFactor,evidence,score:(z<0?-1:1)*evidence*impactFactor}
+ const imp=impactWeight(m,z),severity=Math.abs(z),evidence=severity*severity;
+ if(z<0){
+   // Dry grinds: statistical evidence dominates. Relevance only nudges ordering,
+   // because going dry on a coveted target is meaningful but impact must not
+   // manufacture a grind from an ordinary outcome.
+   const impactFactor=.75+1.25*(1-Math.exp(-imp.w/3));
+   return{imp,impactFactor,evidence,score:-evidence*impactFactor,side:'dry'}
+ }
+ // Lucky drops: strong relevance gate to counter the look-elsewhere effect.
+ // Across hundreds of Collection Log slots, obscure items will inevitably have
+ // extreme positive RNG. Utility/progression therefore matters far more here.
+ const impactFactor=.05+2.45*(1-Math.exp(-imp.w/2.2));
+ return{imp,impactFactor,evidence,score:evidence*impactFactor,side:'lucky'}
 }
 function ranked(metrics){
  return metrics.map(m=>{
@@ -363,7 +370,7 @@ function renderLists(){
   if(!stats)formula.innerHTML='';
   else if(lens==='raw')formula.innerHTML='<b>Raw drop-rate view:</b> items are ordered only by their percentile-derived σ deviation. No GE price or gameplay-importance weighting is used in this list. The aggregate raw signal is <strong>'+sig(stats.idx.raw)+'</strong>.';
   else if(lens==='value')formula.innerHTML='<b>Financial-impact view:</b> probability deviation is multiplied by a log-scaled live GE weight. The aggregate priced-item signal is <strong>'+sig(stats.idx.financial.z)+'</strong>, with an approximate observed-minus-expected value of <strong>'+(stats.idx.financial.deltaGp>=0?'+':'−')+money(Math.abs(stats.idx.financial.deltaGp))+' gp</strong>. This is deliberately separate from the final overall luck score.';
-  else formula.innerHTML='<b>Final 1–10 score:</b> weighted item signal '+signed(stats.idx.itemNumerator)+' + pooled raid portfolios '+signed(stats.idx.portfolioNumerator)+' = '+signed(stats.idx.numerator)+' ÷ '+stats.idx.denom.toFixed(2)+' = <strong>'+sig(stats.idx.meaningful)+'</strong> → <strong>'+scoreText(stats.idx.score)+'</strong>. '+(stats.idx.portfolios.length?stats.idx.portfolios.map(p=>p.label+': '+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected · volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)).join(' · '):'No raid portfolio with a usable expected-drop denominator.')+' Assumption-heavy mechanics are confidence-damped, including the fixed CoX/ToA point assumptions. Overall-impact weights are portfolio-aware: community progression value comes first, early useful group copies are worth more than redundant copies, complementary gear can add a capped synergy bonus, and a personal dry streak is softened when teammates have already solved that slot for the GIM. The visible meaningful-drop/grind lists are ranked separately with statistical evidence first: |σ| is squared and gameplay impact is compressed to a limited rank modifier, so a coveted item cannot turn a routine outcome into the top dry streak. Raid items already represented in a pooled portfolio retain only part of their ordinary item-level weight to avoid counting the same evidence twice. Large source tables are L2-capped so having more Collection Log slots does not create more statistical power. Item σ is capped at ±3.50.';
+  else formula.innerHTML='<b>Final 1–10 score:</b> weighted item signal '+signed(stats.idx.itemNumerator)+' + pooled raid portfolios '+signed(stats.idx.portfolioNumerator)+' = '+signed(stats.idx.numerator)+' ÷ '+stats.idx.denom.toFixed(2)+' = <strong>'+sig(stats.idx.meaningful)+'</strong> → <strong>'+scoreText(stats.idx.score)+'</strong>. '+(stats.idx.portfolios.length?stats.idx.portfolios.map(p=>p.label+': '+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected · volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)).join(' · '):'No raid portfolio with a usable expected-drop denominator.')+' Assumption-heavy mechanics are confidence-damped, including the fixed CoX/ToA point assumptions. Overall-impact weights are portfolio-aware: community progression value comes first, early useful group copies are worth more than redundant copies, complementary gear can add a capped synergy bonus, and a personal dry streak is softened when teammates have already solved that slot for the GIM. The visible meaningful-drop/grind lists are asymmetric. Dry grinds remain statistical-evidence first: |σ| is squared and gameplay impact only modestly changes the order. Lucky drops use a much stronger relevance gate to counter the look-elsewhere effect across hundreds of Collection Log slots, so obscure cosmetics and low-utility items are heavily suppressed even when their raw RNG is extreme. Raid items already represented in a pooled portfolio retain only part of their ordinary item-level weight to avoid counting the same evidence twice. Large source tables are L2-capped so having more Collection Log slots does not create more statistical power. Item σ is capped at ±3.50.';
  }
  const titles=lens==='raw'?['Most statistically lucky','Most statistically unlucky']:lens==='value'?['Biggest valuable spoons','Biggest valuable dry streaks']:['Luckiest meaningful drops','Unluckiest meaningful grinds'];
  $('#clogLuckLuckyTitle').textContent=titles[0];$('#clogLuckDryTitle').textContent=titles[1];
