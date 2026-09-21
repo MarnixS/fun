@@ -12,14 +12,14 @@ async function staticJsonFast(path,timeout=12000){
  const r=await fetch(path,{cache:'no-store',headers:{Accept:'application/json'},signal:AbortSignal.timeout(timeout)});
  if(!r.ok)throw new Error('HTTP '+r.status);return r.json()
 }
-async function firstValid(loaders,field){
- return new Promise((resolve,reject)=>{
-  let pending=loaders.length,last=null,done=false;
-  for(const fn of loaders)Promise.resolve().then(fn).then(x=>{
-   if(done)return;if(x&&x[field]&&typeof x[field]==='object'){done=true;resolve(x);return}
-   last=new Error('Invalid '+field+' data');if(--pending===0)reject(last)
-  }).catch(e=>{last=e;if(--pending===0&&!done)reject(last||new Error('Data unavailable'))})
- })
+async function loadLuckSource(path,field,fallback,timeout){
+ try{
+  const local=await staticJsonFast(path,timeout);
+  if(local&&local[field]&&typeof local[field]==='object')return local
+ }catch(e){console.warn('Lucky or Not local '+field+' fallback failed',e)}
+ const remote=await fallback();
+ if(remote&&remote[field]&&typeof remote[field]==='object')return remote;
+ throw new Error('No usable '+field+' data')
 }
 async function ensureLuckData(){
  if(model&&wom)return true;if(dataRequest)return dataRequest;
@@ -27,8 +27,8 @@ async function ensureLuckData(){
   try{
    showLuckStatus('Loading Collection Log and WOM data…');
    const [d,w]=await Promise.all([
-    firstValid([()=>U.loadClog(),()=>staticJsonFast('data/temple-clog.json',10000)],'players'),
-    firstValid([()=>U.loadWom(),()=>staticJsonFast('data/wom-cache.json',12000)],'profiles')
+    loadLuckSource('data/temple-clog.json','players',()=>U.loadClog(),12000),
+    loadLuckSource('data/wom-cache.json','profiles',()=>U.loadWom(),20000)
    ]);
    doc=d;wom=w;model=M.build(doc,U.PLAYERS);reset();return true
   }catch(e){
@@ -41,6 +41,8 @@ async function ensureLuckData(){
 }
 async function activateLuck(){
  luckActive=true;
+ showLuckStatus('Loading luck analysis…');
+ await nextTurn();
  const ok=await ensureLuckData();
  if(luckActive&&ok)scheduleLuckRender()
 }
@@ -637,9 +639,15 @@ function setSecondaryLoading(){
 }
 function renderPrimary(){
  if(!model||!wom||!luckActive)return;
- renderPicker();overview();renderLists();renderView();setSecondaryLoading()
+ try{
+  renderPicker();overview();renderLists();renderView();setSecondaryLoading()
+ }catch(e){
+  console.error('Lucky or Not primary render failed',e);
+  showLuckStatus('Lucky or Not hit a render error: '+(e?.message||String(e)),true)
+ }
 }
 async function renderSecondary(gen){
+ try{
  if(!luckActive||gen!==renderGeneration)return;
  const ps=selectedPlayers();
  const ih=$('#clogLuckIndividuals'),ph=$('#clogLuckPlayers');
@@ -661,6 +669,10 @@ async function renderSecondary(gen){
  }
  if(!luckActive||gen!==renderGeneration)return;
  renderPlayers(sortCombinationRows(rows))
+ }catch(e){
+  console.error('Lucky or Not secondary render failed',e);
+  const h=$('#clogLuckPlayers');if(h)h.innerHTML='<div class="notice warn">Combination analysis failed: '+esc(e?.message||String(e))+'</div>'
+ }
 }
 async function renderImpossibleLazy(gen=renderGeneration){
  const h=$('#clogLuckImpossible');if(!h||!luckActive||view!=='impossible')return;
@@ -671,13 +683,21 @@ async function renderImpossibleLazy(gen=renderGeneration){
 function scheduleLuckRender(){
  if(!luckActive||!model||!wom)return;
  const gen=++renderGeneration;
- renderPrimary();
- setTimeout(()=>{if(!luckActive||gen!==renderGeneration)return;renderSecondary(gen);if(view==='impossible')renderImpossibleLazy(gen)},0);
+ showLuckStatus('Calculating selected-group luck…');
+ setTimeout(()=>{
+  if(!luckActive||gen!==renderGeneration)return;
+  renderPrimary();
+  setTimeout(()=>{if(!luckActive||gen!==renderGeneration)return;renderSecondary(gen);if(view==='impossible')renderImpossibleLazy(gen)},0)
+ },0);
  if(!prices&&!priceRequest)loadPrices().then(p=>{
   if(!p||!luckActive)return;
   statsCache=new Map();portfolioCache=new Map();
-  const next=++renderGeneration;renderPrimary();
-  setTimeout(()=>{if(!luckActive||next!==renderGeneration)return;renderSecondary(next);if(view==='impossible')renderImpossibleLazy(next)},0)
+  const next=++renderGeneration;
+  setTimeout(()=>{
+   if(!luckActive||next!==renderGeneration)return;
+   renderPrimary();
+   setTimeout(()=>{if(!luckActive||next!==renderGeneration)return;renderSecondary(next);if(view==='impossible')renderImpossibleLazy(next)},0)
+  },0)
  })
 }
 function bind(){
