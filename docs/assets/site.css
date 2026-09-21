@@ -247,3 +247,71 @@
  .faq-subtopic-meta{margin-top:2px}
  .faq-subtopic-summary p{max-width:60ch}
 }
+
+
+/* Wide compact full-information cards for Poep Aura and Lompste on Overview. */
+.sidecast-grid{grid-template-columns:1fr}
+.player-card-wide{
+ display:grid;
+ grid-template-columns:minmax(210px,260px) minmax(0,1fr);
+ grid-template-areas:
+  "head stats"
+  "mantra stats"
+  "clog clog";
+ column-gap:12px;
+ row-gap:4px;
+ padding:10px 12px;
+}
+.player-card-wide .player-card-head{grid-area:head}
+.player-card-wide .player-mantra{
+ grid-area:mantra;
+ margin:2px 0 0;
+ align-self:start;
+}
+.player-card-wide .player-portrait{
+ width:46px;
+ height:60px;
+}
+.player-card-wide h3{font-size:17px}
+.player-card-wide .player-role{font-size:8.5px}
+.player-card-wide .stat-grid{
+ grid-area:stats;
+ grid-template-columns:repeat(6,minmax(0,1fr));
+ gap:4px;
+ align-self:stretch;
+}
+.player-card-wide .stat-box{
+ display:flex;
+ flex-direction:column;
+ justify-content:center;
+ min-height:52px;
+ padding:6px 7px;
+}
+.player-card-wide .stat-box span{font-size:7.5px}
+.player-card-wide .stat-box b{font-size:13px}
+.player-card-wide .stat-box .small-value{font-size:9.5px!important}
+.player-card-wide .v22-clog-quick{
+ grid-area:clog;
+ grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:4px;
+ margin-top:5px;
+ padding-top:7px;
+}
+.player-card-wide .v22-clog-quick>div{
+ min-height:48px;
+ padding:6px 8px;
+}
+.player-card-wide .v22-clog-quick span,
+.player-card-wide .v22-clog-quick small{font-size:8.5px}
+.player-card-wide .v22-clog-quick b{font-size:14px;margin:1px 0}
+@media(max-width:900px){
+ .player-card-wide{
+  grid-template-columns:1fr;
+  grid-template-areas:"head" "mantra" "stats" "clog";
+ }
+ .player-card-wide .stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:620px){
+ .player-card-wide .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .player-card-wide .v22-clog-quick{grid-template-columns:1fr}
+}
