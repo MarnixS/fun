@@ -141,7 +141,7 @@ function exclusion(id,name,ps,wom,model,U){
  if(id===4740)return{kind:'barrows',label:'Barrows reward potential unknown',detail:'Bolt racks depend on Barrows reward potential. WOM records chest completions but not the reward potential used for each chest, so chest KC is not a valid denominator.'};
  const raw=DATA[id];
  if(raw?.[1]?.some(r=>r[0]==='NEX_KILLS'))return{kind:'nex',label:'Nex contribution history unknown',detail:'Nex unique and pet chances depend on personal contribution and MVP bonus. Historical team/mass KC does not preserve that contribution share, so a fixed contribution assumption would be misleading.'};
- if(raw?.[0]==='u'&&Array.isArray(raw?.[2])&&raw?.[1]?.length&&raw[1].every(r=>+r[1]>=1))return{kind:'guaranteed',label:'Guaranteed variable-quantity drop',detail:'This item is guaranteed whenever the eligible encounter is completed. Variation in stack size is not treated as spoon/dry rarity evidence, so it is excluded from Lucky or Not.'};
+ if(raw?.[0]==='u'&&Array.isArray(raw?.[2])&&raw?.[1]?.length&&raw[1].every(r=>+r[1]>=1))return{kind:'guaranteed',label:'Guaranteed variable-quantity drop',detail:'This item is guaranteed whenever the eligible encounter is completed. Variation in stack size is not treated as spoon/dry rarity evidence, so it is excluded from RNG Index evidence.'};
  if(!raw)return{kind:'rate',label:'No supported rate model',detail:'No sufficiently reliable item-level probability model is available for this Collection Log entry.'};
  if((raw[4]||0)&SPECIAL_UNSUPPORTED)return{kind:'mechanic',label:'Historical mechanic cannot be reconstructed',detail:'The item depends on historical state or counters that are not available in the saved WOM and Collection Log data.'};
  return null
