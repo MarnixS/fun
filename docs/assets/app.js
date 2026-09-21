@@ -126,6 +126,13 @@ async function loadMastPrices(){
 }
 function mastItemPrice(id){id=+id;const ge=x=>{const p=mastPrices?.[x];if(!p)return 0;const h=+p.high,l=+p.low;return h>0&&l>0?(h+l)/2:h>0?h:l>0?l:0};if(id===29799)return Math.max(0,ge(29801)-ge(19553));if(id===29790||id===29792||id===29794)return ge(29796)/3;if(id===28319||id===28321||id===28323||id===28325)return ge(28338)/4;if(id===28279)return Math.max(0,ge(28316)-ge(28301)-500*ge(565)-3*ge(28276));if(id===28281)return Math.max(0,ge(28313)-ge(28304)-500*ge(565)-3*ge(28276));if(id===28283)return Math.max(0,ge(28310)-ge(28298)-500*ge(565)-3*ge(28276));if(id===28285)return Math.max(0,ge(28307)-ge(28295)-500*ge(565)-3*ge(28276));return ge(id)}
 function mastMoney(n){if(!Number.isFinite(+n)||+n<=0)return'—';n=+n;return n>=1e9?(n/1e9).toFixed(2)+'b':n>=1e6?(n/1e6).toFixed(1)+'m':n>=1e3?(n/1e3).toFixed(1)+'k':fmt(n)}
+function ensureFiveMast(){
+ const host=$('.mast-status');if(!host)return;
+ if(host.dataset.layout==='five')return;
+ host.dataset.layout='five';
+ host.classList.add('mast-status-five');
+ host.innerHTML=`<div class="mast-stat mast-stat-clog"><span>Group Collection Log</span><b data-mast-log>—</b><small data-mast-log-sub>Collection Log via Temple</small></div><div class="mast-stat mast-stat-value mast-stat-clog" data-mast-value><span>Total Collection Log Value</span><small>Loading logged value split…</small></div><div class="mast-stat mast-stat-drop mast-stat-clog mast-stat-clog-end"><img data-mast-drop-icon hidden alt=""><div><span>Latest item unlock</span><b data-mast-drop>—</b><small data-mast-drop-sub>item unlocks via Temple</small></div></div><div class="mast-stat mast-stat-xp"><span>Total XP · 5-man GIM</span><b data-mast-xp>—</b><small data-mast-xp-exact>all five WOM accounts</small></div><div class="mast-stat mast-stat-level"><img data-mast-level-icon hidden alt=""><div><span>Latest gained level</span><b data-mast-level>—</b><small data-mast-level-sub>saved WOM history</small></div></div>`;
+}
 async function renderMastValue(){
  const slots=$$('[data-mast-value]');if(!slots.length)return;
  slots.forEach(x=>{x.className='mast-stat mast-stat-value mast-stat-clog';x.innerHTML='<span>Total Collection Log Value</span><small>Loading logged value split…</small>'});
@@ -143,6 +150,7 @@ function latestRecordedLevel(){
  return events[0]
 }
 function renderMast(){
+ ensureFiveMast();
  const gs=collectionModel(true),cov=templeCoverage(),totalXp=PLAYERS.reduce((n,p)=>n+(+overall(p.key).experience||0),0),totalLevel=PLAYERS.reduce((n,p)=>n+(+overall(p.key).level||0),0);
  $$('[data-mast-log]').forEach(x=>x.textContent=gs.known?`${fmt(gs.got)} / ${fmt(gs.known)}`:'—');
  $$('[data-mast-log-sub]').forEach(x=>x.textContent=`${cov.synced}/5 Collection Logs available${cov.unsynced.length?' · '+cov.unsynced.join(', ')+' unavailable':''}`);
@@ -153,8 +161,8 @@ function renderMast(){
  $$('[data-mast-drop-sub]').forEach(x=>x.textContent=dr?`${dr.player||'Group'} · ${dateOnly(dr.date)} · Temple`:'Temple recent unlocks');
  $$('[data-mast-drop-icon]').forEach(x=>{if(dr){x.src=`https://static.runelite.net/cache/item/icon/${dr.id}.png`;x.hidden=false}else x.hidden=true});
  const lv=latestRecordedLevel(),lp=lv?playerByKey(lv.key):null;
- $$('[data-mast-level]').forEach(x=>x.textContent=lv?`Level ${fmt(lv.level)} ${nice(lv.metric)}`:'No recorded level yet');
- $$('[data-mast-level-sub]').forEach(x=>x.textContent=lv?`${lv.player} · ${dateOnly(lv.date)}`:'Saved WOM history');
+ $('[data-mast-level]').forEach(x=>x.textContent=lv?`${fmt(lv.level)} ${nice(lv.metric)}`:'No recorded level yet');
+ $('[data-mast-level-sub]').forEach(x=>x.textContent=lv?`${lv.player} · ${dateOnly(lv.date)} · WOM`:'Saved WOM history');
  $$('[data-mast-level-icon]').forEach(x=>{if(lv&&lp?.portrait){x.src=lp.portrait;x.alt=lp.name;x.hidden=false}else x.hidden=true});
  renderMastValue()
 }
