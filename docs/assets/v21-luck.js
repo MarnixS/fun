@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
 const U=window.UGV21,M=window.UGClogBetaModel,L=window.UGClogLuck;
-if(!U||!M||!L||document.body.dataset.page!=='gim')return;
+if(!U||!M||!L||!['gim','rng'].includes(document.body.dataset.page))return;
 const {$,$$,fmt,escapeHtml:esc}=U;
 let doc=null,wom=null,model=null,selected=U.loadMemberSelection(),view='scored',lens='meaningful',prices=null,priceRequest=null,metricCache=new Map(),excludedCache=new Map();
 
@@ -74,7 +74,7 @@ function impactProfile(m){
  // Keep this path so a future newly-added rate does not crash the entire page before
  // its impact review is added; it is deliberately tiny and visibly labelled.
  const name=String(m?.name||'').trim();
- console.warn('Lucky or Not: missing explicit impact review for item',id,name);
+ console.warn('RNG Index: missing explicit impact review for item',id,name);
  return{base:.05,label:'impact review missing',kind:'low-impact',set:null}
 }
 function averageMarginal(q,curve,tail=.12){
@@ -256,7 +256,7 @@ function luckScore(z){if(!Number.isFinite(z))return null;const t=Math.tanh(.35*z
 function scoreText(v){return Number.isFinite(v)?v.toFixed(1)+'/10':'—'}
 async function loadPrices(){
  if(prices)return prices;if(priceRequest)return priceRequest;
- priceRequest=(async()=>{try{const r=await fetch('https://prices.runescape.wiki/api/v1/osrs/latest',{cache:'no-store',signal:AbortSignal.timeout(15000),headers:{Accept:'application/json'}});if(!r.ok)throw new Error('GE '+r.status);prices=(await r.json()).data||{}}catch(e){console.warn('Lucky or Not prices unavailable',e);prices=null}return prices})();
+ priceRequest=(async()=>{try{const r=await fetch('https://prices.runescape.wiki/api/v1/osrs/latest',{cache:'no-store',signal:AbortSignal.timeout(15000),headers:{Accept:'application/json'}});if(!r.ok)throw new Error('GE '+r.status);prices=(await r.json()).data||{}}catch(e){console.warn('RNG Index prices unavailable',e);prices=null}return prices})();
  try{return await priceRequest}finally{priceRequest=null}
 }
 function price(id){id=+id;const ge=x=>{const p=prices?.[x];if(!p)return 0;const h=+p.high,l=+p.low;return h>0&&l>0?(h+l)/2:h>0?h:l>0?l:0};if(id===29799)return Math.max(0,ge(29801)-ge(19553));if(id===29790||id===29792||id===29794)return ge(29796)/3;if(id===28319||id===28321||id===28323||id===28325)return ge(28338)/4;if(id===28279)return Math.max(0,ge(28316)-ge(28301)-500*ge(565)-3*ge(28276));if(id===28281)return Math.max(0,ge(28313)-ge(28304)-500*ge(565)-3*ge(28276));if(id===28283)return Math.max(0,ge(28310)-ge(28298)-500*ge(565)-3*ge(28276));if(id===28285)return Math.max(0,ge(28307)-ge(28295)-500*ge(565)-3*ge(28276));return ge(id)}
