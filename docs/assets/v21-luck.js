@@ -20,6 +20,7 @@ function signed(n){return(n>0?'+':'')+n.toFixed(2)}
 function money(n){if(!Number.isFinite(+n)||+n<=0)return'—';n=+n;return n>=1e9?(n/1e9).toFixed(2)+'b':n>=1e6?(n/1e6).toFixed(1)+'m':n>=1e3?(n/1e3).toFixed(1)+'k':fmt(n)}
 function tone(z){return z>.15?'positive':z<-.15?'negative':'neutral'}
 function sourceText(m){return(m?.r?.sources||[]).map(x=>String(x.label||x.source||'')).join(' ').toLowerCase()}
+const EXPLICIT_IMPACT=window.GIM_CLOG_IMPACT||Object.freeze({});
 const COMMUNITY_RULES=[
  {w:10.0,label:'iconic megarare · account-defining',kind:'major-shareable',re:/^(twisted bow|tumeken's shadow(?: \(uncharged\))?)$/i},
  {w:9.0,label:'iconic megarare · account-defining',kind:'major-shareable',re:/^scythe of vitur(?: \(uncharged\))?$/i},
@@ -67,19 +68,14 @@ function portfolioCounts(m){
 function portfolioCount(name,m){return portfolioCounts(m).get(String(name||'').toLowerCase())||0}
 function sumPortfolio(regex,m){let n=0;for(const [name,q] of portfolioCounts(m))if(regex.test(name))n+=q;return n}
 function impactProfile(m){
+ const id=+m?.id,explicit=EXPLICIT_IMPACT[id];
+ if(explicit&&Number.isFinite(+explicit.score))return{base:+explicit.score,label:explicit.label||'reviewed item utility',kind:explicit.kind||'shareable',set:explicit.set||null};
+ // Fallback only: the explicit impact asset currently covers every rate-model item.
+ // Keep this path so a future newly-added rate does not crash the entire page before
+ // its impact review is added; it is deliberately tiny and visibly labelled.
  const name=String(m?.name||'').trim();
- for(const r of COMMUNITY_RULES)if(r.re.test(name))return{base:r.w,label:r.label,kind:r.kind||'shareable',set:r.set||null};
- const src=sourceText(m),clue=/clue/.test(src);
- if(clue)return{base:.04,label:'clue reward / cosmetic',kind:'cosmetic'};
- if(PET_RE.test(name)||/\bpet\b/i.test(name))return{base:.18,label:'pet / vanity chase',kind:'vanity'};
- if(/^(jar of |.* ornament kit$|.* kit$)/i.test(name)||/ornament|cosmetic|transmog/i.test(name))return{base:.08,label:'cosmetic / vanity',kind:'cosmetic'};
- if(/^(heads?|jars?)$/i.test(name)||/\bhead$|stuffed/i.test(name))return{base:.12,label:'trophy / cosmetic',kind:'cosmetic'};
- if(/chambers of xeric|tombs of amascut|theatre of blood|theater of blood/.test(src))return{base:2.2,label:'raid unique',kind:'shareable'};
- if(/barrows/.test(src))return{base:.65,label:'replaceable equipment',kind:'shareable'};
- if(/gauntlet/.test(src))return{base:1.2,label:'PvM equipment',kind:'shareable'};
- if(/kills|completion|kc|boss|slayer/.test(src))return{base:.95,label:'PvM unique',kind:'shareable'};
- if(/sword|bow|staff|mace|spear|halberd|axe|claw|fang|helm|mask|body|plate|robe|legs|chaps|tassets|boots|gloves|ring|amulet|necklace|shield|ward|defender|hilt|seed|crystal/i.test(name))return{base:.9,label:'equipment / progression',kind:'shareable'};
- return{base:.35,label:'low-impact collection item',kind:'low-impact'}
+ console.warn('Lucky or Not: missing explicit impact review for item',id,name);
+ return{base:.05,label:'impact review missing',kind:'low-impact',set:null}
 }
 function averageMarginal(q,curve,tail=.12){
  q=Math.max(0,Math.floor(+q||0));if(q<=0)return 1;
@@ -387,7 +383,7 @@ function renderLists(){
   if(!stats)formula.innerHTML='';
   else if(lens==='raw')formula.innerHTML='<b>Raw drop-rate view:</b> items are ordered only by their percentile-derived σ deviation. No GE price or gameplay-importance weighting is used in this list. The aggregate raw signal is <strong>'+sig(stats.idx.raw)+'</strong>.';
   else if(lens==='value')formula.innerHTML='<b>Financial-impact view:</b> probability deviation is multiplied by a log-scaled live GE weight. The aggregate priced-item signal is <strong>'+sig(stats.idx.financial.z)+'</strong>, with an approximate observed-minus-expected value of <strong>'+(stats.idx.financial.deltaGp>=0?'+':'−')+money(Math.abs(stats.idx.financial.deltaGp))+' gp</strong>. This is deliberately separate from the final overall luck score.';
-  else formula.innerHTML='<b>Final 1–10 score:</b> weighted item signal '+signed(stats.idx.itemNumerator)+' + pooled raid portfolios '+signed(stats.idx.portfolioNumerator)+' = '+signed(stats.idx.numerator)+' ÷ '+stats.idx.denom.toFixed(2)+' = <strong>'+sig(stats.idx.meaningful)+'</strong> → <strong>'+scoreText(stats.idx.score)+'</strong>. '+(stats.idx.portfolios.length?stats.idx.portfolios.map(p=>p.label+': '+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected · volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)).join(' · '):'No raid portfolio with a usable expected-drop denominator.')+' Assumption-heavy mechanics are confidence-damped, including the fixed CoX/ToA point assumptions. Overall-impact weights are portfolio-aware: community progression value comes first, early useful group copies are worth more than redundant copies, complementary gear can add a capped synergy bonus, and a personal dry streak is softened when teammates have already solved that slot for the GIM. The visible meaningful-drop/grind lists are asymmetric. Dry grinds remain statistical-evidence first: |σ| is squared and gameplay impact only modestly changes the order. On the lucky side, pure cosmetics, vanity drops and generic low-impact collection items stay in the Raw RNG view instead of competing for a meaningful slot. Remaining useful drops get somewhat stronger relevance weighting than dry grinds plus a modest source-family breadth discount for the look-elsewhere effect; this is intentionally much softer than a formal Bonferroni correction. Raid items already represented in a pooled portfolio retain only part of their ordinary item-level weight to avoid counting the same evidence twice. Large source tables are L2-capped so having more Collection Log slots does not create more statistical power. Item σ is capped at ±3.50.';
+  else formula.innerHTML='<b>Final 1–10 score:</b> weighted item signal '+signed(stats.idx.itemNumerator)+' + pooled raid portfolios '+signed(stats.idx.portfolioNumerator)+' = '+signed(stats.idx.numerator)+' ÷ '+stats.idx.denom.toFixed(2)+' = <strong>'+sig(stats.idx.meaningful)+'</strong> → <strong>'+scoreText(stats.idx.score)+'</strong>. '+(stats.idx.portfolios.length?stats.idx.portfolios.map(p=>p.label+': '+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected · volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)).join(' · '):'No raid portfolio with a usable expected-drop denominator.')+' Item impact is read from an explicit 885-item utility table calibrated to mature/late-game GIM progression; rarity and GE price do not define those base scores. Assumption-heavy mechanics are confidence-damped, including the fixed CoX/ToA point assumptions. Overall-impact weights are portfolio-aware: community progression value comes first, early useful group copies are worth more than redundant copies, complementary gear can add a capped synergy bonus, and a personal dry streak is softened when teammates have already solved that slot for the GIM. The visible meaningful-drop/grind lists are asymmetric. Dry grinds remain statistical-evidence first: |σ| is squared and gameplay impact only modestly changes the order. On the lucky side, pure cosmetics, vanity drops and generic low-impact collection items stay in the Raw RNG view instead of competing for a meaningful slot. Remaining useful drops get somewhat stronger relevance weighting than dry grinds plus a modest source-family breadth discount for the look-elsewhere effect; this is intentionally much softer than a formal Bonferroni correction. Raid items already represented in a pooled portfolio retain only part of their ordinary item-level weight to avoid counting the same evidence twice. Large source tables are L2-capped so having more Collection Log slots does not create more statistical power. Item σ is capped at ±3.50.';
  }
  const titles=lens==='raw'?['Most statistically lucky','Most statistically unlucky']:lens==='value'?['Biggest valuable spoons','Biggest valuable dry streaks']:['Luckiest meaningful drops','Unluckiest meaningful grinds'];
  $('#clogLuckLuckyTitle').textContent=titles[0];$('#clogLuckDryTitle').textContent=titles[1];
