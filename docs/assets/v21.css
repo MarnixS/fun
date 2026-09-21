@@ -125,3 +125,21 @@ button,select,input,.link-button,.btn{min-height:38px}.metric-link{min-height:34
  .nav-dropdown{position:relative}
  .nav-dropdown-panel{position:fixed;left:8px!important;right:8px!important;top:auto;min-width:0}
 }
+
+
+/* Group ownership: contribution first, overlap as optional detail. */
+.clog-overlap-detail{margin-top:10px;border:1px solid #4b3926;background:#100c08}
+.clog-overlap-detail>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:11px 14px;cursor:pointer;background:linear-gradient(180deg,#1b140d,#120d09)}
+.clog-overlap-detail>summary::-webkit-details-marker{display:none}
+.clog-overlap-detail>summary:hover{background:linear-gradient(180deg,#241a10,#15100a)}
+.clog-overlap-detail>summary span{min-width:0}
+.clog-overlap-detail>summary b{display:block;color:#ddc58f;font:700 12px Georgia,serif}
+.clog-overlap-detail>summary small{display:block;margin-top:2px;color:#817664;font-size:9px}
+.clog-overlap-detail>summary em{flex:0 0 auto;color:#9c8763;font:normal 9px Arial,sans-serif}
+.clog-overlap-detail[open]>summary{border-bottom:1px solid #3b2d1e}
+.clog-overlap-detail[open]>summary em{font-size:0}
+.clog-overlap-detail[open]>summary em:after{content:"Hide detail ▴";font-size:9px}
+.clog-overlap-detail #clogOverlap .clog-deep-shell{margin:0;border:0;background:transparent}
+.clog-overlap-detail #clogOverlap .clog-deep-head{display:none}
+.clog-overlap-detail #clogOverlap .clog-shared-summary{border-top:0}
+@media(max-width:700px){.clog-overlap-detail>summary{align-items:flex-start}.clog-overlap-detail>summary em{margin-top:2px}}
