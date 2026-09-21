@@ -215,5 +215,43 @@ function dependencyKey(id){
  return t+':'+[...set].map(Number).sort((a,b)=>a-b).join(',');
 }
 function title(x){if(!x)return'';const base='Luck percentile '+x.text+' · position of the observed item count among players with the same estimated eligible rolls';const exp=Number.isFinite(x.expected)?' · '+x.observed+' logged vs '+x.expected.toFixed(x.expected<10?2:1)+' expected':'';return base+exp+(x.approx?' · distribution approximation used for scale':'')}
-return{calculate,exclusion,formatPct,title,dependencyKey,assumptions:ASSUME,trackingCaps:TRACKING_CAPS,rateItems:Object.keys(DATA).length};
+function simulationSourceLabel(source){
+ const special={
+  CHAMBERS_OF_XERIC_COMPLETIONS:'Chambers of Xeric',
+  CHAMBERS_OF_XERIC_CM_COMPLETIONS:'Chambers of Xeric · Challenge Mode',
+  THEATRE_OF_BLOOD_COMPLETIONS:'Theatre of Blood',
+  THEATRE_OF_BLOOD_HARD_COMPLETIONS:'Theatre of Blood · Hard Mode',
+  TOMBS_OF_AMASCUT_COMPLETIONS:'Tombs of Amascut',
+  TOMBS_OF_AMASCUT_EXPERT_COMPLETIONS:'Tombs of Amascut · Expert',
+  BARROWS_CHESTS_OPENED:'Barrows',
+  LUNAR_CHESTS_OPENED:'Moons of Peril',
+  GAUNTLET_COMPLETION_COUNT:'The Gauntlet',
+  CORRUPTED_GAUNTLET_COMPLETION_COUNT:'The Corrupted Gauntlet'
+ };
+ if(special[source])return special[source];
+ const key=sourceKey(source);
+ return key?key.replace(/_/g,' ').replace(/\b\w/g,x=>x.toUpperCase()).replace(/\bOf\b/g,'of').replace(/\bThe\b/g,'The'):labelSource(source)
+}
+const SIM_RAIDS=new Set(['CHAMBERS_OF_XERIC_COMPLETIONS','CHAMBERS_OF_XERIC_CM_COMPLETIONS','THEATRE_OF_BLOOD_COMPLETIONS','THEATRE_OF_BLOOD_HARD_COMPLETIONS','TOMBS_OF_AMASCUT_COMPLETIONS','TOMBS_OF_AMASCUT_EXPERT_COMPLETIONS']);
+function simulationCatalog(names={}){
+ const grouped=new Map();
+ for(const [idKey,raw] of Object.entries(DATA)){
+  const id=+idKey,name=String(names[id]||('Item '+id)),rec={_id:id,t:raw[0],rolls:raw[1]||[],param:raw[2],set:raw[3],flags:raw[4]||0},low=name.toLowerCase();
+  for(const roll of rec.rolls){
+   const source=roll[0],key=sourceKey(source);if(!key)continue;
+   const notes=new Set(),prob=chance(rec,roll,name,notes,'post'),trials=Math.max(1,+roll[2]||1);
+   if(!Number.isFinite(prob)||prob<=0)continue;
+   let exclusive=null;
+   if(source==='CHAMBERS_OF_XERIC_COMPLETIONS'&&COX_REG_WEIGHTS[low])exclusive='raid-unique';
+   else if(source==='CHAMBERS_OF_XERIC_CM_COMPLETIONS'&&COX_CM_WEIGHTS[low])exclusive='raid-unique';
+   else if((source==='TOMBS_OF_AMASCUT_COMPLETIONS'||source==='TOMBS_OF_AMASCUT_EXPERT_COMPLETIONS')&&TOA_WEIGHTS[low])exclusive='raid-unique';
+   else if(source==='THEATRE_OF_BLOOD_COMPLETIONS'&&(rec.flags&F.TOB))exclusive='raid-unique';
+   else if(source==='THEATRE_OF_BLOOD_HARD_COMPLETIONS'&&(rec.flags&F.TOBHM))exclusive='raid-unique';
+   if(!grouped.has(source))grouped.set(source,{source,key,label:simulationSourceLabel(source),raid:SIM_RAIDS.has(source),items:[]});
+   grouped.get(source).items.push({id,name,type:rec.t,prob,rolls:trials,param:rec.param,set:rec.set,flags:rec.flags,exclusive,notes:[...notes]})
+  }
+ }
+ return[...grouped.values()].map(s=>({...s,items:s.items.sort((a,b)=>b.prob-a.prob||a.name.localeCompare(b.name))})).sort((a,b)=>(b.raid-a.raid)||a.label.localeCompare(b.label))
+}
+return{calculate,exclusion,formatPct,title,dependencyKey,simulationCatalog,assumptions:ASSUME,trackingCaps:TRACKING_CAPS,rateItems:Object.keys(DATA).length};
 });
