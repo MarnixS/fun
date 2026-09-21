@@ -74,3 +74,11 @@
  .faq-mini-table small{grid-column:1/-1}
  .rng-feature-callout{align-items:flex-start;flex-direction:column}
 }
+
+
+/* RNG FAQ is one feature with internal chapters, not many top-level categories. */
+.faq-subsection{margin:14px 2px 7px;padding:8px 10px;border-left:2px solid #765a34;background:#120d08}
+.faq-subsection:first-child{margin-top:2px}
+.faq-subsection h3{margin:0 0 3px;color:#d8bd7e;font:700 13px Georgia,serif}
+.faq-subsection p{margin:0;color:#8f816d;font-size:9.5px;line-height:1.4}
+.faq-subsection+.faq-item{margin-top:0}
