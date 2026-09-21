@@ -377,7 +377,7 @@ function ranked(metrics){
  }).filter(m=>lens!=='value'||m.fw?.w>0).sort((a,b)=>b.sort-a.sort)
 }
 function renderLists(){
- const ps=selectedPlayers(),subjectLabel=ps.map(p=>p.name).join(', ')||'no selected members',stats=ps.length?entityStats(ps):null,metrics=stats?.metrics||[],rows=ranked(metrics),lucky=(lens==='meaningful'?rows.filter(m=>meaningfulLuckyEligible(m)):rows).slice(0,8),dry=[...rows].sort((a,b)=>a.sort-b.sort).slice(0,8);
+ const ps=selectedPlayers(),subjectLabel=ps.map(p=>p.name).join(', ')||'no selected members',stats=ps.length?entityStats(ps):null,metrics=stats?.metrics||[],rows=ranked(metrics),lucky=(lens==='meaningful'?rows.filter(m=>meaningfulLuckyEligible(m)):rows).filter(m=>m.sort>0&&(+m.r?.observed||0)>0).slice(0,8),dry=[...rows].filter(m=>m.sort<0).sort((a,b)=>a.sort-b.sort).slice(0,8);
  const formula=$('#clogLuckFormula');
  if(formula){
   if(!stats)formula.innerHTML='';
@@ -402,7 +402,9 @@ function combinations(ps){
 }
 function bestWorst(metrics,mode){
  const prev=lens;lens=mode;const r=ranked(metrics);lens=prev;
- return{best:r[0]||null,worst:r.length?[...r].sort((a,b)=>a.sort-b.sort)[0]:null}
+ const best=r.find(x=>x.sort>0&&(+x.r?.observed||0)>0)||null;
+ const worst=[...r].filter(x=>x.sort<0).sort((a,b)=>a.sort-b.sort)[0]||null;
+ return{best,worst}
 }
 function renderIndividuals(){
  const h=$('#clogLuckIndividuals');if(!h)return;const ps=selectedPlayers();
