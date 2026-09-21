@@ -21,8 +21,8 @@ function money(n){if(!Number.isFinite(+n)||+n<=0)return'—';n=+n;return n>=1e9?
 function tone(z){return z>.15?'positive':z<-.15?'negative':'neutral'}
 function sourceText(m){return(m?.r?.sources||[]).map(x=>String(x.label||x.source||'')).join(' ').toLowerCase()}
 const COMMUNITY_RULES=[
- {w:10.0,label:'iconic megarare · account-defining',kind:'major-shareable',re:/^(twisted bow|tumeken's shadow(?: \\(uncharged\\))?)$/i},
- {w:9.0,label:'iconic megarare · account-defining',kind:'major-shareable',re:/^scythe of vitur(?: \\(uncharged\\))?$/i},
+ {w:10.0,label:'iconic megarare · account-defining',kind:'major-shareable',re:/^(twisted bow|tumeken's shadow(?: \(uncharged\))?)$/i},
+ {w:9.0,label:'iconic megarare · account-defining',kind:'major-shareable',re:/^scythe of vitur(?: \(uncharged\))?$/i},
  {w:7.6,label:'progression-defining ranged unlock',kind:'major-shareable',re:/^enhanced crystal weapon seed$/i},
  {w:7.0,label:'permanent ranged progression unlock',kind:'personal-unlock',re:/^dexterous prayer scroll$/i},
  {w:6.5,label:'major raid / defence progression tool',kind:'major-shareable',re:/^(elder maul|dragon warhammer)$/i},
@@ -184,12 +184,12 @@ function financialIndex(metrics){
 }
 
 const RAID_PORTFOLIOS=[
- {key:'cox',label:'CoX purple portfolio',weight:9,names:new Set(['Twisted bow','Kodai insignia','Elder maul','Dragon claws','Ancestral hat','Ancestral robe top','Ancestral robe bottom',"Dinh's bulwark",'Dragon hunter crossbow','Twisted buckler','Dexterous prayer scroll','Arcane prayer scroll'])},
- {key:'toa',label:'ToA purple portfolio',weight:9,names:new Set(["Tumeken's shadow (uncharged)","Osmumten's fang",'Lightbearer',"Elidinis' ward",'Masori mask','Masori body','Masori chaps'])},
- {key:'tob',label:'ToB purple portfolio',weight:8,names:new Set(['Avernic defender hilt','Ghrazi rapier','Sanguinesti staff (uncharged)','Scythe of Vitur (uncharged)','Justiciar faceguard','Justiciar chestguard','Justiciar legguards'])}
+ {key:'cox',label:'CoX purple portfolio',weight:9,names:new Set(['twisted bow','kodai insignia','elder maul','dragon claws','ancestral hat','ancestral robe top','ancestral robe bottom',"dinh's bulwark",'dragon hunter crossbow','twisted buckler','dexterous prayer scroll','arcane prayer scroll'])},
+ {key:'toa',label:'ToA purple portfolio',weight:9,names:new Set(["tumeken's shadow (uncharged)","osmumten's fang",'lightbearer',"elidinis' ward",'masori mask','masori body','masori chaps'])},
+ {key:'tob',label:'ToB purple portfolio',weight:8,names:new Set(['avernic defender hilt','ghrazi rapier','sanguinesti staff (uncharged)','scythe of vitur (uncharged)','justiciar faceguard','justiciar chestguard','justiciar legguards'])}
 ];
 function raidPortfolio(metrics,def){
- const rows=metrics.filter(m=>def.names.has(m.name)&&Number.isFinite(m.r.expected)&&Number.isFinite(m.r.observed));
+ const rows=metrics.filter(m=>def.names.has(String(m.name||'').toLowerCase())&&Number.isFinite(m.r.expected)&&Number.isFinite(m.r.observed));
  const expected=rows.reduce((n,m)=>n+m.r.expected,0),observed=rows.reduce((n,m)=>n+m.r.observed,0);
  if(!rows.length||expected<1)return null;
  const volumeZ=cappedZ((observed-expected)/Math.sqrt(Math.max(.25,expected)));
