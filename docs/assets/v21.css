@@ -107,3 +107,21 @@ button,select,input,.link-button,.btn{min-height:38px}.metric-link{min-height:34
  .clog-deep-head{padding:12px}
  .clog-deep-head>strong{min-width:72px;font-size:18px}
 }
+
+
+/* Primary nav refinement: one clean row, compact grouped menus. */
+.nav-inner{flex-wrap:nowrap!important;overflow:visible!important}
+.nav-inner>.nav-link:not(.nav-brand),.nav-inner>.nav-dropdown{flex:1 1 0;min-width:0}
+.nav-trigger,.nav-brand,.nav-link{min-height:45px}
+.nav-trigger{padding:0 12px;gap:7px;background:linear-gradient(#20170f,#15100b)}
+.nav-dropdown-panel{min-width:220px;padding:4px;background:#120d08;border-color:#5a4328;box-shadow:0 10px 22px #000b}
+.nav-dropdown-panel .nav-link{min-height:39px;padding:0 11px;border:0;background:transparent;justify-content:flex-start!important}
+.nav-dropdown-panel .nav-link+.nav-link{border-top:1px solid #2f2418}
+.nav-dropdown-panel .nav-link:hover,.nav-dropdown-panel .nav-link.active{background:#24190f}
+.nav-dropdown-panel .nav-rune{min-width:20px;height:20px}
+@media(max-width:700px){
+ .nav-inner{overflow-x:auto!important;overflow-y:visible!important}
+ .nav-trigger,.nav-inner>.nav-link{white-space:nowrap}
+ .nav-dropdown{position:relative}
+ .nav-dropdown-panel{position:fixed;left:8px!important;right:8px!important;top:auto;min-width:0}
+}
