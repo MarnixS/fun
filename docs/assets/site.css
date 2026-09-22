@@ -444,3 +444,17 @@
  .mast-stat-level .mast-level-icons .mast-level-skill-icon{width:23px;height:23px;flex-basis:23px}
  .skill-icon{width:18px;height:18px;flex-basis:18px}
 }
+
+/* Local masthead summary icons. */
+.mast-stat-iconed{flex-direction:row;align-items:center;gap:9px}
+.mast-stat-iconed>div{min-width:0}
+.mast-summary-icon{width:30px;height:30px;flex:0 0 30px;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 2px 2px #0009)}
+.mast-clog-icon{width:31px;height:31px;flex-basis:31px}
+.mast-skills-icon{width:29px;height:29px;flex-basis:29px}
+.metric-with-icon{display:inline-flex;align-items:center;gap:6px}
+.total-level-row{background:linear-gradient(90deg,rgba(190,145,71,.12),rgba(190,145,71,.025))}
+.total-level-row>td:first-child{font-weight:700}
+@media(max-width:620px){
+ .mast-summary-icon{width:25px;height:25px;flex-basis:25px}
+ .mast-clog-icon{width:27px;height:27px;flex-basis:27px}
+}
