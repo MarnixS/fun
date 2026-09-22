@@ -51,6 +51,14 @@ async function run() {
         if (player === 'Lijpste') items.push({ id: 2, name: 'Recovered full-log item', count: 1, date: 1_700_000_100 });
         return response({ data: { items: { General: items }, player } });
       }
+      if (String(url).includes('player_stats.php')) {
+        const player = new URL(url).searchParams.get('player');
+        return response({ data: {
+          Player: player,
+          'Demonic Gorilla': player === 'Dikste' ? 912 : 0,
+          'Tortured Gorillas': player === 'Big Dog Aura' ? 14 : 0,
+        } });
+      }
       if (String(url).includes('player_recent_items.php')) {
         const player = new URL(url).searchParams.get('player');
         if (player === 'Lijpste') return response({ Code: 403, Message: 'No items after initial sync' }, 403);
@@ -78,7 +86,14 @@ async function run() {
     assert.equal(repeat.detected_from_count, true);
     assert(!first.json.recent.some((row) => row.Code || !row.id || !row.name), 'error objects are never published as recent items');
     assert.equal(calls.filter((url) => url.includes('player_collection_log.php')).length, 5);
+    assert.equal(calls.filter((url) => url.includes('player_stats.php')).length, 5);
     assert.equal(calls.filter((url) => url.includes('player_recent_items.php')).length, 5);
+    assert.equal(first.json.bossKc.dikste.demonic_gorilla, 912);
+    assert.equal(first.json.bossKc['big dog aura'].tortured_gorilla, 14);
+    assert.deepEqual(handler._test.extractBossKc({ data: { 'Demonic Gorillas': 321, 'Tortured Gorilla': 7 } }), {
+      demonic_gorilla: 321,
+      tortured_gorilla: 7,
+    });
 
     const callCount = calls.length;
     const second = await call();
