@@ -235,21 +235,26 @@ function saturateSourceFamilies(units){
 function meaningfulContext(m,z){
  z=clamp(+z,-3.5,3.5);
  const expected=Number.isFinite(m?.r?.expected)?+m.r.expected:null,observed=Number.isFinite(+m?.r?.observed)?+m.r.observed:0,profile=impactProfile(m);
- let dryGate=1,earlyUnlockBoost=0,signal=z;
- // A missing sub-rate rare is usually still a normal outcome. Meaningful
- // dryness only matures once the lower tail itself becomes genuinely small.
+ let dryGate=1,drySeverity=1,earlyUnlockBoost=0,signal=z;
+ // Meaningful dryness is deliberately asymmetric. Ordinary missing drops are
+ // ignored until the one-sided lower tail falls below 25%, but once that
+ // happens the evidence matures quickly and genuinely rare dry streaks become
+ // increasingly more costly than equally-sized positive deviations are useful.
  if(z<0&&Number.isFinite(+m?.r?.dryTail)){
-  const tail=+m.r.dryTail;
-  dryGate=clamp((.25-tail)/.15,0,1);
-  signal=z*dryGate;
+  const tail=clamp(+m.r.dryTail,0,1);
+  const maturity=clamp((.25-tail)/.20,0,1); // zero at 25%, fully mature by 5%
+  dryGate=Math.sqrt(maturity);              // avoids suppressing real 10–20% tails too harshly
+  const rarity=tail>0?clamp(Math.log(.10/tail)/Math.log(100),0,1):1;
+  drySeverity=1+.45*rarity;                 // up to 45% extra weight for extreme established dryness
+  signal=clamp(z*dryGate*drySeverity,-3.5,3.5);
  }
- // Progression is asymmetric: landing the first major item before one expected
- // copy can matter even when it is not an extreme statistical spoon.
+ // Progression is asymmetric in the other direction too: landing the first
+ // major item before one expected copy can matter without being an absurd spoon.
  if(z>0&&observed>0&&expected!=null&&expected<1&&profile.base>=5){
   earlyUnlockBoost=.08*Math.min(5,Math.max(0,profile.base-5))*(1-expected);
   signal=clamp(z+earlyUnlockBoost,-3.5,3.5);
  }
- return{signal,dryGate,earlyUnlockBoost,expected,observed,profile}
+ return{signal,dryGate,drySeverity,earlyUnlockBoost,expected,observed,profile}
 }
 function independentUnits(metrics){
  const groups=new Map();
@@ -418,8 +423,11 @@ function meaningfulRank(m,z=null,familySize=1){
  let evidence=severity*severity,earlyUnlockBonus=0;
  const importanceBoost=1+.20*Math.max(0,Math.min(5,imp.base-5));
  if(signal<0){
-   const impactFactor=(.75+1.25*(1-Math.exp(-imp.w/3)))*importanceBoost;
-   return{imp,impactFactor,importanceBoost,evidence,searchPenalty:1,familySize,score:-evidence*impactFactor,side:'dry',signal,dryGate:ctx.dryGate,earlyUnlockBonus:0}
+   // Once dryness has cleared the stricter evidence gate, important dry streaks
+   // should bite harder than a comparable spoon helps. This prevents a pile of
+   // modest positive outcomes from washing out one genuinely punishing grind.
+   const impactFactor=(.90+1.65*(1-Math.exp(-imp.w/3)))*importanceBoost;
+   return{imp,impactFactor,importanceBoost,evidence,searchPenalty:1,familySize,score:-evidence*impactFactor,side:'dry',signal,dryGate:ctx.dryGate,drySeverity:ctx.drySeverity,earlyUnlockBonus:0}
  }
  // First-copy timing gets a modest progression bonus for major items that
  // arrived before one expected copy. This is not treated as extra raw RNG.
@@ -451,7 +459,7 @@ function renderLists(){
    const raidText=stats.idx.portfolios.length?stats.idx.portfolios.map(p=>'<li><b>'+esc(p.label)+'</b><span>'+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected</span><small>volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)+'</small></li>').join(''):'<li><span>No raid portfolio with a usable expected-drop denominator.</span></li>';
    formula.innerHTML='<div class="rng-formula-summary"><span>Headline RNG Index</span><strong>'+scoreText(stats.idx.score)+'</strong><small>'+sig(stats.idx.meaningful)+' normalized impact signal</small></div>'+
    '<div class="rng-formula-equation"><span><small>Items</small><b>'+signed(stats.idx.itemNumerator)+'</b></span><em>+</em><span><small>Raid portfolios</small><b>'+signed(stats.idx.portfolioNumerator)+'</b></span><em>÷</em><span><small>Weight norm</small><b>'+stats.idx.denom.toFixed(2)+'</b></span><em>=</em><span><small>Combined</small><b>'+sig(stats.idx.meaningful)+'</b></span></div>'+
-   '<details class="rng-formula-detail"><summary>Calculation breakdown</summary><div><p><b>Evidence × impact × context.</b> Item impact comes from the explicit 885-item mature-GIM utility table. Assumption-heavy mechanics are confidence-damped; useful copies diminish with group coverage; complementary gear can add capped synergy; dry streaks can be softened when teammates already solved the slot.</p><ul>'+raidText+'</ul><p>Meaningful lucky drops use stronger relevance filtering plus a modest source-family look-elsewhere discount. A missing rare is not treated as meaningful dryness until its one-sided lower tail becomes genuinely small; major first copies obtained before one expected copy can receive a modest progression-timing bonus. Raid items represented in a pooled portfolio retain only part of their ordinary item-level weight to avoid double counting. Large source tables are L2-capped and item σ is capped at ±3.50.</p></div></details>';
+   '<details class="rng-formula-detail"><summary>Calculation breakdown</summary><div><p><b>Evidence × impact × context.</b> Item impact comes from the explicit 885-item mature-GIM utility table. Assumption-heavy mechanics are confidence-damped; useful copies diminish with group coverage; complementary gear can add capped synergy; dry streaks can be softened when teammates already solved the slot.</p><ul>'+raidText+'</ul><p>Meaningful lucky drops use stronger relevance filtering plus a modest source-family look-elsewhere discount. A missing rare is not treated as meaningful dryness until its one-sided lower tail falls below 25%; after that threshold, dryness matures quickly and extreme established dry streaks are deliberately penalized more strongly than comparable positive deviations are rewarded. Major first copies obtained before one expected copy can receive a modest progression-timing bonus. Raid items represented in a pooled portfolio retain only part of their ordinary item-level weight to avoid double counting. Large source tables are L2-capped and item σ is capped at ±3.50.</p></div></details>';
   }
  }
  const titles=lens==='raw'?['Most statistically lucky','Most statistically unlucky']:lens==='value'?['Biggest valuable spoons','Biggest valuable dry streaks']:['Luckiest meaningful drops','Unluckiest meaningful grinds'];
