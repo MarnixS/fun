@@ -108,6 +108,141 @@ async function lookup(name){
  if(tc.kind==='ok'&&!tcp)tc.kind='missing';
  return{id:keyName(name),name,displayName:wp?.displayName||tsp?.displayName||name,wom,templeStats:ts,templeClog:tc,womProfile:wp,templeStatsProfile:tsp,clog:tcp,stats:wp||tsp,womRaw:wom.data||null,color:EXT_COLORS[externals.length%EXT_COLORS.length],history:{snapshots:[],yearLoaded:false,allLoaded:false,loading:false,error:null}}
 }
+
+function latestRawSnapshot(raw){return raw?.latestSnapshot||raw?.latest_snapshot||raw?.data?.latestSnapshot||raw?.data?.latest_snapshot||null}
+function uniqSnapshots(rows){
+ const map=new Map();
+ for(const row of rows||[]){if(!row?.createdAt||!row?.data)continue;map.set(String(row.createdAt),row)}
+ return [...map.values()].sort((a,b)=>+new Date(a.createdAt)-+new Date(b.createdAt))
+}
+function externalSnapshots(x){
+ const latest=latestRawSnapshot(x?.womRaw),rows=[...(x?.history?.snapshots||[])];
+ if(latest?.createdAt&&latest?.data)rows.push(latest);
+ return uniqSnapshots(rows)
+}
+function ownSnapshots(p){return C.snaps(ownWom,p.key)}
+function periodLabel(v){return v==='all'?'All history':({365:'1 year',180:'6 months',90:'3 months',30:'1 month',7:'1 week'}[String(v)]||String(v)+' days')}
+function latestComparisonTime(){
+ const times=[];
+ for(const p of selectedPlayers())for(const row of ownSnapshots(p))times.push(+new Date(row.createdAt));
+ for(const x of externals)for(const row of externalSnapshots(x))times.push(+new Date(row.createdAt));
+ return times.filter(Number.isFinite).length?Math.max(...times.filter(Number.isFinite)):Date.now()
+}
+function comparisonWindow(){
+ if(comparePeriod==='all')return null;
+ const end=latestComparisonTime(),days=+comparePeriod||365;
+ return{start:end-days*864e5,end}
+}
+function withinWindow(rows){
+ const w=comparisonWindow();if(!w)return rows.slice();
+ return rows.filter(r=>{const t=+new Date(r.createdAt);return t>=w.start&&t<=w.end})
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+async function loadExternalHistory(x,all=false){
+ if(!x?.womProfile)return;
+ const h=x.history||(x.history={snapshots:[],yearLoaded:false,allLoaded:false,loading:false,error:null});
+ if((all&&h.allLoaded)||(!all&&(h.yearLoaded||h.allLoaded))||h.loading)return;
+ h.loading=true;h.error=null;renderExternalRoster();renderProgressComparison();
+ try{
+  const latest=latestRawSnapshot(x.womRaw),endMs=latest?.createdAt?+new Date(latest.createdAt):Date.now();
+  if(!Number.isFinite(endMs))throw new Error('latest WOM snapshot date unavailable');
+  const startMs=all?Date.UTC(2013,0,1):endMs-370*864e5;
+  const base='https://api.wiseoldman.net/v2/players/'+encodeURIComponent(x.name);
+  const rows=[];
+  for(let offset=0;offset<1000;offset+=50){
+   const q=new URLSearchParams({startDate:new Date(startMs).toISOString(),endDate:new Date(endMs).toISOString(),limit:'50',offset:String(offset)});
+   const res=await fetchJson(base+'/snapshots?'+q,22000);
+   if(res.kind!=='ok')throw new Error(res.error||('WOM history HTTP '+res.status));
+   const batch=Array.isArray(res.data)?res.data:(Array.isArray(res.data?.data)?res.data.data:null);
+   if(!batch)throw new Error('WOM returned an invalid history response');
+   rows.push(...batch.filter(r=>r?.createdAt&&r?.data));
+   if(batch.length<50)break;
+   await sleep(90)
+  }
+  h.snapshots=uniqSnapshots([...(h.snapshots||[]),...rows,latest].filter(Boolean));
+  if(all){h.allLoaded=true;h.yearLoaded=true}else h.yearLoaded=true
+ }catch(e){h.error=String(e?.message||e)}
+ finally{h.loading=false;renderExternalRoster();renderProgressComparison()}
+}
+async function ensureExternalHistory(){
+ const all=comparePeriod==='all';
+ const targets=externals.filter(x=>x.womProfile&&!(all?x.history?.allLoaded:(x.history?.yearLoaded||x.history?.allLoaded))&&!x.history?.loading);
+ if(!targets.length)return;
+ for(const x of targets)await loadExternalHistory(x,all)
+}
+function metricSpec(){
+ if(compareMetric==='total_xp')return{kind:'skill',key:'overall',label:'Total XP',format:'compact'};
+ if(compareMetric==='total_level')return{kind:'level',key:'overall',label:'Total level',format:'integer'};
+ if(compareMetric==='ehp')return{kind:'computed',key:'ehp',label:'EHP',format:'hours'};
+ if(compareMetric==='ehb')return{kind:'computed',key:'ehb',label:'EHB',format:'hours'};
+ if(compareMetric==='raids')return{kind:'raids',key:'raids',label:'Raid KC',format:'integer'};
+ if(compareMetric==='maxed')return{kind:'maxed',key:'maxed',label:'Skills at 99',format:'integer'};
+ if(compareMetric==='skill')return{kind:'skill',key:compareSkill||'slayer',label:nice(compareSkill||'slayer')+' XP',format:'compact'};
+ if(compareMetric==='boss')return{kind:'boss',key:compareBoss,label:nice(compareBoss||'boss')+' KC',format:'integer'};
+ return{kind:'activity',key:compareActivity,label:nice(compareActivity||'activity')+' score',format:'integer'}
+}
+function currentFromStats(stats,spec){
+ if(!stats)return null;
+ if(spec.kind==='skill'){
+  if(spec.key==='overall')return n(stats.overall?.experience);
+  return n(stats.skills?.[spec.key]?.experience)
+ }
+ if(spec.kind==='level')return n(stats.overall?.level);
+ if(spec.kind==='computed')return n(stats[spec.key]);
+ if(spec.kind==='boss')return n(stats.bosses?.[spec.key]);
+ if(spec.kind==='activity')return n(stats.activities?.[spec.key]);
+ return null
+}
+function externalLatestData(x){return latestRawSnapshot(x?.womRaw)?.data||null}
+function externalCurrentMetric(x,spec){
+ const d=externalLatestData(x),direct=d?C.metricValue(d,spec.kind,spec.key):null;
+ if(direct!=null)return direct;
+ if(spec.kind==='raids'||spec.kind==='maxed')return null;
+ return currentFromStats(x.stats,spec)
+}
+function ownCurrentMetric(p,spec){return C.metricValue(U.snapData(ownWom,p.key)||{},spec.kind,spec.key)}
+function metricSeries(rows,spec){
+ const w=comparisonWindow();
+ return rows.map(r=>({date:r.createdAt,value:C.metricValue(r.data,spec.kind,spec.key)}))
+   .filter(x=>x.value!=null&&(!w||(+new Date(x.date)>=w.start&&+new Date(x.date)<=w.end)))
+   .sort((a,b)=>+new Date(a.date)-+new Date(b.date))
+}
+function aggregateSeries(memberSeries){
+ const streams=memberSeries.filter(a=>a.length);
+ if(!streams.length)return[];
+ const first=Math.max(...streams.map(a=>+new Date(a[0].date)));
+ const times=[...new Set(streams.flatMap(a=>a.map(x=>+new Date(x.date))).filter(t=>t>=first))].sort((a,b)=>a-b);
+ const pos=streams.map(()=>0),last=streams.map(()=>null),out=[];
+ for(const t of times){
+  let ok=true,total=0;
+  for(let i=0;i<streams.length;i++){
+   const a=streams[i];
+   while(pos[i]<a.length&&+new Date(a[pos[i]].date)<=t){last[i]=a[pos[i]];pos[i]++}
+   if(!last[i]){ok=false;break}
+   total+=+last[i].value||0
+  }
+  if(ok)out.push({date:new Date(t).toISOString(),value:total})
+ }
+ return out
+}
+function externalGroupSeries(spec){return aggregateSeries(externals.filter(x=>x.womProfile).map(x=>metricSeries(externalSnapshots(x),spec)))}
+function unitedGroupSeries(spec){return aggregateSeries(selectedPlayers().map(p=>metricSeries(ownSnapshots(p),spec)))}
+function deltaFromSeries(a){return a.length>=2?(+a.at(-1).value||0)-(+a[0].value||0):null}
+function externalMemberValue(x,spec){
+ if(compareMode==='current')return externalCurrentMetric(x,spec);
+ return deltaFromSeries(metricSeries(externalSnapshots(x),spec))
+}
+function ownMemberValue(p,spec){
+ if(compareMode==='current')return ownCurrentMetric(p,spec);
+ return deltaFromSeries(metricSeries(ownSnapshots(p),spec))
+}
+function groupBarEntries(spec){
+ const ev=sumValues(externals.map(x=>externalMemberValue(x,spec))).value,uv=sumValues(selectedPlayers().map(p=>ownMemberValue(p,spec))).value;
+ return[
+  {name:'External group',color:GROUP_COLORS.external,value:ev},
+  {name:'United Gimps',color:GROUP_COLORS.united,value:uv}
+ ]
+}
 function selectedPlayers(){return PLAYERS.filter(p=>selection.has(p.key))}
 function f1(v){return v!=null&&Number.isFinite(+v)?(+v).toLocaleString('en-GB',{maximumFractionDigits:1}):'—'}
 function fi(v){return v!=null&&Number.isFinite(+v)?fmt(v):'—'}
