@@ -62,14 +62,17 @@ function mergeWom(a,b){
 function mergeTemple(a,b){
  if(!a?.players)return b;if(!b?.players)return a;
  const newer=millis(b.fetchedAt||b.savedAt)>=millis(a.fetchedAt||a.savedAt)?b:a,older=newer===a?b:a;
- const players={};
+ const players={},bossKc={};
  for(const key of new Set([...Object.keys(a.players),...Object.keys(b.players)])){
   const x=a.players[key],y=b.players[key];
   if(validLog(x)&&validLog(y))players[key]=logTime(y,b)>logTime(x,a)?y:logTime(y,b)<logTime(x,a)?x:((y.data??y).total_collections_finished||0)>=((x.data??x).total_collections_finished||0)?y:x;
   else if(validLog(x)||validLog(y))players[key]=validLog(x)?x:y;
  }
+ for(const key of new Set([...Object.keys(a.bossKc||{}),...Object.keys(b.bossKc||{})])){
+  bossKc[key]={...(a.bossKc?.[key]||{}),...(b.bossKc?.[key]||{})};
+ }
  const recent=new Map();for(const row of [...(older.recent||[]),...(newer.recent||[])]){const who=String(row.player_name_with_capitalization||row.player||'').toLowerCase(),when=millis(row.date_unix||row.date);recent.set([who,row.id||row.item_id,when].join('|'),row)}
- return {...older,...newer,players,membersWithClog:Object.keys(players).length,recent:[...recent.values()].sort((x,y)=>millis(y.date_unix||y.date)-millis(x.date_unix||x.date))};
+ return {...older,...newer,players,bossKc,membersWithClog:Object.keys(players).length,recent:[...recent.values()].sort((x,y)=>millis(y.date_unix||y.date)-millis(x.date_unix||x.date))};
 }
 async function templeLatest(local){const saved=await access(false,null,TKEY);return mergeTemple(saved,local)}
 async function templeSave(doc,{replace=false}={}){const saved=await access(true,doc,TKEY,replace?undefined:mergeTemple);if(!saved)return false;try{localStorage.removeItem(TKEY);localStorage.setItem(TSIGNAL,String(Date.now()))}catch{}return saved}
