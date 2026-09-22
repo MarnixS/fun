@@ -302,7 +302,7 @@ function renderSkills(){
  const rows=SKILLS.map(k=>{
   const ea=sumValues(es.map(x=>x.skills?.[k]?.level)),oa=sumValues(os.map(x=>x.skills?.[k]?.level));
   const eavg=ea.count?ea.value/ea.count:null,oavg=oa.count?oa.value/oa.count:null,diff=ea.value!=null&&oa.value!=null?ea.value-oa.value:null;
-  return '<tr><th>'+U.skillIcon(k,{alt:''})+'<span>'+escapeHtml(nice(k))+'</span></th><td>'+fi(ea.value)+' <small>'+ea.count+'/'+externals.length+'</small></td><td>'+fi(oa.value)+' <small>'+oa.count+'/'+selectedPlayers().length+'</small></td><td class="'+(diff==null?'':diff>=0?'pos':'neg')+'">'+signed(diff)+'</td><td>'+f1(eavg)+'</td><td>'+f1(oavg)+'</td></tr>'
+  return '<tr><th><button class="metric-link nem-metric-link" data-nem-skill="'+escapeHtml(k)+'">'+U.skillIcon(k,{alt:''})+'<span>'+escapeHtml(nice(k))+'</span></button></th><td>'+fi(ea.value)+' <small>'+ea.count+'/'+externals.length+'</small></td><td>'+fi(oa.value)+' <small>'+oa.count+'/'+selectedPlayers().length+'</small></td><td class="'+(diff==null?'':diff>=0?'pos':'neg')+'">'+signed(diff)+'</td><td>'+f1(eavg)+'</td><td>'+f1(oavg)+'</td></tr>'
  }).join('');
  h.innerHTML='<div class="nem-coverage-note">Totals are additive across each side. Averages are shown as a member-count sanity check when the two groups have different sizes.</div><div class="table-scroll"><table class="nem-table nem-skills"><thead><tr><th>Skill</th><th>External group total</th><th>United Gimps total</th><th>Difference</th><th>External avg</th><th>United avg</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
 }
@@ -314,7 +314,7 @@ function renderBosses(){
   const ea=sumValues(es.map(x=>n(x.bosses?.[k])??0)),oa=sumValues(os.map(x=>n(x.bosses?.[k])??0)),diff=(ea.value??0)-(oa.value??0);
   return{k,ev:ea.value??0,ov:oa.value??0,diff,max:Math.max(ea.value??0,oa.value??0)}
  }).filter(x=>x.max>0).sort((a,b)=>b.max-a.max).slice(0,40);
- h.innerHTML=rows.length?'<div class="nem-coverage-note">Boss KC is summed across '+es.length+'/'+externals.length+' external WOM accounts and '+os.length+'/'+selectedPlayers().length+' selected United Gimps accounts.</div><div class="table-scroll"><table class="nem-table"><thead><tr><th>Boss</th><th>External group KC</th><th>United Gimps KC</th><th>Difference</th></tr></thead><tbody>'+rows.map(x=>'<tr><th>'+escapeHtml(nice(x.k))+'</th><td>'+fmt(x.ev)+'</td><td>'+fmt(x.ov)+'</td><td class="'+(x.diff>=0?'pos':'neg')+'">'+signed(x.diff)+'</td></tr>').join('')+'</tbody></table></div>':'<div class="notice">No comparable boss KC was found.</div>'
+ h.innerHTML=rows.length?'<div class="nem-coverage-note">Boss KC is summed across '+es.length+'/'+externals.length+' external WOM accounts and '+os.length+'/'+selectedPlayers().length+' selected United Gimps accounts.</div><div class="table-scroll"><table class="nem-table"><thead><tr><th>Boss</th><th>External group KC</th><th>United Gimps KC</th><th>Difference</th></tr></thead><tbody>'+rows.map(x=>'<tr><th><button class="metric-link nem-metric-link" data-nem-boss="'+escapeHtml(x.k)+'">'+escapeHtml(nice(x.k))+'</button></th><td>'+fmt(x.ev)+'</td><td>'+fmt(x.ov)+'</td><td class="'+(x.diff>=0?'pos':'neg')+'">'+signed(x.diff)+'</td></tr>').join('')+'</tbody></table></div>':'<div class="notice">No comparable boss KC was found.</div>'
 }
 
 function selectorKeys(){
@@ -405,7 +405,12 @@ function renderClog(){
   const m=setOps(x.clog.items,ou),d=new Set([...x.clog.items.keys(),...ou.keys()]).size;
   return '<tr><th>'+escapeHtml(x.displayName||x.name)+'</th><td>'+fmt(x.clog.total)+'</td><td>'+fmt(m.shared)+'</td><td>'+fmt(m.aOnly)+'</td><td>'+fmt(m.bOnly)+'</td><td>'+f1(d?100*m.shared/d:0)+'%</td></tr>'
  }).join('');
- h.innerHTML=top+coverage+'<div class="table-scroll"><table class="nem-table"><thead><tr><th>External member</th><th>Their slots</th><th>Shared with United union</th><th>External-only</th><th>United-only</th><th>Overlap</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+ h.innerHTML=top+coverage+'<div class="nem-clog-visual"><div data-nem-clog-pie></div></div><div class="table-scroll"><table class="nem-table"><thead><tr><th>External member</th><th>Their slots</th><th>Shared with United union</th><th>External-only</th><th>United-only</th><th>Overlap</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+ C.drawPie(h.querySelector('[data-nem-clog-pie]'),[
+  {name:'Shared',color:'#d5b65b',value:q.shared},
+  {name:'External-only',color:GROUP_COLORS.external,value:q.aOnly},
+  {name:'United-only',color:GROUP_COLORS.united,value:q.bOnly}
+ ],{format:'integer',note:'Unique Collection Log slot composition across both group unions.'})
 }
 function render(){
  renderExternalRoster();renderCoverage();
@@ -418,7 +423,7 @@ function render(){
  }
  if(empty)empty.hidden=true;if(results)results.hidden=false;
  $('#nemesisResultTitle').textContent='External group ('+externals.length+') vs United Gimps ('+selectedPlayers().length+')';
- renderSummary();renderSkills();renderBosses();renderClog()
+ renderSummary();renderProgressComparison();renderSkills();renderBosses();renderClog()
 }
 function bindPicker(){
  const host=$('#nemesisMemberPicker');if(!host)return;
@@ -446,9 +451,13 @@ async function init(){
  const intro=$('.nemesis-panel p');if(intro)intro.textContent='Add one or more OSRS usernames. Each account is checked independently on WOM and Temple, then the available members are combined into an external GIM-style group.';
  const note=$('#nemesisLookupNote');if(note)note.textContent='Add accounts one at a time. Unsynced WOM or Temple data stays visible as missing coverage instead of being guessed.';
  const input=$('#nemesisName');if(input)input.placeholder='Add RSN…';
- bindPicker();
+ bindPicker();bindProgressControls();populateProgressSelectors();
  form?.addEventListener('submit',e=>{e.preventDefault();addAccount()});
  window.addEventListener('ug:members-changed',()=>{selection=U.loadMemberSelection();bindPicker();render()});
+ window.addEventListener('ug:data-updated',async e=>{
+  if(e.detail?.key===U.WKEY){ownWom=await U.loadWom();render()}
+  else if(e.detail?.key===U.TKEY){ownClog=await U.loadClog();render()}
+ });
  render()
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
