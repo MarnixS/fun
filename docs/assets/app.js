@@ -163,7 +163,7 @@ function renderMast(){
  const lv=latestRecordedLevel(),lp=lv?playerByKey(lv.key):null;
  $$('[data-mast-level]').forEach(x=>x.textContent=lv?`${fmt(lv.level)} ${nice(lv.metric)}`:'No recorded level yet');
  $$('[data-mast-level-sub]').forEach(x=>x.textContent=lv?`${lv.player} · ${dateOnly(lv.date)} · WOM`:'Saved WOM history');
- $('[data-mast-level-icon]').forEach(x=>{if(lv&&lp?.portrait){x.src=lp.portrait;x.alt=lp.name;x.hidden=false}else x.hidden=true});$('[data-mast-level-skill-icon]').forEach(x=>{const src=lv?window.UGV21.skillIconUrl?.(lv.metric):'';if(src){x.src=src;x.alt=nice(lv.metric);x.hidden=false;x.onerror=()=>{x.hidden=true}}else x.hidden=true});
+ $$('[data-mast-level-icon]').forEach(x=>{if(lv&&lp?.portrait){x.src=lp.portrait;x.alt=lp.name;x.hidden=false}else x.hidden=true});$$('[data-mast-level-skill-icon]').forEach(x=>{const src=lv?window.UGV21.skillIconUrl?.(lv.metric):'';if(src){x.src=src;x.alt=nice(lv.metric);x.hidden=false;x.onerror=()=>{x.hidden=true}}else x.hidden=true});
  renderMastValue()
 }
 
