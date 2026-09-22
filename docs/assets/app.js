@@ -161,8 +161,8 @@ function renderMast(){
  $$('[data-mast-drop-sub]').forEach(x=>x.textContent=dr?`${dr.player||'Group'} · ${dateOnly(dr.date)} · Temple`:'Temple recent unlocks');
  $$('[data-mast-drop-icon]').forEach(x=>{if(dr){x.src=`https://static.runelite.net/cache/item/icon/${dr.id}.png`;x.hidden=false}else x.hidden=true});
  const lv=latestRecordedLevel(),lp=lv?playerByKey(lv.key):null;
- $('[data-mast-level]').forEach(x=>x.textContent=lv?`${fmt(lv.level)} ${nice(lv.metric)}`:'No recorded level yet');
- $('[data-mast-level-sub]').forEach(x=>x.textContent=lv?`${lv.player} · ${dateOnly(lv.date)} · WOM`:'Saved WOM history');
+ $$('[data-mast-level]').forEach(x=>x.textContent=lv?`${fmt(lv.level)} ${nice(lv.metric)}`:'No recorded level yet');
+ $$('[data-mast-level-sub]').forEach(x=>x.textContent=lv?`${lv.player} · ${dateOnly(lv.date)} · WOM`:'Saved WOM history');
  $$('[data-mast-level-icon]').forEach(x=>{if(lv&&lp?.portrait){x.src=lp.portrait;x.alt=lp.name;x.hidden=false}else x.hidden=true});
  renderMastValue()
 }
