@@ -7,7 +7,7 @@ const MAX_EXTERNAL=10;
 const EXT_COLORS=['#d66bea','#7db5ff','#ed8e65','#78c7a2','#d5b65b','#a88bea','#e27a9e','#78b7c2','#c39064','#a8bd68'];
 const GROUP_COLORS={external:'#d66bea',united:'#e6ad43'};
 let externals=[],ownWom=null,ownClog=null,selection=U.loadMemberSelection();
-let comparePeriod=365,compareMode='gain',compareView='timeline',compareMetric='total_xp',compareSkill='slayer',compareBoss='',compareActivity='';
+let comparePeriod=365,compareMode='gain',compareView='timeline',compareScope='group',compareMetric='total_xp',compareSkill='slayer',compareBoss='',compareActivity='';
 let historyPromise=null;
 
 function cleanName(v){return String(v||'').replace(/\s+/g,' ').trim().slice(0,12)}
@@ -244,6 +244,18 @@ function groupBarEntries(spec){
   {name:'United Gimps',color:GROUP_COLORS.united,value:uv}
  ]
 }
+function memberBarEntries(spec){
+ return[
+  ...externals.map(x=>({name:x.displayName||x.name,color:x.color,value:externalMemberValue(x,spec)})),
+  ...selectedPlayers().map(p=>({name:p.name,color:p.color,value:ownMemberValue(p,spec)}))
+ ]
+}
+function memberLineSeries(spec){
+ return[
+  ...externals.filter(x=>x.womProfile).map(x=>({name:x.displayName||x.name,color:x.color,data:metricSeries(externalSnapshots(x),spec)})),
+  ...selectedPlayers().map(p=>({name:p.name,color:p.color,data:metricSeries(ownSnapshots(p),spec)}))
+ ]
+}
 function selectedPlayers(){return PLAYERS.filter(p=>selection.has(p.key))}
 function f1(v){return v!=null&&Number.isFinite(+v)?(+v).toLocaleString('en-GB',{maximumFractionDigits:1}):'—'}
 function fi(v){return v!=null&&Number.isFinite(+v)?fmt(v):'—'}
@@ -349,6 +361,7 @@ function populateProgressSelectors(){
  $('#nemesisActivityWrap').hidden=compareMetric!=='activity';
  document.querySelectorAll('[data-nem-mode]').forEach(b=>b.classList.toggle('active',b.dataset.nemMode===compareMode));
  document.querySelectorAll('[data-nem-view]').forEach(b=>b.classList.toggle('active',b.dataset.nemView===compareView));
+ document.querySelectorAll('[data-nem-scope]').forEach(b=>b.classList.toggle('active',b.dataset.nemScope===compareScope));
  document.querySelectorAll('[data-nem-period]').forEach(b=>b.classList.toggle('active',b.dataset.nemPeriod===String(comparePeriod)));
 }
 function comparisonCoverage(spec){
@@ -377,18 +390,28 @@ function renderProgressComparison(){
  const extMetric=externals.filter(x=>externalMemberValue(x,spec)!=null).length,ownMetric=selectedPlayers().filter(p=>ownMemberValue(p,spec)!=null).length;
  const range=periodLabel(comparePeriod),modeLabel=compareMode==='gain'?'gains':'current totals';
  status.textContent=range+' · '+modeLabel+' · metric coverage '+extMetric+'/'+externals.length+' external vs '+ownMetric+'/'+selectedPlayers().length+' United · timeline '+cov.extSeries+'/'+cov.extWom+' external WOM vs '+cov.ownSeries+'/'+cov.ownWom+' United WOM'+(loading?' · loading '+loading+' external histor'+(loading===1?'y':'ies'):'')+(errors?' · '+errors+' external history request'+(errors===1?' failed':'s failed'):'');
- const bars=groupBarEntries(spec);
- if(compareView==='bars'){C.drawBars(host,bars,{format:spec.format,note:(compareMode==='gain'?'Gain over '+range:'Current')+' group-vs-group '+spec.label+' comparison.'});return}
+ const groupBars=groupBarEntries(spec),memberBars=memberBarEntries(spec);
+ if(compareView==='bars'){
+  const bars=compareScope==='members'?memberBars:groupBars;
+  C.drawBars(host,bars,{format:spec.format,note:(compareMode==='gain'?'Gain over '+range:'Current')+' '+(compareScope==='members'?'member-by-member':'group-vs-group')+' '+spec.label+' comparison.'});return
+ }
  if(compareView==='share'){renderShareChart(host,spec);return}
+ if(compareScope==='members'){
+  const lines=memberLineSeries(spec),usable=lines.filter(x=>x.data.length>=2);
+  if(!usable.length){
+   C.drawBars(host,memberBars,{format:spec.format,note:'Member bars shown because no individual account has two usable WOM timeline points for '+range+'.'});return
+  }
+  C.drawLine(host,lines,{format:spec.format,gainMode:compareMode==='gain',bars:memberBars,domain:comparisonWindow()});return
+ }
  const ext=externalGroupSeries(spec),uni=unitedGroupSeries(spec);
  if(ext.length<2&&uni.length<2){
-  C.drawBars(host,bars,{format:spec.format,note:'Bar comparison shown because neither side has two usable WOM timeline points for '+range+'.'});
+  C.drawBars(host,groupBars,{format:spec.format,note:'Bar comparison shown because neither side has two usable WOM timeline points for '+range+'.'});
   return
  }
  C.drawLine(host,[
   {name:'External group',color:GROUP_COLORS.external,data:ext},
   {name:'United Gimps',color:GROUP_COLORS.united,data:uni}
- ],{format:spec.format,gainMode:compareMode==='gain',bars,domain:comparisonWindow()})
+ ],{format:spec.format,gainMode:compareMode==='gain',bars:groupBars,domain:comparisonWindow()})
 }
 function bindProgressControls(){
  const metric=$('#nemesisMetric'),skill=$('#nemesisSkill'),boss=$('#nemesisBoss'),activity=$('#nemesisActivity');
@@ -398,6 +421,7 @@ function bindProgressControls(){
  if(activity&&!activity.dataset.bound){activity.dataset.bound='1';activity.onchange=()=>{compareActivity=activity.value;renderProgressComparison()}}
  document.querySelectorAll('[data-nem-mode]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{compareMode=b.dataset.nemMode;renderProgressComparison()}});
  document.querySelectorAll('[data-nem-view]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{compareView=b.dataset.nemView;renderProgressComparison()}});
+ document.querySelectorAll('[data-nem-scope]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{compareScope=b.dataset.nemScope;renderProgressComparison()}});
  document.querySelectorAll('[data-nem-period]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{comparePeriod=b.dataset.nemPeriod==='all'?'all':+b.dataset.nemPeriod;renderProgressComparison()}});
  document.addEventListener('click',e=>{
   const sk=e.target.closest?.('[data-nem-skill]');if(sk){compareMetric='skill';compareSkill=sk.dataset.nemSkill;renderProgressComparison();$('#nemesisProgress')?.scrollIntoView?.({behavior:'smooth',block:'start'});return}
