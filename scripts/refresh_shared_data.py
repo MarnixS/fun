@@ -63,6 +63,36 @@ def valid_temple(x):
 
 
 
+def normalized_metric_key(value):
+    return ''.join(ch for ch in str(value or '').lower() if ch.isalnum())
+
+
+def extract_boss_kc(payload):
+    if not isinstance(payload, dict) or payload.get('error') or payload.get('errors'):
+        return {}
+    data = payload.get('data', payload)
+    if not isinstance(data, dict):
+        return {}
+    wanted = {
+        'demonicgorilla': 'demonic_gorilla',
+        'demonicgorillas': 'demonic_gorilla',
+        'torturedgorilla': 'tortured_gorilla',
+        'torturedgorillas': 'tortured_gorilla',
+    }
+    out = {}
+    for raw_key, raw_value in data.items():
+        key = wanted.get(normalized_metric_key(raw_key))
+        if not key:
+            continue
+        try:
+            value = float(raw_value)
+        except (TypeError, ValueError):
+            continue
+        if value >= 0:
+            out[key] = int(value) if value.is_integer() else value
+    return out
+
+
 def recent_time(row):
     try:
         value = float(row.get('date_unix') or row.get('date') or 0)
@@ -277,6 +307,8 @@ wom_doc = {
 
 # Collection Log via Temple: attempt every member. Invalid/missing means unknown, never zero.
 temple = {k: v for k, v in dict(oldt.get('players') or {}).items() if k in PLAYERS and valid_temple(v)}
+boss_kc = {k: dict(v or {}) for k, v in dict(oldt.get('bossKc') or {}).items() if k in PLAYERS}
+boss_kc_players = []
 for key, name in PLAYERS.items():
     q = urllib.parse.urlencode({
         'player': name,
@@ -295,6 +327,19 @@ for key, name in PLAYERS.items():
             print('No valid Collection Log via Temple; preserving prior valid log if present:', name)
     except Exception as e:
         print('Collection Log via Temple failed; preserving last known good:', name, repr(e))
+
+    try:
+        stats_q = urllib.parse.urlencode({'player': name, 'bosses': '1'})
+        stats = get('https://templeosrs.com/api/player_stats.php?' + stats_q, attempts=3, delay=.8)
+        extracted = extract_boss_kc(stats)
+        if extracted:
+            boss_kc[key] = {**boss_kc.get(key, {}), **extracted}
+            boss_kc_players.append(key)
+            print('Temple boss KC:', name, extracted)
+        else:
+            print('Temple boss KC unavailable; preserving prior values if present:', name)
+    except Exception as e:
+        print('Temple boss KC failed; preserving prior values if present:', name, repr(e))
 
 try:
     cp = get('https://templeosrs.com/api/collection-log/items.php', attempts=4, delay=1.0)
@@ -347,12 +392,13 @@ temple_doc = {
     'source': 'Collection Log via TempleOSRS',
     'fetchedAt': int(time.time() * 1000),
     'players': temple,
+    'bossKc': boss_kc,
     'catalog': catalog,
     'categories': categories,
     'recent': recent[:300],
     'membersWithClog': sum(1 for k in PLAYERS if valid_temple(temple.get(k))),
     'groupSize': 5,
-    'refreshDiagnostics': {'derivedRecentItems': len(derived_recent)},
+    'refreshDiagnostics': {'derivedRecentItems': len(derived_recent), 'bossKcPlayers': boss_kc_players},
 }
 
 (ROOT / 'wom-cache.json').write_text(json.dumps(wom_doc, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
