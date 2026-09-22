@@ -68,7 +68,7 @@ for(const [id,cap] of cappedExpected){
  assert(reason&&reason.kind==='cap'&&reason.cap===cap,'saved capped item '+id+' must be excluded at '+cap);
 }
 assert.equal(cappedExpected.size,12);
-const gimHtml=fs.readFileSync(path.join(__dirname,'../docs/gim.html'),'utf8');
-const luckPanel=(gimHtml.match(/<section class="hidden" data-gim-panel="luck">([\s\S]*?)<\/section>\s*<section class="hidden" data-gim-panel="categories">/)||[])[1]||'';
-assert(luckPanel&&!/<select\b/i.test(luckPanel),'Lucky or Not must use additive member checkboxes, not a dropdown');
-console.log('Current saved log capped-entry audit passed: 12 capped unique items; Lucky or Not has no dropdown.');
+const rngHtml=fs.readFileSync(path.join(__dirname,'../docs/rng.html'),'utf8');
+assert(/id="clogLuckMembers"/.test(rngHtml),'RNG Index must expose the additive member picker host');
+assert(!/<select\b/i.test(rngHtml),'Lucky or Not must use additive member checkboxes, not a dropdown');
+console.log('Current saved log capped-entry audit passed: 12 capped unique items; RNG Index uses the additive member picker and has no dropdown.');
