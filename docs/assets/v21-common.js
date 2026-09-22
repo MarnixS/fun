@@ -31,13 +31,20 @@ window.addEventListener('ug:data-updated',e=>{const {key,document:doc}=e.detail|
 async function loadDocument(key,path,field){
  if(documents.has(key))return documents.get(key);
  if(pending.has(key))return pending.get(key);
- // Only an explicit Recovery import overrides the shared baseline on this browser.
- const request=(async()=>{const override=key===TKEY?await window.UGTempleStore.latest(localJSON(key)):null;if(override?._browserOverride){if(!documents.has(key))documents.set(key,override);return documents.get(key)}let confirmed=null;try{confirmed=await window.UGSharedData.load(key===WKEY?'wom':'temple')}catch(e){console.warn('Shared baseline unavailable; using saved fallback',e)}
- if(confirmed){if(!documents.has(key))documents.set(key,confirmed);return documents.get(key)}
- let shared=null;try{shared=await staticJSON(path)}catch(e){console.warn(path,e)}
- const local=key===WKEY?await window.UGWomStore.latest(localJSON(key)):override;
- const chosen=key===TKEY?(window.UGTempleStore.merge(shared,local)||{players:{}}):(window.UGWomStore.merge(shared,local)||{profiles:{}});
- if(!documents.has(key))documents.set(key,chosen);return documents.get(key)})();
+ // Load the JSON deployed with this page first. The external shared-data
+ // receipt/raw-GitHub route is only a fallback, so a slow proxy cannot block
+ // the entire site on "loading…".
+ const request=(async()=>{
+  const override=key===TKEY?await window.UGTempleStore.latest(localJSON(key)):null;
+  if(override?._browserOverride){if(!documents.has(key))documents.set(key,override);return documents.get(key)}
+  let shared=null;try{shared=await staticJSON(path)}catch(e){console.warn(path,e)}
+  const local=key===WKEY?await window.UGWomStore.latest(localJSON(key)):override;
+  let chosen=key===TKEY?(window.UGTempleStore.merge(shared,local)||null):(window.UGWomStore.merge(shared,local)||null);
+  if(chosen?.[field]){if(!documents.has(key))documents.set(key,chosen);return documents.get(key)}
+  let confirmed=null;try{confirmed=await window.UGSharedData.load(key===WKEY?'wom':'temple')}catch(e){console.warn('Shared baseline unavailable; using saved fallback',e)}
+  chosen=confirmed||chosen||(key===TKEY?{players:{}}:{profiles:{}});
+  if(!documents.has(key))documents.set(key,chosen);return documents.get(key)
+ })();
  pending.set(key,request);try{return await request}finally{pending.delete(key)}
 }
 async function loadWom(){return loadDocument(WKEY,'data/wom-cache.json','profiles')}
