@@ -374,8 +374,9 @@ function renderProgressComparison(){
   if(need){historyPromise=ensureExternalHistory().finally(()=>{historyPromise=null;renderProgressComparison()})}
  }
  const cov=comparisonCoverage(spec),loading=externals.filter(x=>x.history?.loading).length,errors=externals.filter(x=>x.history?.error).length;
+ const extMetric=externals.filter(x=>externalMemberValue(x,spec)!=null).length,ownMetric=selectedPlayers().filter(p=>ownMemberValue(p,spec)!=null).length;
  const range=periodLabel(comparePeriod),modeLabel=compareMode==='gain'?'gains':'current totals';
- status.textContent=range+' · '+modeLabel+' · external WOM history '+cov.extSeries+'/'+cov.extWom+' · United WOM history '+cov.ownSeries+'/'+cov.ownWom+(loading?' · loading '+loading+' external histor'+(loading===1?'y':'ies'):'')+(errors?' · '+errors+' external history request'+(errors===1?' failed':'s failed'):'');
+ status.textContent=range+' · '+modeLabel+' · metric coverage '+extMetric+'/'+externals.length+' external vs '+ownMetric+'/'+selectedPlayers().length+' United · timeline '+cov.extSeries+'/'+cov.extWom+' external WOM vs '+cov.ownSeries+'/'+cov.ownWom+' United WOM'+(loading?' · loading '+loading+' external histor'+(loading===1?'y':'ies'):'')+(errors?' · '+errors+' external history request'+(errors===1?' failed':'s failed'):'');
  const bars=groupBarEntries(spec);
  if(compareView==='bars'){C.drawBars(host,bars,{format:spec.format,note:(compareMode==='gain'?'Gain over '+range:'Current')+' group-vs-group '+spec.label+' comparison.'});return}
  if(compareView==='share'){renderShareChart(host,spec);return}
