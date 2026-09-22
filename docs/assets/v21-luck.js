@@ -263,7 +263,7 @@ function meaningfulContext(m,z){
   earlyUnlockBoost=.08*Math.min(5,Math.max(0,profile.base-5))*(1-expected);
   signal=clamp(z+earlyUnlockBoost,-3.5,3.5);
  }
- return{signal,dryGate,drySeverity,earlyUnlockBoost,expected,observed,profile}
+ return{signal,dryGate,drySeverity,dryTail:Number.isFinite(+m?.r?.dryTail)?clamp(+m.r.dryTail,0,1):null,earlyUnlockBoost,expected,observed,profile}
 }
 function independentUnits(metrics){
  const groups=new Map();
@@ -432,11 +432,15 @@ function meaningfulRank(m,z=null,familySize=1){
  let evidence=severity*severity,earlyUnlockBonus=0;
  const importanceBoost=1+.20*Math.max(0,Math.min(5,imp.base-5));
  if(signal<0){
-   // Once dryness has cleared the stricter evidence gate, important dry streaks
-   // should bite harder than a comparable spoon helps. This prevents a pile of
-   // modest positive outcomes from washing out one genuinely punishing grind.
+   // Background bad luck (25–50% lower tail) is intentionally small, but it
+   // must remain visible. Squaring the already-gated signal made cases such as
+   // 0 Dragon claws at ~0.79 expected collapse to 0.00. Use a damped linear
+   // evidence term there; once the lower tail is <25%, keep the stronger
+   // nonlinear treatment for genuine dry streaks.
+   const backgroundDry=Number.isFinite(ctx.dryTail)&&ctx.dryTail>=.25;
+   evidence=backgroundDry?severity:severity*severity;
    const impactFactor=(.90+1.65*(1-Math.exp(-imp.w/3)))*importanceBoost;
-   return{imp,impactFactor,importanceBoost,evidence,searchPenalty:1,familySize,score:-evidence*impactFactor,side:'dry',signal,dryGate:ctx.dryGate,drySeverity:ctx.drySeverity,earlyUnlockBonus:0}
+   return{imp,impactFactor,importanceBoost,evidence,searchPenalty:1,familySize,score:-evidence*impactFactor,side:'dry',signal,dryGate:ctx.dryGate,drySeverity:ctx.drySeverity,dryTail:ctx.dryTail,backgroundDry,earlyUnlockBonus:0}
  }
  // First-copy timing gets a modest progression bonus for major items that
  // arrived before one expected copy. This is not treated as extra raw RNG.
