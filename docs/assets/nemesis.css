@@ -69,3 +69,15 @@
 .nem-external-sources .nem-source.history{border-style:dashed}
 @media(max-width:800px){.nem-progress-tools{align-items:stretch}.nem-select-label{flex:1 1 160px}.nem-select-label select{width:100%;min-width:0}.nem-share-grid{grid-template-columns:1fr}}
 @media(max-width:520px){.nem-progress-tools{display:grid;grid-template-columns:1fr}.nem-control-group,.nem-periods{width:100%}.nem-control-group button,.nem-periods button{flex:1}.nem-compare-chart{padding:4px;min-height:250px}.nem-share-grid section{padding:5px}}
+
+.nem-time-machine{margin-top:12px;border-top:1px solid #3a2c1d;padding-top:11px}
+.nem-time-head{display:flex;justify-content:space-between;gap:12px;align-items:end;margin-bottom:8px}
+.nem-time-head h4{margin:0;color:#dbc594;font:700 13px Georgia,serif}
+.nem-time-head p{margin:3px 0 0;color:#8f836f;font-size:9px;line-height:1.45}
+.nem-time-controls{display:flex;gap:6px;align-items:end;flex-wrap:wrap;margin-bottom:8px}
+.nem-time-controls input{min-height:34px;border:1px solid #564229;background:#120d09;color:#dbc594;padding:0 8px;font:inherit}
+.nem-time-controls button{min-height:34px;border:1px solid #564229;background:#17100b;color:#cdb98f;padding:0 10px;cursor:pointer;font:inherit}
+.nem-time-controls button:hover{border-color:#80623b;color:#f0dca7;background:#21170e}
+.nem-time-chart{margin:8px 0;border:1px solid #342719;background:#0d0907;padding:6px;min-height:220px}
+.nem-time-chart svg{display:block;width:100%;height:auto}
+@media(max-width:520px){.nem-time-controls{display:grid;grid-template-columns:1fr 1fr}.nem-time-controls .nem-select-label{grid-column:1/-1}.nem-time-controls button{width:100%}.nem-time-chart{padding:3px}}
