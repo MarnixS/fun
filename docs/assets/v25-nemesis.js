@@ -7,7 +7,7 @@ const MAX_EXTERNAL=10;
 const EXT_COLORS=['#d66bea','#7db5ff','#ed8e65','#78c7a2','#d5b65b','#a88bea','#e27a9e','#78b7c2','#c39064','#a8bd68'];
 const GROUP_COLORS={external:'#d66bea',united:'#e6ad43'};
 let externals=[],ownWom=null,ownClog=null,selection=U.loadMemberSelection();
-let comparePeriod=365,compareMode='gain',compareView='timeline',compareScope='group',compareMetric='total_xp',compareSkill='slayer',compareBoss='',compareActivity='';
+let comparePeriod=365,compareMode='gain',compareView='timeline',compareScope='group',compareMetric='total_xp',compareSkill='slayer',compareBoss='',compareActivity='',compareAtDate=null;
 let historyPromise=null;
 
 function cleanName(v){return String(v||'').replace(/\s+/g,' ').trim().slice(0,12)}
@@ -229,6 +229,20 @@ function aggregateSeries(memberSeries){
 function externalGroupSeries(spec){return aggregateSeries(externals.filter(x=>x.womProfile).map(x=>metricSeries(externalSnapshots(x),spec)))}
 function unitedGroupSeries(spec){return aggregateSeries(selectedPlayers().map(p=>metricSeries(ownSnapshots(p),spec)))}
 function deltaFromSeries(a){return a.length>=2?(+a.at(-1).value||0)-(+a[0].value||0):null}
+function nearestSnapshot(rows,target){
+ const a=(rows||[]).filter(r=>r?.createdAt&&r?.data);
+ if(!a.length)return null;
+ const snap=a.reduce((best,row)=>Math.abs(+new Date(row.createdAt)-target)<Math.abs(+new Date(best.createdAt)-target)?row:best,a[0]);
+ return{snap,diffDays:Math.abs(+new Date(snap.createdAt)-target)/864e5}
+}
+function historicalValue(snap,spec){return snap?.data?C.metricValue(snap.data,spec.kind,spec.key):null}
+function dateLabel(ms){return new Date(ms).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
+function timeQuality(days){
+ if(days==null)return'No snapshot';
+ if(days<.6)return'Same day';
+ if(days<=7)return Math.round(days)+' days away';
+ return Math.round(days)+' days away'
+}
 function externalMemberValue(x,spec){
  if(compareMode==='current')return externalCurrentMetric(x,spec);
  return deltaFromSeries(metricSeries(externalSnapshots(x),spec))
@@ -346,7 +360,7 @@ function selectorKeys(){
  return{bosses,activities}
 }
 function populateProgressSelectors(){
- const metric=$('#nemesisMetric'),skill=$('#nemesisSkill'),boss=$('#nemesisBoss'),activity=$('#nemesisActivity');
+ const metric=$('#nemesisMetric'),skill=$('#nemesisSkill'),boss=$('#nemesisBoss'),activity=$('#nemesisActivity'),timeGo=$('#nemesisTimeGo'),timeDate=$('#nemesisTimeDate');
  if(!metric||!skill||!boss||!activity)return;
  metric.value=compareMetric;
  skill.innerHTML=SKILLS.map(k=>'<option value="'+escapeHtml(k)+'">'+escapeHtml(nice(k))+'</option>').join('');
@@ -413,12 +427,48 @@ function renderProgressComparison(){
   {name:'United Gimps',color:GROUP_COLORS.united,data:uni}
  ],{format:spec.format,gainMode:compareMode==='gain',bars:groupBars,domain:comparisonWindow()})
 }
+async function runNemesisTimeMachine(){
+ const input=$('#nemesisTimeDate'),status=$('#nemesisTimeStatus'),button=$('#nemesisTimeGo');
+ const raw=input?.value;if(!raw)return;
+ const target=+new Date(raw+'T12:00:00');if(!Number.isFinite(target))return;
+ compareAtDate=target;
+ if(button){button.disabled=true;button.textContent='Loading history…'}
+ if(status)status.textContent='Loading external WOM history where available…';
+ try{
+  for(const x of externals.filter(x=>x.womProfile))await loadExternalHistory(x,true);
+ }finally{
+  if(button){button.disabled=false;button.textContent='Compare date'}
+  renderTimeMachineComparison()
+ }
+}
+function renderTimeMachineComparison(){
+ const host=$('#nemesisTimeChart'),table=$('#nemesisTimeTable'),status=$('#nemesisTimeStatus');
+ if(!host||!table||!status)return;
+ if(!compareAtDate){host.innerHTML='';table.innerHTML='';status.textContent='Choose a date to compare the closest real WOM snapshots. No interpolation is used.';return}
+ const spec=metricSpec(),target=compareAtDate;
+ const ext=externals.map(x=>({name:x.displayName||x.name,color:x.color,side:'External',near:nearestSnapshot(externalSnapshots(x),target)}));
+ const own=selectedPlayers().map(p=>({name:p.name,color:p.color,side:'United',near:nearestSnapshot(ownSnapshots(p),target)}));
+ const rows=[...ext,...own].map(x=>({...x,value:historicalValue(x.near?.snap,spec)}));
+ const extVals=rows.filter(x=>x.side==='External').map(x=>x.value),ownVals=rows.filter(x=>x.side==='United').map(x=>x.value);
+ const ev=sumValues(extVals).value,uv=sumValues(ownVals).value;
+ C.drawBars(host,[
+  {name:'External group',color:GROUP_COLORS.external,value:ev},
+  {name:'United Gimps',color:GROUP_COLORS.united,value:uv}
+ ],{format:spec.format,note:spec.label+' at the closest saved WOM snapshots to '+dateLabel(target)+'.'});
+ const usable=rows.filter(x=>x.value!=null).length;
+ status.textContent=dateLabel(target)+' · '+spec.label+' · '+usable+'/'+rows.length+' members have a usable historical value · closest real snapshot per account, never interpolated.';
+ table.innerHTML='<div class="table-scroll"><table class="nem-table"><thead><tr><th>Member</th><th>Side</th><th>'+escapeHtml(spec.label)+'</th><th>Snapshot</th><th>Distance</th></tr></thead><tbody>'+
+ rows.map(x=>'<tr><th style="color:'+escapeHtml(x.color)+'">'+escapeHtml(x.name)+'</th><td>'+x.side+'</td><td>'+(x.value==null?'—':spec.format==='compact'?compact(x.value):spec.format==='hours'?f1(x.value):fmt(x.value))+'</td><td>'+(x.near?.snap?.createdAt?escapeHtml(new Date(x.near.snap.createdAt).toLocaleString('en-GB')):'—')+'</td><td>'+escapeHtml(timeQuality(x.near?.diffDays))+'</td></tr>').join('')+
+ '</tbody></table></div>'
+}
 function bindProgressControls(){
  const metric=$('#nemesisMetric'),skill=$('#nemesisSkill'),boss=$('#nemesisBoss'),activity=$('#nemesisActivity');
- if(metric&&!metric.dataset.bound){metric.dataset.bound='1';metric.onchange=()=>{compareMetric=metric.value;populateProgressSelectors();renderProgressComparison()}}
- if(skill&&!skill.dataset.bound){skill.dataset.bound='1';skill.onchange=()=>{compareSkill=skill.value;renderProgressComparison()}}
- if(boss&&!boss.dataset.bound){boss.dataset.bound='1';boss.onchange=()=>{compareBoss=boss.value;renderProgressComparison()}}
- if(activity&&!activity.dataset.bound){activity.dataset.bound='1';activity.onchange=()=>{compareActivity=activity.value;renderProgressComparison()}}
+ if(metric&&!metric.dataset.bound){metric.dataset.bound='1';metric.onchange=()=>{compareMetric=metric.value;populateProgressSelectors();renderProgressComparison();renderTimeMachineComparison()}}
+ if(skill&&!skill.dataset.bound){skill.dataset.bound='1';skill.onchange=()=>{compareSkill=skill.value;renderProgressComparison();renderTimeMachineComparison()}}
+ if(boss&&!boss.dataset.bound){boss.dataset.bound='1';boss.onchange=()=>{compareBoss=boss.value;renderProgressComparison();renderTimeMachineComparison()}}
+ if(activity&&!activity.dataset.bound){activity.dataset.bound='1';activity.onchange=()=>{compareActivity=activity.value;renderProgressComparison();renderTimeMachineComparison()}}
+ if(timeGo&&!timeGo.dataset.bound){timeGo.dataset.bound='1';timeGo.onclick=runNemesisTimeMachine}
+ document.querySelectorAll('[data-nem-time-preset]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{const d=new Date();if(b.dataset.nemTimePreset==='1y')d.setFullYear(d.getFullYear()-1);else if(b.dataset.nemTimePreset==='6m')d.setMonth(d.getMonth()-6);else d.setTime(+new Date(b.dataset.nemTimePreset+'T12:00:00'));if(timeDate)timeDate.value=d.toISOString().slice(0,10);runNemesisTimeMachine()}})
  document.querySelectorAll('[data-nem-mode]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{compareMode=b.dataset.nemMode;renderProgressComparison()}});
  document.querySelectorAll('[data-nem-view]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{compareView=b.dataset.nemView;renderProgressComparison()}});
  document.querySelectorAll('[data-nem-scope]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{compareScope=b.dataset.nemScope;renderProgressComparison()}});
@@ -458,7 +508,7 @@ function render(){
  }
  if(empty)empty.hidden=true;if(results)results.hidden=false;
  $('#nemesisResultTitle').textContent='External group ('+externals.length+') vs United Gimps ('+selectedPlayers().length+')';
- renderSummary();renderProgressComparison();renderSkills();renderBosses();renderClog()
+ renderSummary();renderProgressComparison();renderTimeMachineComparison();renderSkills();renderBosses();renderClog()
 }
 function bindPicker(){
  const host=$('#nemesisMemberPicker');if(!host)return;
