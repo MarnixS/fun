@@ -344,7 +344,8 @@ function renderSearch(){
  if(input&&input.value!==search)input.value=search;
  if(!q){if(count)count.textContent='';host.innerHTML='<div class="clog-luck-empty">Type an item name to search the full RNG database.</div>';return}
  const ps=selectedPlayers();if(!ps.length){if(count)count.textContent='0 matches';host.innerHTML='<div class="clog-luck-empty">No selected synced members.</div>';return}
- const scored=ranked(entityStats(ps).metrics).filter(m=>String(m.name||'').toLowerCase().includes(q)||String(m.id)===q);
+ const allMetrics=entityStats(ps).metrics,rankedRows=ranked(allMetrics),rankedById=new Map(rankedRows.map(m=>[m.id,m]));
+ const scored=allMetrics.filter(m=>String(m.name||'').toLowerCase().includes(q)||String(m.id)===q).map(m=>rankedById.get(m.id)||({...m,sort:0})).sort((a,b)=>(b.sort||0)-(a.sort||0)||a.name.localeCompare(b.name));
  const excluded=excludedFor(ps).filter(x=>String(x.name||'').toLowerCase().includes(q)||String(x.id)===q).sort((a,b)=>a.name.localeCompare(b.name));
  const total=scored.length+excluded.length;if(count)count.textContent=fmt(total)+' match'+(total===1?'':'es');
  host.innerHTML=total?scored.map(itemRow).join('')+excluded.map(excludedSearchRow).join(''):'<div class="clog-luck-empty">No RNG items match “'+esc(search)+'”.</div>'
