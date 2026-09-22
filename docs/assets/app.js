@@ -153,9 +153,9 @@ function renderMast(){
  ensureFiveMast();
  const gs=collectionModel(true),cov=templeCoverage(),totalXp=PLAYERS.reduce((n,p)=>n+(+overall(p.key).experience||0),0);
  $$('[data-mast-log]').forEach(x=>x.textContent=gs.known?`${fmt(gs.got)} / ${fmt(gs.known)}`:'—');
- $$('[data-mast-log-sub]').forEach(x=>x.textContent=`${cov.synced}/5 Collection Logs available${cov.unsynced.length?' · '+cov.unsynced.join(', ')+' unavailable':''}`);
- $$('[data-mast-xp]').forEach(x=>{x.textContent=totalXp?compact(totalXp):'—';x.title=`${fmt(totalXp)} XP across all five WOM accounts`});
- $$('[data-mast-xp-exact]').forEach(x=>x.textContent=`${fmt(totalXp)} XP across all five WOM accounts`);
+ $('[data-mast-log-sub]').forEach(x=>x.textContent='Across all five accounts');
+ $$('[data-mast-xp]').forEach(x=>{x.textContent=totalXp?compact(totalXp):'—';x.title=`${fmt(totalXp)} XP across all five accounts`});
+ $('[data-mast-xp-exact]').forEach(x=>x.textContent=`${fmt(totalXp)} XP across all five accounts`);
  const dr=templeRecent()[0];
  $$('[data-mast-drop]').forEach(x=>x.innerHTML=dr?window.UGV21.itemLink(dr.id,dr.name):'No recent feed yet');
  $$('[data-mast-drop-sub]').forEach(x=>x.textContent=dr?`${dr.player||'Group'} · ${dateOnly(dr.date)} · Temple`:'Temple recent unlocks');
