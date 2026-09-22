@@ -67,6 +67,16 @@ function portfolioCounts(m){
  portfolioCache.set(key,map);return map
 }
 function portfolioCount(name,m){return portfolioCounts(m).get(String(name||'').toLowerCase())||0}
+function groupHolderCount(name,players=fullGroupPlayers()){
+ const id=itemIdByName(name);if(id==null)return 0;
+ let n=0;for(const p of players)if((model.counts.get(p.key)?.get(+id)||0)>0)n++;return n
+}
+function personalUnlockRedundancy(profile,m){
+ if(profile.kind!=='personal-unlock')return{f:1,label:null};
+ const selected=new Set(contextPlayers(m).map(p=>p.key)),holders=fullGroupPlayers().filter(p=>(model.counts.get(p.key)?.get(+m.id)||0)>0),outside=holders.filter(p=>!selected.has(p.key)).length;
+ const f=outside<=0?1:outside===1?.75:outside===2?.65:outside===3?.58:.54;
+ return{f,label:outside?outside+' other group member'+(outside===1?' already has ':'s already have ')+m.name:null}
+}
 function sumPortfolio(regex,m){let n=0;for(const [name,q] of portfolioCounts(m))if(regex.test(name))n+=q;return n}
 function impactProfile(m){
  const id=+m?.id,explicit=EXPLICIT_IMPACT[id];
@@ -456,7 +466,8 @@ function meaningfulRank(m,z=null,familySize=1){
  // marginal-copy utility directly to positive ranking evidence so multiple Dex/
  // prayer-scroll drops cannot stay almost full-strength merely because RNG was extreme.
  const positiveCopyFactor=signal>0&&imp.kind==='personal-unlock'?imp.copy:1;
- return{imp,impactFactor,importanceBoost,evidence,searchPenalty,familySize,positiveCopyFactor,score:evidence*impactFactor*searchPenalty*positiveCopyFactor,side:'lucky',signal,dryGate:ctx.dryGate,earlyUnlockBonus}
+ const positiveGroupRedundancy=signal>0?personalUnlockRedundancy(imp,m):{f:1,label:null};
+ return{imp,impactFactor,importanceBoost,evidence,searchPenalty,familySize,positiveCopyFactor,positiveGroupRedundancy,score:evidence*impactFactor*searchPenalty*positiveCopyFactor*positiveGroupRedundancy.f,side:'lucky',signal,dryGate:ctx.dryGate,earlyUnlockBonus}
 }
 function ranked(metrics){
  const familySizes=lens==='meaningful'?luckyFamilySizes(metrics):null;
