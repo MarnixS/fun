@@ -69,8 +69,8 @@ function effectiveProb(src,item){
 function sourceAssumptions(src){
  const set=new Set();
  for(const item of src.items)for(const n of item.notes||[])if(n)set.add(n);
- const notes=[...set];
- return notes.length?notes.slice(0,3).join(' · '):'Uses the current Collection Log rate model for this source.'
+ const notes=[...set],cfg=RAID_CONFIG[src.source],base=notes.length?notes.slice(0,3).join(' · '):'Uses the current Collection Log rate model for this source.';
+ return cfg?base+' · Hypothetical raid-unique chance is rescaled to '+fmt(raidSettingValue(src))+cfg.suffix+'.':base
 }
 function rollEncounter(src,batch){
  state.kc[src.source]=(state.kc[src.source]||0)+1;
