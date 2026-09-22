@@ -651,3 +651,19 @@
  .clog-luck-player-name{grid-column:1/-1}
  .clog-luck-player-row>.clog-luck-sample{grid-column:1/-1}
 }
+
+.rng-assumption-info{
+ display:inline-flex;
+ align-items:center;
+ justify-content:center;
+ width:14px;
+ height:14px;
+ margin-left:5px;
+ border:1px solid #6b583d;
+ border-radius:50%;
+ color:#c9b07a;
+ font:700 9px/1 Arial,sans-serif;
+ cursor:help;
+ vertical-align:1px;
+}
+.rng-assumption-info:hover,.rng-assumption-info:focus{border-color:#b68b4a;color:#f0d59a;outline:none}
