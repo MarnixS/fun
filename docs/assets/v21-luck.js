@@ -3,7 +3,7 @@
 const U=window.UGV21,M=window.UGClogBetaModel,L=window.UGClogLuck;
 if(!U||!M||!L||!['gim','rng'].includes(document.body.dataset.page))return;
 const {$,$$,fmt,escapeHtml:esc}=U;
-let doc=null,wom=null,model=null,selected=U.loadMemberSelection(),view='scored',lens='meaningful',prices=null,priceRequest=null,metricCache=new Map(),excludedCache=new Map();
+let doc=null,wom=null,model=null,selected=U.loadMemberSelection(),view='scored',lens='meaningful',search='',prices=null,priceRequest=null,metricCache=new Map(),excludedCache=new Map();
 
 function selectedPlayers(){return U.PLAYERS.filter(p=>selected.has(p.key)&&model?.known.has(p.key))}
 function modelIds(){const ids=new Set(model?.names?.keys?.()||[]);for(const m of model?.counts?.values?.()||[])for(const id of m.keys())ids.add(id);return [...ids]}
@@ -335,6 +335,20 @@ function itemRow(m){
  const sub=actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile · '+imp.label+(modifiers.length?' · '+modifiers.join(' · '):'');
  return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(contribution)+'">'+signed(contribution)+'</strong><small>'+sig(z)+' evidence · '+imp.w.toFixed(2)+' impact · '+rank.impactFactor.toFixed(2)+'× rank modifier</small></div></article>'
 }
+function excludedSearchRow(x){
+ return '<article class="clog-luck-item clog-luck-search-excluded"><img src="https://static.runelite.net/cache/item/icon/'+x.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(x.id,x.name)+'</b><small>'+esc(x.reason.detail)+'</small></div><div class="clog-luck-item-score"><strong>Excluded</strong><small>'+esc(x.reason.label)+' · '+fmt(x.count)+' logged</small></div></article>'
+}
+function renderSearch(){
+ const host=$('#clogLuckSearchResults'),count=$('#clogLuckSearchCount'),input=$('#clogLuckSearch');if(!host)return;
+ const q=String(search||input?.value||'').trim().toLowerCase();
+ if(input&&input.value!==search)input.value=search;
+ if(!q){if(count)count.textContent='';host.innerHTML='<div class="clog-luck-empty">Type an item name to search the full RNG database.</div>';return}
+ const ps=selectedPlayers();if(!ps.length){if(count)count.textContent='0 matches';host.innerHTML='<div class="clog-luck-empty">No selected synced members.</div>';return}
+ const scored=ranked(entityStats(ps).metrics).filter(m=>String(m.name||'').toLowerCase().includes(q)||String(m.id)===q);
+ const excluded=excludedFor(ps).filter(x=>String(x.name||'').toLowerCase().includes(q)||String(x.id)===q).sort((a,b)=>a.name.localeCompare(b.name));
+ const total=scored.length+excluded.length;if(count)count.textContent=fmt(total)+' match'+(total===1?'':'es');
+ host.innerHTML=total?scored.map(itemRow).join('')+excluded.map(excludedSearchRow).join(''):'<div class="clog-luck-empty">No RNG items match “'+esc(search)+'”.</div>'
+}
 function meaningfulLuckyEligible(m){
  const p=impactProfile(m);
  // Pure statistical oddities still belong in the Raw view. The meaningful
@@ -429,10 +443,13 @@ function renderView(){
  if(scored)scored.classList.toggle('hidden',view!=='scored');if(impossible)impossible.classList.toggle('hidden',view!=='impossible');
  $$('[data-luck-view]').forEach(b=>b.classList.toggle('active',b.dataset.luckView===view))
 }
-function render(){if(!model||!wom)return;renderPicker();overview();renderLists();renderIndividuals();renderPlayers();renderImpossible();renderView()}
+function render(){if(!model||!wom)return;renderPicker();overview();renderLists();renderSearch();renderIndividuals();renderPlayers();renderImpossible();renderView()}
 function bind(){
  document.querySelectorAll('[data-luck-view]').forEach(b=>b.onclick=()=>{view=b.dataset.luckView;renderView()});
- document.querySelectorAll('[data-luck-lens]').forEach(b=>b.onclick=()=>{lens=b.dataset.luckLens||'meaningful';document.querySelectorAll('[data-luck-lens]').forEach(x=>x.classList.toggle('active',x===b));renderLists()});
+ document.querySelectorAll('[data-luck-lens]').forEach(b=>b.onclick=()=>{lens=b.dataset.luckLens||'meaningful';document.querySelectorAll('[data-luck-lens]').forEach(x=>x.classList.toggle('active',x===b));renderLists();renderSearch()});
+ const searchInput=$('#clogLuckSearch'),clear=$('#clogLuckSearchClear');
+ if(searchInput&&!searchInput.dataset.bound){searchInput.dataset.bound='1';searchInput.addEventListener('input',()=>{search=searchInput.value;renderSearch()})}
+ if(clear&&!clear.dataset.bound){clear.dataset.bound='1';clear.onclick=()=>{search='';if(searchInput)searchInput.value='';renderSearch();searchInput?.focus()}}
  const tab=$('[data-gim-tab="luck"]');if(tab&&!tab.dataset.luckBound){tab.dataset.luckBound='1';tab.addEventListener('click',()=>{render();if(!prices)loadPrices().then(()=>render())})}
 }
 function reset(){metricCache=new Map();excludedCache=new Map();portfolioCache=new Map()}
