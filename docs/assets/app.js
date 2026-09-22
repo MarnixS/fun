@@ -153,16 +153,16 @@ function renderMast(){
  ensureFiveMast();
  const gs=collectionModel(true),totalXp=PLAYERS.reduce((n,p)=>n+(+overall(p.key).experience||0),0);
  $$('[data-mast-log]').forEach(x=>x.textContent=gs.known?`${fmt(gs.got)} / ${fmt(gs.known)}`:'—');
- $('[data-mast-log-sub]').forEach(x=>x.textContent='Across all five accounts');
- $('[data-mast-xp]').forEach(x=>{x.textContent=totalXp?compact(totalXp):'—';x.title=`${fmt(totalXp)} XP across all five accounts`});
- $('[data-mast-xp-exact]').forEach(x=>x.textContent=`${fmt(totalXp)} XP across all five accounts`);
+ $$('[data-mast-log-sub]').forEach(x=>x.textContent='Across all five accounts');
+ $$('[data-mast-xp]').forEach(x=>{x.textContent=totalXp?compact(totalXp):'—';x.title=`${fmt(totalXp)} XP across all five accounts`});
+ $$('[data-mast-xp-exact]').forEach(x=>x.textContent=`${fmt(totalXp)} XP across all five accounts`);
  const dr=templeRecent()[0];
  $$('[data-mast-drop]').forEach(x=>x.innerHTML=dr?window.UGV21.itemLink(dr.id,dr.name):'No recent feed yet');
- $('[data-mast-drop-sub]').forEach(x=>x.innerHTML=dr?`<a class="mast-context-link" href="chronicle.html#chronicle">${esc(dr.player||'Group')} · ${dateOnly(dr.date)} · Temple</a>`:'<a class="mast-context-link" href="chronicle.html#chronicle">Open Chronicle</a>');
+ $$('[data-mast-drop-sub]').forEach(x=>x.innerHTML=dr?`<a class="mast-context-link" href="chronicle.html#chronicle">${esc(dr.player||'Group')} · ${dateOnly(dr.date)} · Temple</a>`:'<a class="mast-context-link" href="chronicle.html#chronicle">Open Chronicle</a>');
  $$('[data-mast-drop-icon]').forEach(x=>{if(dr){x.src=`https://static.runelite.net/cache/item/icon/${dr.id}.png`;x.hidden=false}else x.hidden=true});
  const lv=latestRecordedLevel(),lp=lv?playerByKey(lv.key):null;
  $$('[data-mast-level]').forEach(x=>x.textContent=lv?`${fmt(lv.level)} ${nice(lv.metric)}`:'No recorded level yet');
- $('[data-mast-level-sub]').forEach(x=>x.innerHTML=lv?`<a class="mast-context-link" href="chronicle.html#chronicle">${esc(lv.player)} · ${dateOnly(lv.date)} · WOM</a>`:'<a class="mast-context-link" href="chronicle.html#chronicle">Open Chronicle</a>');
+ $$('[data-mast-level-sub]').forEach(x=>x.innerHTML=lv?`<a class="mast-context-link" href="chronicle.html#chronicle">${esc(lv.player)} · ${dateOnly(lv.date)} · WOM</a>`:'<a class="mast-context-link" href="chronicle.html#chronicle">Open Chronicle</a>');
  $$('[data-mast-level-icon]').forEach(x=>{if(lv&&lp?.portrait){x.src=lp.portrait;x.alt=lp.name;x.hidden=false}else x.hidden=true});$$('[data-mast-level-skill-icon]').forEach(x=>{const src=lv?window.UGV21.skillIconUrl?.(lv.metric):'';if(src){x.src=src;x.alt=nice(lv.metric);x.hidden=false;x.onerror=()=>{x.hidden=true}}else x.hidden=true});
  renderMastValue()
 }
