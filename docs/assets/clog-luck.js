@@ -196,17 +196,18 @@ function calculate(id,name,ps,wom,model,U){
    let mean=0,v=0;for(const g of groups){const m=g.p*eu,e2=g.p*eu2;mean+=g.n*m;v+=g.n*(e2-m*m)}
    if(v<=0)return null;const sd=Math.sqrt(v),f1=normalCdf((directObserved-.5-mean)/sd),f2=normalCdf((directObserved+.5-mean)/sd),pct=clamp((f1+f2)/2);
    notes.add('Variable stack-size item: percentile uses a compound-distribution normal approximation');
-   return finish(pct,directObserved,mean,rawTrials,groups,notes,true)
+   return finish(pct,directObserved,mean,rawTrials,groups,notes,true,null,null)
  }
  const maxSuccess=groups.reduce((n,g)=>n+g.n,0);if(lower>maxSuccess)return null;
  const loCdf=cdf(groups,lower-1),hiCdf=cdf(groups,Math.min(upper,maxSuccess)),pct=clamp((loCdf+hiCdf)/2);
+ const dryTail=clamp(hiCdf),luckyTail=clamp(1-loCdf);
  const effectiveExpected=groups.reduce((n,g)=>n+g.n*g.p,0),displayExpected=(rec.t==='b'||rec.t==='p')?effectiveExpected:null;
- return finish(pct,directObserved,displayExpected,rawTrials,groups,notes,groups.reduce((n,g)=>n+g.n,0)>500)
+ return finish(pct,directObserved,displayExpected,rawTrials,groups,notes,groups.reduce((n,g)=>n+g.n,0)>500,dryTail,luckyTail)
 }
-function finish(percentile,observed,expected,trials,groups,notes,approx){
+function finish(percentile,observed,expected,trials,groups,notes,approx,dryTail=null,luckyTail=null){
  const pct=percentile*100,text=formatPct(pct);
  const by=new Map();for(const g of groups){const old=by.get(g.source)||{source:g.source,kc:0,rolls:0,expected:0};old.kc+=g.kc;old.rolls+=g.n;old.expected+=g.n*g.p;by.set(g.source,old)}
- return{percentile,pct,text,observed,expected,trials,groups,sources:[...by.values()].map(x=>({...x,label:labelSource(x.source)})),notes:[...notes],approx,band:pct>=90?'lucky':pct<=10?'dry':'normal'}
+ return{percentile,pct,text,observed,expected,trials,groups,sources:[...by.values()].map(x=>({...x,label:labelSource(x.source)})),notes:[...notes],approx,dryTail,luckyTail,band:pct>=90?'lucky':pct<=10?'dry':'normal'}
 }
 function formatPct(p){if(p<.01)return'<0.01%';if(p>99.99)return'>99.99%';if(p<1||p>99)return p.toFixed(2)+'%';return Math.round(p)+'%'}
 function dependencyKey(id){
