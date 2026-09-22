@@ -367,9 +367,9 @@
 }
 
 
-/* Five-cell masthead: Collection Log trio + progression pair. */
+/* Five-cell masthead: Collection Log summary, XP, recent unlock and latest level. */
 .mast-status.mast-status-five{
- grid-template-columns:minmax(170px,.9fr) minmax(260px,1.35fr) minmax(225px,1.15fr) minmax(155px,.78fr) minmax(210px,1.05fr);
+ grid-template-columns:minmax(170px,.9fr) minmax(260px,1.35fr) minmax(155px,.78fr) minmax(225px,1.15fr) minmax(210px,1.05fr);
 }
 .mast-status-five .mast-stat{min-width:0}
 .mast-status-five .mast-stat-clog{
