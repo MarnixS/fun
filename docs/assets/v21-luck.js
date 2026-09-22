@@ -393,6 +393,7 @@ function itemRow(m){
  const rank=m.meaningfulRank||meaningfulRank(m,z),imp=rank.imp,contribution=rank.score;
  const modifiers=[];
  if(imp.copy<.98)modifiers.push('duplicate utility '+Math.round(imp.copy*100)+'%');
+ if(rank.positiveGroupRedundancy?.f<.98&&rank.positiveGroupRedundancy.label)modifiers.push('group redundancy '+Math.round(rank.positiveGroupRedundancy.f*100)+'%: '+rank.positiveGroupRedundancy.label);
  if(imp.synergy?.label)modifiers.push(imp.synergy.label);
  if(imp.deficit?.f<.98&&imp.deficit.label)modifiers.push('dryness softened: '+imp.deficit.label);
  if(imp.confidence.f<1)modifiers.push(Math.round(imp.confidence.f*100)+'% model confidence');
