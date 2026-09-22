@@ -3,6 +3,7 @@
 const ALLOWED_ORIGIN = 'https://marnixs.github.io';
 const SNAPSHOT_URL = 'https://marnixs.github.io/fun/docs/data/temple-clog.json';
 const TEMPLE_BASE = 'https://templeosrs.com/api/collection-log';
+const TEMPLE_STATS = 'https://templeosrs.com/api/player_stats.php';
 const CACHE_MS = 90_000;
 const PLAYERS = {
   dikste: 'Dikste',
@@ -37,6 +38,29 @@ function validLog(value) {
   if (!value || typeof value !== 'object' || value.error || value.errors) return false;
   const data = value.data ?? value;
   return Boolean(data && typeof data === 'object' && data.items && typeof data.items === 'object');
+}
+
+function normalizedMetricKey(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function extractBossKc(payload) {
+  const data = payload?.data ?? payload;
+  if (!data || typeof data !== 'object' || payload?.error || payload?.errors) return null;
+  const wanted = {
+    demonicgorilla: 'demonic_gorilla',
+    demonicgorillas: 'demonic_gorilla',
+    torturedgorilla: 'tortured_gorilla',
+    torturedgorillas: 'tortured_gorilla',
+  };
+  const out = {};
+  for (const [rawKey, rawValue] of Object.entries(data)) {
+    const key = wanted[normalizedMetricKey(rawKey)];
+    if (!key) continue;
+    const value = Number(rawValue);
+    if (Number.isFinite(value) && value >= 0) out[key] = value;
+  }
+  return Object.keys(out).length ? out : null;
 }
 
 async function fetchJson(url, { attempts = 2, timeout = 20_000 } = {}) {
@@ -198,6 +222,9 @@ async function buildDocument(previous) {
   }
 
   const playerEntries = Object.entries(PLAYERS);
+  const bossKc = Object.fromEntries(
+    Object.entries(previous?.bossKc || {}).map(([key, value]) => [key, { ...(value || {}) }]),
+  );
   const playerResults = await mapWithConcurrency(playerEntries, 2, async ([key, player], index) => {
     if (index % 2) await wait(225);
     const query = new URLSearchParams({
@@ -208,20 +235,33 @@ async function buildDocument(previous) {
       onlyitems: '0',
       dateformat: 'unix',
     });
+    let payload = null;
     try {
-      const payload = await fetchJson(`${TEMPLE_BASE}/player_collection_log.php?${query}`, {
+      payload = await fetchJson(`${TEMPLE_BASE}/player_collection_log.php?${query}`, {
         attempts: 1,
         timeout: 15_000,
       });
       if (!validLog(payload)) throw new Error('invalid Collection Log response');
-      return { key, payload, ok: true };
-    } catch (error) {
-      return { key, ok: false };
+    } catch {
+      return { key, ok: false, bossKc: null };
     }
+    let playerBossKc = null;
+    try {
+      const statsQuery = new URLSearchParams({ player, bosses: '1' });
+      playerBossKc = extractBossKc(await fetchJson(`${TEMPLE_STATS}?${statsQuery}`, {
+        attempts: 1,
+        timeout: 15_000,
+      }));
+    } catch {}
+    return { key, payload, ok: true, bossKc: playerBossKc };
   });
   const freshPlayers = playerResults.filter((result) => result.ok).map((result) => result.key);
   const failedPlayers = playerResults.filter((result) => !result.ok).map((result) => result.key);
   playerResults.filter((result) => result.ok).forEach((result) => { players[result.key] = result.payload; });
+  playerResults.forEach((result) => {
+    if (result.bossKc) bossKc[result.key] = { ...(bossKc[result.key] || {}), ...result.bossKc };
+  });
+  const bossKcPlayers = playerResults.filter((result) => result.bossKc).map((result) => result.key);
 
   if (!freshPlayers.length) throw new Error('Temple returned no valid Collection Logs');
 
@@ -290,6 +330,7 @@ async function buildDocument(previous) {
     source: 'Collection Log via TempleOSRS manual site update',
     fetchedAt,
     players,
+    bossKc,
     catalog,
     categories,
     recent,
@@ -299,6 +340,7 @@ async function buildDocument(previous) {
       freshPlayers,
       failedPlayers,
       recentPlayers,
+      bossKcPlayers,
       derivedRecentItems: derivedRecent.length,
       refreshedAt: fetchedAt,
     },
@@ -365,6 +407,7 @@ module.exports._test = {
   PLAYERS,
   mapWithConcurrency,
   validLog,
+  extractBossKc,
   logItems,
   normalizeRecent,
   derivedRecentRows,
