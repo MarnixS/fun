@@ -235,27 +235,23 @@ function saturateSourceFamilies(units){
 function meaningfulContext(m,z){
  z=clamp(+z,-3.5,3.5);
  const expected=Number.isFinite(m?.r?.expected)?+m.r.expected:null,observed=Number.isFinite(+m?.r?.observed)?+m.r.observed:0,profile=impactProfile(m);
- let dryGate=1,drySeverity=1,earlyUnlockBoost=0,signal=z;
- // Meaningful dryness is deliberately asymmetric. Mild below-expectation outcomes
- // can contribute a small negative once fewer than half of comparable players
- // would be this dry. Below a 25% lower tail the evidence ramps much harder, and
- // genuinely rare dry streaks become increasingly more costly than equally-sized
- // positive deviations are useful.
+ let dryGate=1,drySeverity=1,dryStrength=0,earlyUnlockBoost=0,signal=z;
+ // Negative RNG uses the one-sided lower tail continuously. Outcomes that are
+ // still more common than not (tail >= 50%) are neutral. Once the observed
+ // count is on the unlucky side of the median, it contributes immediately;
+ // below 25% it becomes materially dry, and rare tails escalate further.
  if(z<0&&Number.isFinite(+m?.r?.dryTail)){
   const tail=clamp(+m.r.dryTail,0,1);
-  // Below-expectation outcomes can still carry a small negative signal when
-  // fewer than half of comparable players would be this dry. The 25% mark is
-  // therefore no longer an on/off switch; it separates background bad luck
-  // from genuinely meaningful dryness.
-  if(tail>=.25){
-   dryGate=clamp((.50-tail)/.25,0,1)*.30;   // 0 at 50%+, rising only to 0.30 at 25%
+  if(tail>=.50){
+   dryGate=0;dryStrength=0;signal=0;
   }else{
-   const maturity=clamp((.25-tail)/.20,0,1);
-   dryGate=.30+.70*Math.sqrt(maturity);     // continuous at 25%, fully mature by 5%
+   dryStrength=clamp((.50-tail)/.50,0,1);
+   dryGate=clamp((.50-tail)/.45,0,1); // reaches full maturity around a 5% tail
+   const rarity=tail<.25?clamp(Math.log(.25/Math.max(tail,1e-9))/Math.log(25),0,1):0;
+   drySeverity=1+.25*rarity;
+   const scale=.55+.90*Math.sqrt(dryStrength);
+   signal=clamp(-Math.abs(z)*scale*drySeverity,-3.5,0);
   }
-  const rarity=tail>0?clamp(Math.log(.10/tail)/Math.log(100),0,1):1;
-  drySeverity=1+.45*rarity;                 // up to 45% extra weight for extreme established dryness
-  signal=clamp(z*dryGate*drySeverity,-3.5,3.5);
  }
  // Progression is asymmetric in the other direction too: landing the first
  // major item before one expected copy can matter without being an absurd spoon.
@@ -263,7 +259,7 @@ function meaningfulContext(m,z){
   earlyUnlockBoost=.08*Math.min(5,Math.max(0,profile.base-5))*(1-expected);
   signal=clamp(z+earlyUnlockBoost,-3.5,3.5);
  }
- return{signal,dryGate,drySeverity,dryTail:Number.isFinite(+m?.r?.dryTail)?clamp(+m.r.dryTail,0,1):null,earlyUnlockBoost,expected,observed,profile}
+ return{signal,dryGate,drySeverity,dryStrength,dryTail:Number.isFinite(+m?.r?.dryTail)?clamp(+m.r.dryTail,0,1):null,earlyUnlockBoost,expected,observed,profile}
 }
 function independentUnits(metrics){
  const groups=new Map();
@@ -431,16 +427,20 @@ function meaningfulRank(m,z=null,familySize=1){
  const ctx=meaningfulContext(m,z),signal=ctx.signal,imp=impactWeight(m,signal),severity=Math.abs(signal);
  let evidence=severity*severity,earlyUnlockBonus=0;
  const importanceBoost=1+.20*Math.max(0,Math.min(5,imp.base-5));
- if(signal<0){
-   // Background bad luck (25–50% lower tail) is intentionally small, but it
-   // must remain visible. Squaring the already-gated signal made cases such as
-   // 0 Dragon claws at ~0.79 expected collapse to 0.00. Use a damped linear
-   // evidence term there; once the lower tail is <25%, keep the stronger
-   // nonlinear treatment for genuine dry streaks.
-   const backgroundDry=Number.isFinite(ctx.dryTail)&&ctx.dryTail>=.25;
-   evidence=backgroundDry?severity:severity*severity;
-   const impactFactor=(.90+1.65*(1-Math.exp(-imp.w/3)))*importanceBoost;
-   return{imp,impactFactor,importanceBoost,evidence,searchPenalty:1,familySize,score:-evidence*impactFactor,side:'dry',signal,dryGate:ctx.dryGate,drySeverity:ctx.drySeverity,dryTail:ctx.dryTail,backgroundDry,earlyUnlockBonus:0}
+ if(z<0){
+   // Use the raw statistical deviation plus the lower-tail curve for negative
+   // ranking. Do not square an already damped signal: that was why a major item
+   // such as 0 Dragon claws at ~0.79 expected collapsed to about -0.15.
+   if(!(Number.isFinite(ctx.dryTail)&&ctx.dryTail<.50)||ctx.dryStrength<=0){
+    return{imp,impactFactor:0,importanceBoost,evidence:0,searchPenalty:1,familySize,score:0,side:'neutral',signal:0,dryGate:ctx.dryGate,drySeverity:ctx.drySeverity,dryTail:ctx.dryTail,dryStrength:ctx.dryStrength,earlyUnlockBonus:0}
+   }
+   const tailScale=(.55+.90*Math.sqrt(ctx.dryStrength))*ctx.drySeverity;
+   evidence=Math.abs(z)*tailScale;
+   // High-impact missing upgrades should register in low single digits even
+   // before they qualify as a serious dry streak, while low-impact items remain
+   // small. Once the tail becomes rare, evidence itself escalates sharply.
+   const impactFactor=clamp(.72*imp.w*importanceBoost,.15,10.5);
+   return{imp,impactFactor,importanceBoost,evidence,searchPenalty:1,familySize,score:-evidence*impactFactor,side:'dry',signal,dryTail:ctx.dryTail,dryGate:ctx.dryGate,drySeverity:ctx.drySeverity,dryStrength:ctx.dryStrength,earlyUnlockBonus:0}
  }
  // First-copy timing gets a modest progression bonus for major items that
  // arrived before one expected copy. This is not treated as extra raw RNG.
@@ -472,7 +472,7 @@ function renderLists(){
    const raidText=stats.idx.portfolios.length?stats.idx.portfolios.map(p=>'<li><b>'+esc(p.label)+'</b><span>'+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected</span><small>volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)+'</small></li>').join(''):'<li><span>No raid portfolio with a usable expected-drop denominator.</span></li>';
    formula.innerHTML='<div class="rng-formula-summary"><span>Headline RNG Index</span><strong>'+scoreText(stats.idx.score)+'</strong><small>'+sig(stats.idx.meaningful)+' normalized impact signal</small></div>'+
    '<div class="rng-formula-equation"><span><small>Items</small><b>'+signed(stats.idx.itemNumerator)+'</b></span><em>+</em><span><small>Raid portfolios</small><b>'+signed(stats.idx.portfolioNumerator)+'</b></span><em>÷</em><span><small>Weight norm</small><b>'+stats.idx.denom.toFixed(2)+'</b></span><em>=</em><span><small>Combined</small><b>'+sig(stats.idx.meaningful)+'</b></span></div>'+
-   '<details class="rng-formula-detail"><summary>Calculation breakdown</summary><div><p><b>Evidence × impact × context.</b> Item impact comes from the explicit 885-item mature-GIM utility table. Assumption-heavy mechanics are confidence-damped; useful copies diminish with group coverage; complementary gear can add capped synergy; dry streaks can be softened when teammates already solved the slot.</p><ul>'+raidText+'</ul><p>Meaningful lucky drops use stronger relevance filtering plus a modest source-family look-elsewhere discount. A below-expectation item can contribute a small negative when fewer than half of comparable players would have this count or fewer. Below a 25% one-sided lower tail, dryness becomes meaningfully stronger; extreme established dry streaks are deliberately penalized more strongly than comparable positive deviations are rewarded. Major first copies obtained before one expected copy can receive a modest progression-timing bonus. Raid items represented in a pooled portfolio retain only part of their ordinary item-level weight to avoid double counting. Large source tables are L2-capped and item σ is capped at ±3.50.</p></div></details>';
+   '<details class="rng-formula-detail"><summary>Calculation breakdown</summary><div><p><b>Evidence × impact × context.</b> Item impact comes from the explicit 885-item mature-GIM utility table. Assumption-heavy mechanics are confidence-damped; useful copies diminish with group coverage; complementary gear can add capped synergy; dry streaks can be softened when teammates already solved the slot.</p><ul>'+raidText+'</ul><p>Meaningful lucky drops use stronger relevance filtering plus a modest source-family look-elsewhere discount. A below-expectation item contributes as soon as fewer than half of comparable players would have this count or fewer. The negative contribution is scaled directly by gameplay impact, so missing a major upgrade can already matter in the low single digits before it is a serious dry streak. Below a 25% one-sided lower tail, dryness strengthens rapidly; extreme dry streaks are penalized more strongly than comparable positive deviations are rewarded. Major first copies obtained before one expected copy can receive a modest progression-timing bonus. Raid items represented in a pooled portfolio retain only part of their ordinary item-level weight to avoid double counting. Large source tables are L2-capped and item σ is capped at ±3.50.</p></div></details>';
   }
  }
  const titles=lens==='raw'?['Most statistically lucky','Most statistically unlucky']:lens==='value'?['Biggest valuable spoons','Biggest valuable dry streaks']:['Luckiest meaningful drops','Unluckiest meaningful grinds'];
