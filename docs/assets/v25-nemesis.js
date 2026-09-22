@@ -1,10 +1,14 @@
 (()=>{
 'use strict';
-const U=window.UGV21;if(!U)return;
+const U=window.UGV21,C=window.UGV21Charts;if(!U||!C)return;
 const {$,PLAYERS,fmt,compact,nice,escapeHtml}=U;
 const SKILLS=['attack','strength','defence','hitpoints','ranged','prayer','magic','cooking','woodcutting','fletching','fishing','firemaking','crafting','smithing','mining','herblore','agility','thieving','slayer','farming','runecrafting','hunter','construction','sailing'];
 const MAX_EXTERNAL=10;
+const EXT_COLORS=['#d66bea','#7db5ff','#ed8e65','#78c7a2','#d5b65b','#a88bea','#e27a9e','#78b7c2','#c39064','#a8bd68'];
+const GROUP_COLORS={external:'#d66bea',united:'#e6ad43'};
 let externals=[],ownWom=null,ownClog=null,selection=U.loadMemberSelection();
+let comparePeriod=365,compareMode='gain',compareView='timeline',compareMetric='total_xp',compareSkill='slayer',compareBoss='',compareActivity='';
+let historyPromise=null;
 
 function cleanName(v){return String(v||'').replace(/\s+/g,' ').trim().slice(0,12)}
 function keyName(v){return cleanName(v).toLowerCase()}
@@ -26,13 +30,14 @@ function womSnapshot(raw){return raw?.latestSnapshot?.data||raw?.latest_snapshot
 function womProfile(raw){
  const d=womSnapshot(raw);if(!d?.skills)return null;
  const skills={};for(const k of SKILLS){const x=d.skills?.[k]||{};skills[k]={level:n(x.level),experience:n(x.experience),rank:n(x.rank)}}
- const o=d.skills?.overall||{},bosses={};
+ const o=d.skills?.overall||{},bosses={},activities={};
  for(const [k,v] of Object.entries(d.bosses||{})){const kills=n(v?.kills??v?.killCount??v);if(kills!=null)bosses[k]=Math.max(0,kills)}
+ for(const [k,v] of Object.entries(d.activities||{})){const score=n(v?.score??v);if(score!=null)activities[k]=Math.max(0,score)}
  return{
   source:'WOM',displayName:raw?.displayName||raw?.username||raw?.player?.displayName||raw?.player?.username||'Nemesis',
   type:raw?.type||raw?.player?.type||null,updatedAt:raw?.updatedAt||raw?.latestSnapshot?.createdAt||raw?.latest_snapshot?.createdAt||null,
   overall:{level:n(o.level),experience:n(o.experience),rank:n(o.rank)},ehp:n(d.computed?.ehp?.value??d.computed?.ehp),ehb:n(d.computed?.ehb?.value??d.computed?.ehb),
-  skills,bosses
+  skills,bosses,activities
  }
 }
 function templeData(raw){return raw?.data&&typeof raw.data==='object'?raw.data:raw}
@@ -101,7 +106,7 @@ async function lookup(name){
  if(wom.kind==='ok'&&!wp)wom.kind='missing';
  if(ts.kind==='ok'&&!tsp)ts.kind='missing';
  if(tc.kind==='ok'&&!tcp)tc.kind='missing';
- return{id:keyName(name),name,displayName:wp?.displayName||tsp?.displayName||name,wom,templeStats:ts,templeClog:tc,womProfile:wp,templeStatsProfile:tsp,clog:tcp,stats:wp||tsp}
+ return{id:keyName(name),name,displayName:wp?.displayName||tsp?.displayName||name,wom,templeStats:ts,templeClog:tc,womProfile:wp,templeStatsProfile:tsp,clog:tcp,stats:wp||tsp,womRaw:wom.data||null,color:EXT_COLORS[externals.length%EXT_COLORS.length],history:{snapshots:[],yearLoaded:false,allLoaded:false,loading:false,error:null}}
 }
 function selectedPlayers(){return PLAYERS.filter(p=>selection.has(p.key))}
 function f1(v){return v!=null&&Number.isFinite(+v)?(+v).toLocaleString('en-GB',{maximumFractionDigits:1}):'—'}
