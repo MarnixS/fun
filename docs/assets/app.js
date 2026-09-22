@@ -174,7 +174,7 @@ function renderFiveStanding(){const t=$('#fiveStandingTable');if(!t)return;const
 function renderGainCards(){const host=$('#gainCards');if(!host)return;const ps=selectedPlayers(),vals=ps.map(gainXp),r=rankValues(vals);host.innerHTML=ps.map((p,i)=>{const top=topGainSkill(p),node=gainNode(p.key);return `<article class="gain-card rank-${r[i]||3}" style="--pc:${p.color}"><div class="name">${p.name}</div><div class="big">+${compact(vals[i])}</div><small>${PERIODS[state.period]} · ${gainLevel(p)>=0?'+':''}${fmt(gainLevel(p))} total levels${node?.derived?' · derived from saved WOM snapshots':''}</small><div class="top">Top skill: ${top?`<button class="metric-link" data-skill="${top.k}" data-recent="1">${nice(top.k)}</button> · +${compact(top.x)}`:'No saved gain data for this window'}</div></article>`}).join('')}
 function renderGimTeaser(){const h=$('#gimTeaser');if(!h)return;const gs=collectionModel(),cov={synced:gs.keys.length};h.innerHTML=`<div class="section-head teaser-head"><div><div class="eyebrow">GROUP IRONMAN TRACKER</div><h2>Selected group members</h2><div class="section-note">All five members are integrated and selected by default. Every comparison follows the shared member filter.</div></div><a class="btn" href="gim.html">Open tracker →</a></div><div class="kpi-grid"><div class="kpi"><span>Members selected</span><b>${selectedPlayers().length}</b></div><div class="kpi"><span>WOM tracked</span><b>${selectedPlayers().filter(p=>state.profiles[p.key]).length}/${selectedPlayers().length}</b></div><div class="kpi"><span>Collection Logs available</span><b>${cov.synced}/${selectedPlayers().length}</b></div><div class="kpi"><span>Current group uniques</span><b>${gs.got?fmt(gs.got):'—'}</b></div></div>`}
 
-function renderGim(){const m=collectionModel(),cov={synced:m.keys.length,unsynced:selectedPlayers().filter(p=>!m.keys.includes(p.key)).map(p=>p.name)},k=$('#gimKpis');if(k)k.innerHTML=`<div class="kpi"><span>Current group uniques</span><b>${m.keys.length?fmt(m.got):'Unknown'}</b><small>combined available Collection Logs</small></div><div class="kpi"><span>Collection Log items</span><b>${fmt(m.known)}</b><small>Collection Log</small></div><div class="kpi"><span>Collection Logs available</span><b>${cov.synced}/${selectedPlayers().length}</b><small>${cov.unsynced.length?esc(cov.unsynced.join(', ')+' unknown'):'all selected logs available'}</small></div><div class="kpi"><span>Missing from available logs</span><b>${m.keys.length?fmt(Math.max(0,m.known-m.got)):'Unknown'}</b><small>members without data remain unknown</small></div>`;const bar=$('#gimProgress');if(bar&&m.known)bar.style.width=Math.min(100,100*m.got/m.known)+'%';renderGimMembers(m);renderFiveStanding();bindGimTabs();bindRecovery()}
+function renderGim(){bindGimTabs();bindRecovery();const m=collectionModel(),cov={synced:m.keys.length,unsynced:selectedPlayers().filter(p=>!m.keys.includes(p.key)).map(p=>p.name)},k=$('#gimKpis');if(k)k.innerHTML=`<div class="kpi"><span>Current group uniques</span><b>${m.keys.length?fmt(m.got):'Unknown'}</b><small>combined available Collection Logs</small></div><div class="kpi"><span>Collection Log items</span><b>${fmt(m.known)}</b><small>Collection Log</small></div><div class="kpi"><span>Collection Logs available</span><b>${cov.synced}/${selectedPlayers().length}</b><small>${cov.unsynced.length?esc(cov.unsynced.join(', ')+' unknown'):'all selected logs available'}</small></div><div class="kpi"><span>Missing from available logs</span><b>${m.keys.length?fmt(Math.max(0,m.known-m.got)):'Unknown'}</b><small>members without data remain unknown</small></div>`;const bar=$('#gimProgress');if(bar&&m.known)bar.style.width=Math.min(100,100*m.got/m.known)+'%';renderGimMembers(m);renderFiveStanding()}
 function renderGimMembers(m=collectionModel()){const h=$('#gimMembers');if(!h)return;h.innerHTML=selectedPlayers().map(p=>{const synced=m.keys.includes(p.key),count=synced?m.byPlayer[p.key].size:null,got=synced?[...m.byPlayer[p.key].values()].filter(x=>x.count>0).length:null;return `<div class="kpi ${p.core?'':'side-kpi'}"><span>${p.name}${p.core?'':' · additional group members'}</span><b>${synced?fmt(got):'unavailable'}</b><small>${synced?'personal obtained uniques':'Collection Log unknown'}</small></div>`}).join('')}
 
 function bindGimTabs(){const buttons=$$('[data-gim-tab]'),panels=$$('[data-gim-panel]');buttons.forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{buttons.forEach(x=>x.classList.toggle('active',x===b));panels.forEach(p=>p.classList.toggle('hidden',p.dataset.gimPanel!==b.dataset.gimTab))}})}
@@ -277,9 +277,32 @@ function renderActivityEras(){
  $('#eraResolution').value=String(eraWindowDays);$('#eraResolution').onchange=e=>{eraWindowDays=+e.target.value;renderActivityEras()};
 }
 function renderHistory(){const host=$('#historyCoverage');if(host)host.innerHTML=selectedPlayers().map(p=>{const arr=snapshotsFor(p.key);return `<div class="kpi ${p.core?'':'side-kpi'}"><span>${p.name}</span><b>${arr.length?fmt(arr.length)+' checkpoints':'—'}</b><small>${arr.length?`${dateOnly(arr[0].createdAt)} → ${dateOnly(arr.at(-1).createdAt)}`:'no chapters logged yet'}</small></div>`}).join('');const c=$('#historyCta');if(c)c.innerHTML='<a class="btn" href="time-machine.html">Open Time Machine →</a> <a class="btn" href="chronicle.html">Open Chronicle →</a>';renderActivityEras()}
-async function renderPage(){renderMast();updateDataStatus();const pg=document.body.dataset.page;if(pg==='home')renderOverview();else if(pg==='hiscores'){const side=$('#hiscoreSide');if(side)side.innerHTML=selectedPlayers().filter(p=>!p.core).map(p=>cardFor(p,true)).join('')}else if(pg==='progress'){}else if(pg==='gim')renderGim();else if(pg==='history')renderHistory();else if(pg==='time')renderTimeMachine();else if(pg==='chronicle'){bindChronicle();await renderChronicle()}else if(pg==='goals'){renderGoals()}window.dispatchEvent(new CustomEvent('ug:page-rendered'))}
+async function renderPage(){
+ try{renderMast()}catch(e){console.error('Masthead render failed',e)}
+ try{updateDataStatus()}catch(e){console.error('Data status render failed',e)}
+ const pg=document.body.dataset.page;
+ try{
+  if(pg==='home')renderOverview();
+  else if(pg==='hiscores'){const side=$('#hiscoreSide');if(side)side.innerHTML=selectedPlayers().filter(p=>!p.core).map(p=>cardFor(p,true)).join('')}
+  else if(pg==='progress'){}
+  else if(pg==='gim')renderGim();
+  else if(pg==='history')renderHistory();
+  else if(pg==='time')renderTimeMachine();
+  else if(pg==='chronicle'){bindChronicle();await renderChronicle()}
+  else if(pg==='goals')renderGoals()
+ }catch(e){console.error('Page render failed',pg,e);setNotice('A page section failed to render. The rest of the site remains available.','warn')}
+ window.dispatchEvent(new CustomEvent('ug:page-rendered'))
+}
 window.addEventListener('ug:members-changed',()=>renderPage());
 window.addEventListener('ug:data-updated',function dataUpdatedListener(e){if(e.detail?.source==='app')return;const key=e.detail?.key,doc=e.detail?.document||loadJSON(key);if(key===WKEY&&doc?.profiles)applyWomDoc(doc);else if(key===TKEY&&doc?.players)state.temple=doc;else return;renderPage()});
-async function init(){ensureFiveMast();bindCommon();await Promise.all([loadTempleSaved(),loadWomSaved()]);$$('[data-period-button]').forEach(x=>x.classList.toggle('active',+x.dataset.periodButton===state.period));await renderPage()}
+async function init(){
+ ensureFiveMast();
+ bindCommon();
+ if(document.body.dataset.page==='gim'){bindGimTabs();bindRecovery()}
+ const loaded=await Promise.allSettled([loadTempleSaved(),loadWomSaved()]);
+ loaded.forEach((r,i)=>{if(r.status==='rejected')console.error(i===0?'Collection Log startup failed':'WOM startup failed',r.reason)});
+ $('[data-period-button]').forEach(x=>x.classList.toggle('active',+x.dataset.periodButton===state.period));
+ await renderPage()
+}
 if(document.readyState==='loading'||!window.UGV21)document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
