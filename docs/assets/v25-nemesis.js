@@ -27,7 +27,7 @@ function womProfile(raw){
  const d=womSnapshot(raw);if(!d?.skills)return null;
  const skills={};for(const k of SKILLS){const x=d.skills?.[k]||{};skills[k]={level:n(x.level),experience:n(x.experience),rank:n(x.rank)}}
  const o=d.skills?.overall||{},bosses={};
- for(const [k,v] of Object.entries(d.bosses||{})){const kills=n(v?.kills??v?.killCount??v);if(kills!=null)bosses[k]=kills}
+ for(const [k,v] of Object.entries(d.bosses||{})){const kills=n(v?.kills??v?.killCount??v);if(kills!=null)bosses[k]=Math.max(0,kills)}
  return{
   source:'WOM',displayName:raw?.displayName||raw?.username||raw?.player?.displayName||raw?.player?.username||'Nemesis',
   type:raw?.type||raw?.player?.type||null,updatedAt:raw?.updatedAt||raw?.latestSnapshot?.createdAt||raw?.latest_snapshot?.createdAt||null,
@@ -104,9 +104,11 @@ async function lookup(name){
  return{id:keyName(name),name,displayName:wp?.displayName||tsp?.displayName||name,wom,templeStats:ts,templeClog:tc,womProfile:wp,templeStatsProfile:tsp,clog:tcp,stats:wp||tsp}
 }
 function selectedPlayers(){return PLAYERS.filter(p=>selection.has(p.key))}
-function f1(v){return Number.isFinite(+v)?(+v).toLocaleString('en-GB',{maximumFractionDigits:1}):'—'}
+function f1(v){return v!=null&&Number.isFinite(+v)?(+v).toLocaleString('en-GB',{maximumFractionDigits:1}):'—'}
+function fi(v){return v!=null&&Number.isFinite(+v)?fmt(v):'—'}
+function ci(v){return v!=null&&Number.isFinite(+v)?compact(v):'—'}
 function signed(v,digits=0){
- if(!Number.isFinite(+v))return'—';const x=+v,opts=digits?{maximumFractionDigits:digits,minimumFractionDigits:digits}:{maximumFractionDigits:0};
+ if(v==null||!Number.isFinite(+v))return'—';const x=+v,opts=digits?{maximumFractionDigits:digits,minimumFractionDigits:digits}:{maximumFractionDigits:0};
  return(x>0?'+':'')+x.toLocaleString('en-GB',opts)
 }
 function sumValues(values){const a=values.filter(v=>Number.isFinite(+v)).map(Number);return{value:a.length?a.reduce((x,y)=>x+y,0):null,count:a.length}}
@@ -140,7 +142,7 @@ function renderCoverage(){
  const h=$('#nemesisSourceStatus');if(!h)return;
  if(!externals.length){h.innerHTML='';return}
  const wom=externals.filter(x=>x.womProfile).length,ts=externals.filter(x=>x.templeStatsProfile).length,tc=externals.filter(x=>x.clog).length,total=externals.length;
- h.innerHTML=pill('WOM '+wom+'/'+total,wom===total?'ok':wom?'missing':'error')+pill('Temple stats '+ts+'/'+total,ts===total?'ok':ts?'missing':'error')+pill('Temple CLog '+tc+'/'+total,tc===total?'ok':tc?'missing':'error')
+ h.innerHTML=pill('WOM '+wom+'/'+total,wom===total?'ok':'missing')+pill('Temple stats '+ts+'/'+total,ts===total?'ok':'missing')+pill('Temple CLog '+tc+'/'+total,tc===total?'ok':'missing')
 }
 function sourceLabel(x){return[x.womProfile?'WOM':null,(x.templeStatsProfile||x.clog)?'Temple':null].filter(Boolean).join(' + ')||'—'}
 function summaryRow(name,stats,clog,source,enemy=false){
@@ -149,8 +151,8 @@ function summaryRow(name,stats,clog,source,enemy=false){
 function renderSummary(){
  const h=$('#nemesisSummary');if(!h)return;
  const ours=ownRows(),em=groupMetrics(extStats(),extClogs(),externals.length),om=groupMetrics(ours.map(x=>x.stats).filter(Boolean),ours.map(x=>x.clog).filter(Boolean),ours.length);
- const groupRows='<tr class="nemesis-row nem-group-row"><th>External group</th><td>'+em.members+' members · stats '+em.statsMembers+'/'+em.members+' · CLog '+em.clogMembers+'/'+em.members+'</td><td>'+fmt(em.level.value)+'</td><td>'+compact(em.xp.value)+'</td><td>'+f1(em.ehp.value)+'</td><td>'+f1(em.ehb.value)+'</td><td>'+fmt(em.union.size)+'</td></tr>'+
- '<tr class="nem-group-row"><th>United Gimps selection</th><td>'+om.members+' members · stats '+om.statsMembers+'/'+om.members+' · CLog '+om.clogMembers+'/'+om.members+'</td><td>'+fmt(om.level.value)+'</td><td>'+compact(om.xp.value)+'</td><td>'+f1(om.ehp.value)+'</td><td>'+f1(om.ehb.value)+'</td><td>'+fmt(om.union.size)+'</td></tr>';
+ const groupRows='<tr class="nemesis-row nem-group-row"><th>External group</th><td>'+em.members+' members · stats '+em.statsMembers+'/'+em.members+' · CLog '+em.clogMembers+'/'+em.members+'</td><td>'+fi(em.level.value)+'</td><td>'+ci(em.xp.value)+'</td><td>'+f1(em.ehp.value)+'</td><td>'+f1(em.ehb.value)+'</td><td>'+fmt(em.union.size)+'</td></tr>'+
+ '<tr class="nem-group-row"><th>United Gimps selection</th><td>'+om.members+' members · stats '+om.statsMembers+'/'+om.members+' · CLog '+om.clogMembers+'/'+om.members+'</td><td>'+fi(om.level.value)+'</td><td>'+ci(om.xp.value)+'</td><td>'+f1(om.ehp.value)+'</td><td>'+f1(om.ehb.value)+'</td><td>'+fmt(om.union.size)+'</td></tr>';
  const members=externals.map(x=>summaryRow(x.displayName||x.name,x.stats,x.clog,sourceLabel(x),true)).join('')+ours.map(x=>summaryRow(x.p.name,x.stats,x.clog,[x.stats?'WOM':null,x.clog?'Temple':null].filter(Boolean).join(' + '))).join('');
  h.innerHTML='<div class="table-scroll"><table class="nem-table"><thead><tr><th>Group / player</th><th>Coverage / source</th><th>Total level</th><th>Total XP</th><th>EHP</th><th>EHB</th><th>Collection Log</th></tr></thead><tbody>'+groupRows+'<tr class="nem-table-divider"><td colspan="7">Individual members</td></tr>'+members+'</tbody></table></div>'
 }
@@ -160,7 +162,7 @@ function renderSkills(){
  const rows=SKILLS.map(k=>{
   const ea=sumValues(es.map(x=>x.skills?.[k]?.level)),oa=sumValues(os.map(x=>x.skills?.[k]?.level));
   const eavg=ea.count?ea.value/ea.count:null,oavg=oa.count?oa.value/oa.count:null,diff=ea.value!=null&&oa.value!=null?ea.value-oa.value:null;
-  return '<tr><th>'+U.skillIcon(k,{alt:''})+'<span>'+escapeHtml(nice(k))+'</span></th><td>'+fmt(ea.value)+' <small>'+ea.count+'/'+externals.length+'</small></td><td>'+fmt(oa.value)+' <small>'+oa.count+'/'+selectedPlayers().length+'</small></td><td class="'+(diff==null?'':diff>=0?'pos':'neg')+'">'+signed(diff)+'</td><td>'+f1(eavg)+'</td><td>'+f1(oavg)+'</td></tr>'
+  return '<tr><th>'+U.skillIcon(k,{alt:''})+'<span>'+escapeHtml(nice(k))+'</span></th><td>'+fi(ea.value)+' <small>'+ea.count+'/'+externals.length+'</small></td><td>'+fi(oa.value)+' <small>'+oa.count+'/'+selectedPlayers().length+'</small></td><td class="'+(diff==null?'':diff>=0?'pos':'neg')+'">'+signed(diff)+'</td><td>'+f1(eavg)+'</td><td>'+f1(oavg)+'</td></tr>'
  }).join('');
  h.innerHTML='<div class="nem-coverage-note">Totals are additive across each side. Averages are shown as a member-count sanity check when the two groups have different sizes.</div><div class="table-scroll"><table class="nem-table nem-skills"><thead><tr><th>Skill</th><th>External group total</th><th>United Gimps total</th><th>Difference</th><th>External avg</th><th>United avg</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
 }
