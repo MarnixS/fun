@@ -14,7 +14,7 @@ const PLAYERS=[
  {key:'big dog aura',name:'Big Dog Aura',core:true,color:'#e6ad43',portrait:portraitFromV19('big dog aura','img/bigdog.webp'),role:'The Founder · strategist with good clicks',mantra:'Wilderness tolerance: too high.'},
  {key:'lijpste',name:'Lijpste',core:true,color:'#d94ff0',portrait:portraitFromV19('lijpste','img/lijpste.webp'),role:'The total package · progression pusher',mantra:'Spooned again. Complaint pending.'},
  {key:'poep aura',name:'Poep Aura',core:false,color:'#d77878',portrait:portraitFromV19('poep aura','img/poep-aura.png'),role:'crab enjoyer',mantra:'crab enjoyer'},
- {key:'lompste',name:'Lompste',core:false,color:'#f0eee8',portrait:portraitFromV19('lompste','img/lompste.png'),role:'Additional group members',mantra:'WOM tracked · Collection Log joins automatically after Temple sync.'}
+ {key:'lompste',name:'Lompste',core:false,color:'#f0eee8',portrait:portraitFromV19('lompste','img/lompste.png'),role:'Additional group members',mantra:'EOC pl0x'}
 ];
 const PERIODS={7:'1 week',30:'1 month',90:'3 months',180:'6 months',365:'1 year'};
 const WKEY='ug-v20-wom-cache',TKEY='ug-v20-temple-cache',MKEY='ug-v25-member-selection';
@@ -131,11 +131,11 @@ function ensureFiveMast(){
  if(host.dataset.layout==='five')return;
  host.dataset.layout='five';
  host.classList.add('mast-status-five');
- host.innerHTML=`<div class="mast-stat mast-stat-clog"><span>Group Collection Log</span><b data-mast-log>—</b><small data-mast-log-sub>Collection Log via Temple</small></div><div class="mast-stat mast-stat-value mast-stat-clog" data-mast-value><span>Total Collection Log Value</span><small>Loading logged value split…</small></div><div class="mast-stat mast-stat-drop mast-stat-clog mast-stat-clog-end"><img data-mast-drop-icon hidden alt=""><div><span>Latest item unlock</span><b data-mast-drop>—</b><small data-mast-drop-sub>item unlocks via Temple</small></div></div><div class="mast-stat mast-stat-xp"><span>Total XP · 5-man GIM</span><b data-mast-xp>—</b><small data-mast-xp-exact>all five WOM accounts</small></div><div class="mast-stat mast-stat-level"><img data-mast-level-icon hidden alt=""><div><span>Latest gained level</span><b data-mast-level>—</b><small data-mast-level-sub>saved WOM history</small></div></div>`;
+ host.innerHTML=`<div class="mast-stat mast-stat-clog"><span>Group Collection Log</span><b data-mast-log>—</b><small data-mast-log-sub>Collection Log via Temple</small></div><div class="mast-stat mast-stat-value mast-stat-clog mast-stat-clog-end" data-mast-value><span>Total Collection Log Value</span><small>Loading logged value split…</small></div><div class="mast-stat mast-stat-xp"><span>Total XP · 5-man GIM</span><b data-mast-xp>—</b><small data-mast-xp-exact>all five WOM accounts</small></div><div class="mast-stat mast-stat-drop"><img data-mast-drop-icon hidden alt=""><div><span>Latest item unlock</span><b data-mast-drop>—</b><small data-mast-drop-sub>item unlocks via Temple</small></div></div><div class="mast-stat mast-stat-level"><img data-mast-level-icon hidden alt=""><div><span>Latest gained level</span><b data-mast-level>—</b><small data-mast-level-sub>saved WOM history</small></div></div>`;
 }
 async function renderMastValue(){
  const slots=$$('[data-mast-value]');if(!slots.length)return;
- slots.forEach(x=>{x.className='mast-stat mast-stat-value mast-stat-clog';x.innerHTML='<span>Total Collection Log Value</span><small>Loading logged value split…</small>'});
+ slots.forEach(x=>{x.className='mast-stat mast-stat-value mast-stat-clog mast-stat-clog-end';x.innerHTML='<span>Total Collection Log Value</span><small>Loading logged value split…</small>'});
  const prices=await loadMastPrices();if(!prices){slots.forEach(x=>x.innerHTML='<span>Total Collection Log Value</span><b>—</b><small>GE prices unavailable</small>');return}
  const m=collectionModel(true),vals=m.keys.map(k=>{const p=PLAYERS.find(x=>x.key===k),value=m.rows.reduce((n,row)=>n+mastItemPrice(row.id)*(row.counts[k]||0),0);return{key:k,name:p?.name||k,color:p?.color||'#8b887f',value}}).filter(x=>x.value>0),total=vals.reduce((n,x)=>n+x.value,0);
  if(!total){slots.forEach(x=>x.innerHTML='<span>Total Collection Log Value</span><b>—</b><small>No priced logged items</small>');return}
