@@ -103,8 +103,13 @@ function chance(rec,roll,name,notes,coxRegime='post'){
  if(src==='NIGHTMARE_KILLS'&&(flags&F.NMSHARE)){p*=(1+Math.max(0,Math.min(75,ASSUME.nightmareTeam-5))/100)*ASSUME.nightmareShare;notes.add('Nightmare assumes 5-player teams and 20.2% personal contribution')}
  if(src==='NIGHTMARE_KILLS'&&+rec._id===24495){p*=1+(1/ASSUME.nightmareTeam)*.05;notes.add('Nightmare jar assumes a 5-player team')}
  if(src==='NIGHTMARE_KILLS'&&+rec._id===24491){p*=1/ASSUME.nightmareTeam;notes.add('Nightmare pet assumes a 5-player team')}
+ if(src==='HUEYCOATL_KILLS'&&(flags&F.HUEY))notes.add('Hueycoatl uses the full recorded player KC; no extra contribution discount')
+ if(src==='ROYAL_TITAN_KILLS'&&(flags&F.ROYAL))notes.add('Royal Titans uses the full recorded player KC; no extra contribution discount')
  if(src==='CALLISTO_KILLS'&&(flags&F.CALLISTO)){p*=ASSUME.callistoShare;notes.add('Callisto uses an 80% average personal-contribution assumption')}
- if(src==='SCURRIUS_KILLS'&&(flags&F.SCURRIUS)){p*=ASSUME.scurriusMvp;notes.add('Scurrius uses the full recorded player KC')}
+ if(src==='VENENATIS_KILLS'&&(flags&F.VENENATIS))notes.add('Venenatis uses the full recorded player KC; no extra contribution discount')
+ if(src==='VETION_KILLS'&&(flags&F.VETION))notes.add("Vet'ion uses the full recorded player KC; no extra contribution discount")
+ if(src==='SCURRIUS_KILLS'&&(flags&F.SCURRIUS)){p*=ASSUME.scurriusMvp;notes.add('Scurrius uses the full recorded player KC; no extra contribution discount')}
+ if(src==='ZALCANO_KILLS'&&(flags&F.ZALCANO))notes.add('Zalcano uses the full recorded player KC; no extra contribution discount')
  if(src==='ZALCANO_KILLS'&&(flags&F.ZALCANO_PTS)){p*=zShardBoost(ASSUME.zalcanoPoints);notes.add('Zalcano assumes 300 points per kill')}
  return clamp(p)
 }
