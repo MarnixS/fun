@@ -7,13 +7,21 @@ const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelecto
 const fmt=n=>Number.isFinite(+n)?Math.round(+n).toLocaleString('en-GB'):'—';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let sources=[],bySource=new Map(),names={},state=loadState(),logStatus='obtained',logSource='all',logSearch='',logSort='source';
+const RAID_CONFIG={
+ CHAMBERS_OF_XERIC_COMPLETIONS:{label:'Personal points / completion',baseline:30000,defaultValue:30000,min:1,max:1000000,step:1000,suffix:' points'},
+ CHAMBERS_OF_XERIC_CM_COMPLETIONS:{label:'Personal points / completion',baseline:62000,defaultValue:62000,min:1,max:1000000,step:1000,suffix:' points'},
+ TOMBS_OF_AMASCUT_COMPLETIONS:{label:'Equivalent reward points / completion',baseline:16667,defaultValue:16667,min:1,max:1000000,step:500,suffix:' points'},
+ TOMBS_OF_AMASCUT_EXPERT_COMPLETIONS:{label:'Equivalent reward points / completion',baseline:21875,defaultValue:21875,min:1,max:1000000,step:500,suffix:' points'},
+ THEATRE_OF_BLOOD_COMPLETIONS:{label:'Personal reward share (%)',baseline:25,defaultValue:25,min:1,max:100,step:1,suffix:'% share'},
+ THEATRE_OF_BLOOD_HARD_COMPLETIONS:{label:'Personal reward share (%)',baseline:20,defaultValue:20,min:1,max:100,step:1,suffix:'% share'}
+};
 
 function loadState(){
  try{
   const x=JSON.parse(localStorage.getItem(STORAGE)||'null');
-  if(x&&typeof x==='object')return{kc:x.kc&&typeof x.kc==='object'?x.kc:{},drops:x.drops&&typeof x.drops==='object'?x.drops:{},history:Array.isArray(x.history)?x.history.slice(0,80):[]}
+  if(x&&typeof x==='object')return{kc:x.kc&&typeof x.kc==='object'?x.kc:{},drops:x.drops&&typeof x.drops==='object'?x.drops:{},history:Array.isArray(x.history)?x.history.slice(0,80):[],raidSettings:x.raidSettings&&typeof x.raidSettings==='object'?x.raidSettings:{}}
  }catch{}
- return{kc:{},drops:{},history:[]}
+ return{kc:{},drops:{},history:[],raidSettings:{}}
 }
 function save(){try{localStorage.setItem(STORAGE,JSON.stringify(state))}catch(e){console.warn('Hypothetical Log save failed',e)}}
 function rand(){
@@ -47,6 +55,17 @@ function addDrop(source,item,qty,batch){
  state.drops[source][item.id]=(state.drops[source][item.id]||0)+qty;
  batch.set(item.id,(batch.get(item.id)||0)+qty)
 }
+function raidSettingValue(src){
+ const cfg=RAID_CONFIG[src?.source];if(!cfg)return null;
+ const raw=+state.raidSettings?.[src.source];
+ return Number.isFinite(raw)&&raw>=cfg.min&&raw<=cfg.max?raw:cfg.defaultValue
+}
+function effectiveProb(src,item){
+ const cfg=RAID_CONFIG[src?.source];
+ if(!cfg||item?.exclusive!=='raid-unique')return Math.max(0,Math.min(1,+item?.prob||0));
+ const ratio=raidSettingValue(src)/cfg.baseline;
+ return Math.max(0,Math.min(1,(+item.prob||0)*ratio))
+}
 function sourceAssumptions(src){
  const set=new Set();
  for(const item of src.items)for(const n of item.notes||[])if(n)set.add(n);
@@ -59,7 +78,7 @@ function rollEncounter(src,batch){
  const bag=sourceDrops(src.source);
  const exclusive=src.items.filter(x=>x.exclusive==='raid-unique');
  if(exclusive.length){
-  const weights=exclusive.map(x=>Math.max(0,+x.prob||0));
+  const weights=exclusive.map(x=>effectiveProb(src,x));
   const total=Math.min(1,weights.reduce((a,b)=>a+b,0));
   const r=rand();
   if(r<total){
@@ -76,7 +95,7 @@ function rollEncounter(src,batch){
    continue
   }
   const trials=Math.max(1,Math.round(+item.rolls||1));
-  for(let i=0;i<trials;i++)if(rand()<item.prob)addDrop(src.source,item,itemQty(item),batch)
+  for(let i=0;i<trials;i++)if(rand()<effectiveProb(src,item))addDrop(src.source,item,itemQty(item),batch)
  }
 }
 function currentSource(){return bySource.get($('#hypoSource')?.value)||sources[0]||null}
@@ -93,8 +112,14 @@ function renderSource(){
  const meta=$('#hypoSourceMeta');
  const pool=$('#hypoPool');
  const kc=state.kc[src.source]||0;
- if(meta)meta.innerHTML='<div><b>'+esc(src.label)+'</b><p>'+esc(sourceAssumptions(src))+'</p></div><span>'+fmt(src.items.length)+' tracked Collection Log drops · '+fmt(kc)+' hypothetical '+(src.raid?'completions':'kills/chests')+'</span>';
- if(pool)pool.innerHTML=src.items.map(item=>'<div class="hypo-pool-row"><img src="https://static.runelite.net/cache/item/icon/'+item.id+'.png" alt=""><div><b>'+esc(item.name)+'</b><small>'+(item.exclusive?'exclusive raid unique · ':'')+(item.rolls>1?item.rolls+' rolls per encounter':'one tracked roll')+'</small></div><strong>'+chanceText(item.prob,item.rolls)+'</strong></div>').join('');
+ const cfg=RAID_CONFIG[src.source],setting=raidSettingValue(src),controls=$('#hypoControls'),field=$('#hypoRaidSetting'),settingInput=$('#hypoRaidSettingInput'),settingLabel=$('#hypoRaidSettingLabel');
+ if(controls)controls.classList.toggle('has-raid-setting',!!cfg);
+ if(field)field.hidden=!cfg;
+ if(cfg&&settingInput){settingInput.min=cfg.min;settingInput.max=cfg.max;settingInput.step=cfg.step;settingInput.value=setting}
+ if(cfg&&settingLabel)settingLabel.textContent=cfg.label;
+ const settingText=cfg?' · '+fmt(setting)+cfg.suffix:'';
+ if(meta)meta.innerHTML='<div><b>'+esc(src.label)+'</b><p>'+esc(sourceAssumptions(src))+'</p></div><span>'+fmt(src.items.length)+' tracked Collection Log drops · '+fmt(kc)+' hypothetical '+(src.raid?'completions':'kills/chests')+settingText+'</span>';
+ if(pool)pool.innerHTML=src.items.map(item=>'<div class="hypo-pool-row"><img src="https://static.runelite.net/cache/item/icon/'+item.id+'.png" alt=""><div><b>'+esc(item.name)+'</b><small>'+(item.exclusive?'exclusive raid unique · ':'')+(item.rolls>1?item.rolls+' rolls per encounter':'one tracked roll')+'</small></div><strong>'+chanceText(effectiveProb(src,item),item.rolls)+'</strong></div>').join('');
  const reset=$('#hypoResetSource');if(reset)reset.disabled=!kc&&!Object.keys(sourceDrops(src.source)).length
 }
 function renderRecent(){
@@ -145,6 +170,7 @@ function renderLog(){
 function renderAll(){renderKpis();renderSource();renderRecent();renderLogFilters();renderLog()}
 function doRoll(){
  const src=currentSource();if(!src)return;
+ const cfg=RAID_CONFIG[src.source],settingInput=$('#hypoRaidSettingInput');if(cfg&&settingInput){const value=Math.max(cfg.min,Math.min(cfg.max,+settingInput.value||cfg.defaultValue));state.raidSettings[src.source]=value;settingInput.value=value}
  const input=$('#hypoAmount'),n=Math.max(1,Math.min(5000,Math.round(+input?.value||1)));if(input)input.value=n;
  const start=(state.kc[src.source]||0)+1,batch=new Map();
  for(let i=0;i<n;i++)rollEncounter(src,batch);
@@ -158,9 +184,9 @@ function doRoll(){
 function bind(){
  $('#hypoSource').onchange=()=>renderSource();
  $('#hypoRoll').onclick=doRoll;
- $$('[data-hypo-amount]').forEach(b=>b.onclick=()=>{$('#hypoAmount').value=b.dataset.hypoAmount;doRoll()});
+ $('#hypoRaidSettingInput').onchange=e=>{const src=currentSource(),cfg=RAID_CONFIG[src?.source];if(!cfg)return;const value=Math.max(cfg.min,Math.min(cfg.max,+e.target.value||cfg.defaultValue));state.raidSettings[src.source]=value;e.target.value=value;save();renderSource()};
  $('#hypoResetSource').onclick=()=>{const src=currentSource();if(!src)return;if(!confirm('Reset all hypothetical KC and drops from '+src.label+'?'))return;delete state.kc[src.source];delete state.drops[src.source];state.history=state.history.filter(x=>x.source!==src.source);save();renderAll();$('#hypoBatch').textContent='Reset '+src.label+'.'};
- $('#hypoResetAll').onclick=()=>{if(!confirm('Reset the entire Hypothetical Log? This does not affect the real Collection Log.'))return;state={kc:{},drops:{},history:[]};save();renderAll();$('#hypoBatch').textContent='Hypothetical Log reset.'};
+ $('#hypoResetAll').onclick=()=>{if(!confirm('Reset the entire Hypothetical Log? This does not affect the real Collection Log.'))return;state={kc:{},drops:{},history:[],raidSettings:{}};save();renderAll();$('#hypoBatch').textContent='Hypothetical Log reset.'};
  $('#hypoSearch').oninput=e=>{logSearch=e.target.value;renderLog()};
  $('#hypoStatus').onchange=e=>{logStatus=e.target.value;renderLog()};
  $('#hypoLogSource').onchange=e=>{logSource=e.target.value;renderLog()};
