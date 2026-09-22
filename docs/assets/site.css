@@ -408,7 +408,7 @@
 .mast-stat-level>div{min-width:0}
 .mast-stat-level b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:1100px){
- .mast-status.mast-status-five{grid-template-columns:1fr 1.35fr 1.15fr 1fr 1.1fr}
+ .mast-status.mast-status-five{grid-template-columns:1fr 1.35fr 1fr 1.15fr 1.1fr}
  .mast-status-five .mast-value-legend{display:none}
 }
 @media(max-width:900px){
