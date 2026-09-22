@@ -19,9 +19,9 @@ const RAID_CONFIG={
 function loadState(){
  try{
   const x=JSON.parse(localStorage.getItem(STORAGE)||'null');
-  if(x&&typeof x==='object')return{kc:x.kc&&typeof x.kc==='object'?x.kc:{},drops:x.drops&&typeof x.drops==='object'?x.drops:{},history:Array.isArray(x.history)?x.history.slice(0,80):[],raidSettings:x.raidSettings&&typeof x.raidSettings==='object'?x.raidSettings:{}}
+  if(x&&typeof x==='object')return{kc:x.kc&&typeof x.kc==='object'?x.kc:{},drops:x.drops&&typeof x.drops==='object'?x.drops:{},history:Array.isArray(x.history)?x.history.slice(0,80):[],raidSettings:x.raidSettings&&typeof x.raidSettings==='object'?x.raidSettings:{},lastRoll:x.lastRoll&&typeof x.lastRoll==='object'?x.lastRoll:null}
  }catch{}
- return{kc:{},drops:{},history:[],raidSettings:{}}
+ return{kc:{},drops:{},history:[],raidSettings:{},lastRoll:null}
 }
 function save(){try{localStorage.setItem(STORAGE,JSON.stringify(state))}catch(e){console.warn('Hypothetical Log save failed',e)}}
 function rand(){
@@ -122,6 +122,15 @@ function renderSource(){
  if(pool)pool.innerHTML=src.items.map(item=>'<div class="hypo-pool-row"><img src="https://static.runelite.net/cache/item/icon/'+item.id+'.png" alt=""><div><b>'+esc(item.name)+'</b><small>'+(item.exclusive?'exclusive raid unique · ':'')+(item.rolls>1?item.rolls+' rolls per encounter':'one tracked roll')+'</small></div><strong>'+chanceText(effectiveProb(src,item),item.rolls)+'</strong></div>').join('');
  const reset=$('#hypoResetSource');if(reset)reset.disabled=!kc&&!Object.keys(sourceDrops(src.source)).length
 }
+function renderLastRoll(){
+ const h=$('#hypoLastRollBody');if(!h)return;
+ const x=state.lastRoll;
+ if(!x){h.innerHTML='<div class="hypo-empty">Nothing rolled yet.</div>';return}
+ const drops=Array.isArray(x.drops)?x.drops:[];
+ const head='<div class="hypo-last-roll-summary"><b>'+esc(x.label||'Last roll')+'</b><span>'+fmt(x.rolls||0)+' '+(x.raid?'raid completion'+(x.rolls===1?'':'s'):'roll'+(x.rolls===1?'':'s'))+(x.from&&x.to?' · '+fmt(x.from)+'–'+fmt(x.to)+' KC':'')+'</span></div>';
+ if(!drops.length){h.innerHTML=head+'<div class="hypo-empty">No tracked Collection Log drops on this roll.</div>';return}
+ h.innerHTML=head+'<div class="hypo-last-roll-grid">'+drops.map(d=>'<div class="hypo-last-roll-item"><img src="https://static.runelite.net/cache/item/icon/'+d.id+'.png" alt=""><div><b>'+esc(d.name)+'</b><small>newly rolled</small></div><strong>×'+fmt(d.qty)+'</strong></div>').join('')+'</div>'
+}
 function renderRecent(){
  const h=$('#hypoRecent');if(!h)return;
  if(!state.history.length){h.innerHTML='<div class="hypo-empty">No hypothetical loot yet. Pick a source and roll it.</div>';return}
@@ -167,7 +176,7 @@ function renderLog(){
   return '<article class="hypo-item '+(x.count?'':'missing')+'"><img src="https://static.runelite.net/cache/item/icon/'+x.id+'.png" alt=""><div><b>'+esc(x.name)+'</b><small>'+esc(srcs.slice(0,2).join(' · '))+(srcs.length>2?' · +'+(srcs.length-2):'')+'</small></div><span class="hypo-count">×'+fmt(x.count)+'</span></article>'
  }).join('')
 }
-function renderAll(){renderKpis();renderSource();renderRecent();renderLogFilters();renderLog()}
+function renderAll(){renderKpis();renderSource();renderLastRoll();renderRecent();renderLogFilters();renderLog()}
 function doRoll(){
  const src=currentSource();if(!src)return;
  const cfg=RAID_CONFIG[src.source],settingInput=$('#hypoRaidSettingInput');if(cfg&&settingInput){const value=Math.max(cfg.min,Math.min(cfg.max,+settingInput.value||cfg.defaultValue));state.raidSettings[src.source]=value;settingInput.value=value}
@@ -176,7 +185,9 @@ function doRoll(){
  for(let i=0;i<n;i++)rollEncounter(src,batch);
  const end=state.kc[src.source]||0,lookup=new Map(src.items.map(x=>[x.id,x]));
  const rows=[...batch.entries()].sort((a,b)=>b[1]-a[1]);
- for(const [id,qty] of rows){const item=lookup.get(+id);state.history.unshift({source:src.source,label:src.label,id:+id,name:item?.name||names[id]||('Item '+id),qty,from:start,to:end,time:Date.now()})}
+ const lastDrops=rows.map(([id,qty])=>{const item=lookup.get(+id);return{id:+id,name:item?.name||names[id]||('Item '+id),qty}});
+ for(const d of lastDrops)state.history.unshift({source:src.source,label:src.label,id:d.id,name:d.name,qty:d.qty,from:start,to:end,time:Date.now()});
+ state.lastRoll={source:src.source,label:src.label,raid:!!src.raid,rolls:n,from:start,to:end,drops:lastDrops,time:Date.now()};
  state.history=state.history.slice(0,80);save();renderAll();
  const summary=$('#hypoBatch');
  if(summary)summary.textContent=rows.length?fmt(n)+' '+(src.raid?'raid completions':'encounters')+' → '+rows.length+' different Collection Log drop'+(rows.length===1?'':'s'):'No tracked Collection Log drops in '+fmt(n)+' '+(src.raid?'raid completions':'encounters')+'.'
@@ -185,8 +196,8 @@ function bind(){
  $('#hypoSource').onchange=()=>renderSource();
  $('#hypoRoll').onclick=doRoll;
  $('#hypoRaidSettingInput').onchange=e=>{const src=currentSource(),cfg=RAID_CONFIG[src?.source];if(!cfg)return;const value=Math.max(cfg.min,Math.min(cfg.max,+e.target.value||cfg.defaultValue));state.raidSettings[src.source]=value;e.target.value=value;save();renderSource()};
- $('#hypoResetSource').onclick=()=>{const src=currentSource();if(!src)return;if(!confirm('Reset all hypothetical KC and drops from '+src.label+'?'))return;delete state.kc[src.source];delete state.drops[src.source];state.history=state.history.filter(x=>x.source!==src.source);save();renderAll();$('#hypoBatch').textContent='Reset '+src.label+'.'};
- $('#hypoResetAll').onclick=()=>{if(!confirm('Reset the entire Hypothetical Log? This does not affect the real Collection Log.'))return;state={kc:{},drops:{},history:[],raidSettings:{}};save();renderAll();$('#hypoBatch').textContent='Hypothetical Log reset.'};
+ $('#hypoResetSource').onclick=()=>{const src=currentSource();if(!src)return;if(!confirm('Reset all hypothetical KC and drops from '+src.label+'?'))return;delete state.kc[src.source];delete state.drops[src.source];state.history=state.history.filter(x=>x.source!==src.source);if(state.lastRoll?.source===src.source)state.lastRoll=null;save();renderAll();$('#hypoBatch').textContent='Reset '+src.label+'.'};
+ $('#hypoResetAll').onclick=()=>{if(!confirm('Reset the entire Hypothetical Log? This does not affect the real Collection Log.'))return;state={kc:{},drops:{},history:[],raidSettings:{},lastRoll:null};save();renderAll();$('#hypoBatch').textContent='Hypothetical Log reset.'};
  $('#hypoSearch').oninput=e=>{logSearch=e.target.value;renderLog()};
  $('#hypoStatus').onchange=e=>{logStatus=e.target.value;renderLog()};
  $('#hypoLogSource').onchange=e=>{logSource=e.target.value;renderLog()};
