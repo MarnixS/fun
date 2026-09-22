@@ -400,8 +400,8 @@ function bindProgressControls(){
  document.querySelectorAll('[data-nem-view]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{compareView=b.dataset.nemView;renderProgressComparison()}});
  document.querySelectorAll('[data-nem-period]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{comparePeriod=b.dataset.nemPeriod==='all'?'all':+b.dataset.nemPeriod;renderProgressComparison()}});
  document.addEventListener('click',e=>{
-  const sk=e.target.closest?.('[data-nem-skill]');if(sk){compareMetric='skill';compareSkill=sk.dataset.nemSkill;renderProgressComparison();$('#nemesisProgress')?.scrollIntoView({behavior:'smooth',block:'start'});return}
-  const bk=e.target.closest?.('[data-nem-boss]');if(bk){compareMetric='boss';compareBoss=bk.dataset.nemBoss;renderProgressComparison();$('#nemesisProgress')?.scrollIntoView({behavior:'smooth',block:'start'})}
+  const sk=e.target.closest?.('[data-nem-skill]');if(sk){compareMetric='skill';compareSkill=sk.dataset.nemSkill;renderProgressComparison();$('#nemesisProgress')?.scrollIntoView?.({behavior:'smooth',block:'start'});return}
+  const bk=e.target.closest?.('[data-nem-boss]');if(bk){compareMetric='boss';compareBoss=bk.dataset.nemBoss;renderProgressComparison();$('#nemesisProgress')?.scrollIntoView?.({behavior:'smooth',block:'start'})}
  })
 }
 function renderClog(){
