@@ -26,6 +26,7 @@ jobs:
           node scripts/test_player_goals.js
           node scripts/test_shared_baseline.js
           node scripts/test_clog_luck.js
+          node scripts/audit_nemesis.js
           python scripts/check_site.py
       - name: All menus and sync regressions
         run: |
