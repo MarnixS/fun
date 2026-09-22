@@ -68,7 +68,12 @@ function coxPreReworkKc(wom,p,source,currentKc){
  for(const s of rows){const t=Date.parse(s?.createdAt||s?.created_at||'');if(!Number.isFinite(t)||t>COX_REWORK_AT||t<bestTime)continue;const n=s?.data?.bosses?.[metric]?.kills;if(Number.isFinite(n)&&n>=0){bestTime=t;best=n}}
  return best==null?null:Math.max(0,Math.min(currentKc,best))
 }
-function metric(U,wom,p,source){
+function metric(U,wom,p,source,temple){
+ if(source==='DEMONIC_GORILLA_KILLS'||source==='TORTURED_GORILLA_KILLS'){
+  const key=source==='DEMONIC_GORILLA_KILLS'?'demonic_gorilla':'tortured_gorilla';
+  const v=temple?.bossKc?.[p.key]?.[key];
+  if(Number.isFinite(v)&&v>=0)return v;
+ }
  const d=U.snapData(wom,p.key)||{};
  if(ACTIVITY[source]){const v=d.activities?.[ACTIVITY[source]]?.score;return Number.isFinite(v)&&v>=0?v:null}
  const key=sourceKey(source);if(!key)return null;
@@ -123,7 +128,7 @@ function playerSpecificChance(prob,p,roll,notes){
 function itemCount(model,p,id){return model.known.has(p.key)?model.counts.get(p.key)?.get(+id)||0:null}
 function setCount(model,p,ids){let n=0;for(const id of ids||[]){const v=itemCount(model,p,id);if(v==null)return null;n+=v}return n}
 function labelSource(s){return s.toLowerCase().replace(/_kills$|_completed$|_completion_count$|_opened$|_claimed$/,'').replace(/_/g,' ').replace(/^./,c=>c.toUpperCase())}
-function exclusion(id,name,ps,wom,model,U){
+function exclusion(id,name,ps,wom,model,U,temple){
  id=+id;
  if(!ps?.length||!model)return{kind:'selection',label:'No comparable selected members',detail:'Select at least one member with a synced Collection Log.'};
  const cap=TRACKING_CAPS[id];
@@ -135,7 +140,10 @@ function exclusion(id,name,ps,wom,model,U){
  if([29574,29580].includes(id))return{kind:'rate',label:'Tormented Demon opportunity count unavailable',detail:'Burning claws and Tormented synapses are high-impact progression drops, but WOM has no Tormented Demon boss metric. The Collection Log records copies received, not the number of eligible demon kills, so statistical spoon/dry status cannot be reconstructed.'};
  if(id===13576)return{kind:'rate',label:'Lizardman Shaman opportunity count unavailable',detail:'Dragon warhammer is progression-significant, but the saved data has no reliable historical Lizardman Shaman kill denominator. Drop quantity without eligible kills is not enough to infer luck.'};
  if(id===20724)return{kind:'rate',label:'Superior Slayer opportunity count unavailable',detail:'Imbued heart is highly progression-significant, but neither WOM boss KC nor the Collection Log reconstructs the number and type of eligible superior Slayer monsters encountered.'};
- if(id===19529)return{kind:'rate',label:'Demonic Gorilla opportunity count unavailable',detail:'Zenyte shards matter strongly for Ironman progression, but the saved sources do not provide a reliable historical Demonic Gorilla kill denominator for this account selection.'};
+ if(id===19529){
+  const missing=(ps||[]).filter(p=>!Number.isFinite(temple?.bossKc?.[p.key]?.demonic_gorilla));
+  if(missing.length)return{kind:'rate',label:'Demonic Gorilla opportunity count unavailable',detail:'Zenyte shards matter strongly for Ironman progression, but Temple Demonic Gorilla KC is not yet saved for '+missing.map(p=>p.name).join(', ')+'. Use the manual Temple refresh so the RNG model has a real 1/300 denominator instead of guessing.'};
+ }
  if([31088,31115,31109,31130].includes(id))return{kind:'mechanic',label:'Doom delve-depth history unknown',detail:'Doom of Mokhaiotl unique rates change sharply by delve level and each run can contain several depth-specific rolls. WOM/HiScores exposes deep-delve KC, not the historical depth distribution for every run, so a single KC denominator cannot reconstruct this item\'s true opportunities.'};
  if([30750,30753,30756,30759,30765].includes(id))return{kind:'mechanic',label:'Yama contribution history unknown',detail:'Yama rolls uniques per player and scales the unique chance or quantity with personal damage contribution in duo encounters. WOM records Yama KC but not historical contribution, so a fixed solo or 50% assumption would be too strong for the headline luck score.'};
  if(id===4740)return{kind:'barrows',label:'Barrows reward potential unknown',detail:'Bolt racks depend on Barrows reward potential. WOM records chest completions but not the reward potential used for each chest, so chest KC is not a valid denominator.'};
@@ -147,14 +155,15 @@ function exclusion(id,name,ps,wom,model,U){
  if((raw[4]||0)&SPECIAL_UNSUPPORTED)return{kind:'mechanic',label:'Historical mechanic cannot be reconstructed',detail:'The item depends on historical state or counters that are not available in the saved WOM and Collection Log data.'};
  return null
 }
-function calculate(id,name,ps,wom,model,U){
- const blocked=exclusion(id,name,ps,wom,model,U);if(blocked)return null;
+function calculate(id,name,ps,wom,model,U,temple){
+ const blocked=exclusion(id,name,ps,wom,model,U,temple);if(blocked)return null;
  const raw=DATA[+id];if(!raw||!ps?.length||!wom||!model||!U)return null;
  const rec={_id:+id,t:raw[0],rolls:raw[1],param:raw[2],set:raw[3],flags:raw[4]||0};
  if(ps.some(p=>!model.known.has(p.key)))return null;
  if(rec.flags&SPECIAL_UNSUPPORTED)return null;
  const sources=new Set(rec.rolls.map(r=>r[0]));if(sources.size<rec.rolls.length)return null;
  const notes=new Set(),groups=[],coxSplit=new Map();let observed=0,directObserved=0,lower=0,upper=0,rawTrials=0;
+ if(+id===19529)notes.add('Zenyte shard uses saved Temple Demonic Gorilla KC at the 1/300 drop rate');
  for(const p of ps){
    const own=itemCount(model,p,id);if(own==null)return null;directObserved+=own;
    let playerObserved=own,lo=own,hi=own,localSet=null;
@@ -169,7 +178,14 @@ function calculate(id,name,ps,wom,model,U){
    observed+=playerObserved;lower+=lo;upper+=hi;
    for(const roll of rec.rolls){
      if(roll[0]==='TOMBS_OF_AMASCUT_ENTRY_COMPLETIONS'){notes.add('Entry-mode ToA is omitted because WOM has no separate Entry completion metric');continue}
-     const kc=metric(U,wom,p,roll[0]);if(kc==null)return null;if(p.key==='big dog aura'&&roll[0]==='CHAMBERS_OF_XERIC_COMPLETIONS'&&kc>0)notes.add('Big Dog Aura CoX caveat: a large proportion, probably the majority, of his normal CoX KC was scaled. A roughly 100-screenshot sample indicates his true average personal points were above the 30,000 baseline, so this model likely makes his CoX luck look slightly better than it really was');
+     const kc=metric(U,wom,p,roll[0],temple);
+     if(kc==null){
+       if(+id===19529&&roll[0]==='TORTURED_GORILLA_KILLS'){
+         notes.add('Tortured Gorilla KC unavailable; the small 1/3,000 Tortured Gorilla contribution is omitted rather than guessed');
+         continue;
+       }
+       return null
+     }if(p.key==='big dog aura'&&roll[0]==='CHAMBERS_OF_XERIC_COMPLETIONS'&&kc>0)notes.add('Big Dog Aura CoX caveat: a large proportion, probably the majority, of his normal CoX KC was scaled. A roughly 100-screenshot sample indicates his true average personal points were above the 30,000 baseline, so this model likely makes his CoX luck look slightly better than it really was');
      let n=Math.round(kc*roll[2]);if(rec.t==='g'&&rec.param&&kc>=rec.param)n=Math.max(0,n-1);
      if(rec.t==='g'&&rec.param&&kc>=rec.param){observed=Math.max(0,observed-1);lower=Math.max(0,lower-1);upper=Math.max(0,upper-1)}
      if(rec.t==='y'&&rec.param&&kc>=rec.param){notes.add('Pity threshold reached; percentile is neutral once the guaranteed threshold has been reached');return{percentile:.5,text:'50%',observed:own,expected:null,trials:kc,groups:[],notes:[...notes],neutral:true}}
