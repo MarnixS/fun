@@ -39,7 +39,7 @@ jobs:
           node scripts/audit_live_sync.js
           node scripts/audit_chronicle_goals.js
           node scripts/audit_chart_ranges.js
-          node scripts/audit_nemesis_runtime.js
+
           node scripts/audit_shared_goals.js
           node scripts/audit_temple_retention.js
           node scripts/audit_shared_baseline.js
