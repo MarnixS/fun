@@ -14,6 +14,9 @@
 .hypo-controls{
  display:grid;grid-template-columns:minmax(260px,1.4fr) minmax(120px,.45fr) auto;gap:9px;align-items:end
 }
+.hypo-controls.has-raid-setting{
+ grid-template-columns:minmax(240px,1.25fr) minmax(110px,.42fr) minmax(160px,.62fr) auto
+}
 .hypo-field{display:grid;gap:5px}
 .hypo-field span{color:#a79577;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
 .hypo-field select,.hypo-field input,.hypo-toolbar input,.hypo-toolbar select{
@@ -24,11 +27,10 @@
  color:#f2d891;font-weight:800;cursor:pointer
 }
 .hypo-roll-btn:hover{background:linear-gradient(#5a3b1d,#332112)}
-.hypo-quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
-.hypo-quick button,.hypo-secondary{
+.hypo-secondary{
  min-height:34px;padding:6px 10px;border:1px solid #58432c;background:#17110b;color:#bea982;cursor:pointer
 }
-.hypo-quick button:hover,.hypo-secondary:hover{background:#24180f;color:#e7cb8b}
+.hypo-secondary:hover{background:#24180f;color:#e7cb8b}
 .hypo-source-meta{
  display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-top:12px;padding-top:10px;border-top:1px solid #3a2c1d
 }
