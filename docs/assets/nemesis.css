@@ -49,3 +49,23 @@
 .nem-clog-kpis{grid-template-columns:repeat(6,minmax(0,1fr))}
 @media(max-width:800px){.nem-external-member{grid-template-columns:1fr auto}.nem-external-sources{grid-column:1/-1;grid-row:2}.nem-clog-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:480px){.nem-roster-head{align-items:flex-start}.nem-external-member{grid-template-columns:minmax(0,1fr) auto}.nem-external-sources .nem-source{font-size:7px}.nem-clog-kpis{grid-template-columns:1fr 1fr}}
+
+.nem-progress-tools{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-bottom:10px;padding:9px;border:1px solid #40311f;background:#0e0a07}
+.nem-control-group{margin:0}
+.nem-periods{display:flex;gap:4px;flex-wrap:wrap;margin:0}
+.nem-periods button{min-height:32px;padding:0 9px}
+.nem-select-label{display:grid;gap:4px;color:#8f836f;font-size:9px;text-transform:uppercase;letter-spacing:.05em}
+.nem-select-label select{min-width:145px;min-height:34px;border:1px solid #564229;background:#120d09;color:#dbc594;padding:0 26px 0 8px;font:inherit;text-transform:none;letter-spacing:0}
+.nem-compare-chart{min-height:300px;border:1px solid #3c2e1e;background:#0d0907;padding:8px;overflow:hidden}
+.nem-compare-chart svg{display:block;width:100%;height:auto;min-height:250px}
+.nem-share-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.nem-share-grid section{min-width:0;border:1px solid #3c2e1e;background:#100c08;padding:8px}
+.nem-share-grid h4{margin:0 0 5px;color:#dbc594;font:700 12px Georgia,serif}
+.nem-share-grid .v21-chart-note{margin-top:4px}
+.nem-clog-visual{display:grid;grid-template-columns:minmax(0,520px);justify-content:center;margin:8px 0 12px;border-top:1px solid #302519;padding-top:10px}
+.nem-clog-visual svg{width:100%;height:auto}
+.nem-metric-link{display:inline-flex!important;align-items:center;gap:7px;color:inherit!important;text-align:left}
+.nem-metric-link .skill-icon{width:18px;height:18px}
+.nem-external-sources .nem-source.history{border-style:dashed}
+@media(max-width:800px){.nem-progress-tools{align-items:stretch}.nem-select-label{flex:1 1 160px}.nem-select-label select{width:100%;min-width:0}.nem-share-grid{grid-template-columns:1fr}}
+@media(max-width:520px){.nem-progress-tools{display:grid;grid-template-columns:1fr}.nem-control-group,.nem-periods{width:100%}.nem-control-group button,.nem-periods button{flex:1}.nem-compare-chart{padding:4px;min-height:250px}.nem-share-grid section{padding:5px}}
