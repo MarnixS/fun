@@ -130,7 +130,13 @@ async function openPage(path, { selection, templeResponse, templeDocument, womRe
     await waitFor(() => dom.window.document.querySelector('#clogMemberPicker fieldset'), 'Collection Log module');
   }
   if (path === 'chronicle.html') {
-    await waitFor(() => dom.window.document.querySelectorAll('.chronicle-event').length > 600, 'complete Chronicle render', 30_000);
+    await waitFor(
+      () => dom.window.document.querySelectorAll('.chronicle-event').length > 0
+        && dom.window.document.querySelector('#chroniclePagerTop [data-chrono-size="all"]')
+        && /of \d[\d,]* events/.test(dom.window.document.querySelector('#chronicleMeta')?.textContent || ''),
+      'paginated Chronicle render',
+      30_000,
+    );
   }
   await sleep(1_000);
   return { dom, errors };
@@ -275,13 +281,20 @@ async function testChronicleLevelsAndFilter() {
   const { window } = dom;
   const { document } = window;
   await waitFor(() => document.querySelector('[data-chrono-filter="all"]')?.classList.contains('active'), 'All events default');
-  await waitFor(() => document.querySelectorAll('.chronicle-event[data-event-type="level"]').length > 1_000, 'all WOM level events', 30_000);
+  assert(document.querySelectorAll('.chronicle-event').length <= 100, 'Chronicle defaults to the 100-event paginated view');
+  click(window, document.querySelector('[data-chrono-size="all"]'));
+  await waitFor(
+    () => document.querySelector('[data-chrono-size="all"]')?.classList.contains('active')
+      && document.querySelectorAll('.chronicle-event[data-event-type="level"]').length === expected.size,
+    'all WOM level events after Show All',
+    30_000,
+  );
   const actual = new Set(
     [...document.querySelectorAll('.chronicle-event[data-event-type="level"]')]
       .map((event) => `${event.dataset.playerKey}|${event.dataset.metric}|${event.dataset.level}`),
   );
   assert.deepEqual(actual, expected, 'Chronicle contains every inferred and official skill level exactly once');
-  assert(document.querySelectorAll('.chronicle-event').length > 600, 'All events is no longer truncated at 600');
+  assert.match(document.querySelector('#chronicleMeta').textContent, /events shown · all at once/);
   assert.deepEqual(checked(document, 'chronicleMemberPicker'), ALL);
 
   click(window, document.querySelector('#chronicleMemberPicker input[value="big dog aura"]'));
