@@ -34,6 +34,7 @@ jobs:
           server=$!
           trap 'kill "$server"' EXIT
           node scripts/audit_v25_jsdom.js
+          node scripts/audit_nemesis_runtime.js
           node scripts/audit_sync.js
           node scripts/audit_live_sync.js
           node scripts/audit_chronicle_goals.js
