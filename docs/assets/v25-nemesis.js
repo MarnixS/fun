@@ -58,7 +58,10 @@ function collectItemIds(raw){
  const d=templeData(raw),ids=new Map(),seen=new Set();
  function walk(x){
   if(x==null)return;
-  if(Array.isArray(x)){for(const v of x)walk(v);return}
+  if(Array.isArray(x)){
+   if(x.length&&x.every(v=>Number.isInteger(+v)&&+v>0)){for(const v of x){const id=+v;ids.set(id,{id,count:1,name:null})};return}
+   for(const v of x)walk(v);return
+  }
   if(typeof x!=='object')return;
   if(seen.has(x))return;seen.add(x);
   const id=n(x.id??x.item_id??x.itemId),count=n(x.count??x.quantity??x.amount??(x.obtained?1:null));
