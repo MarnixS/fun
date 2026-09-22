@@ -84,7 +84,7 @@ function averageMarginal(q,curve,tail=.12){
 }
 function copyUtility(profile,m){
  const q=portfolioCount(m.name,m);
- if(profile.kind==='personal-unlock')return averageMarginal(q,[1,.96,.92,.88,.84],.12);
+ if(profile.kind==='personal-unlock')return averageMarginal(q,[1,.78,.56,.42,.32],.12);
  if(profile.kind==='major-shareable')return averageMarginal(q,[1,.82,.66,.52,.42],.14);
  if(profile.kind==='shareable')return averageMarginal(q,[1,.72,.54,.40,.30],.12);
  return 1
@@ -297,7 +297,7 @@ function countFor(id,ps){let n=0;for(const p of ps){const v=model.counts.get(p.k
 function metricsFor(ps){
  const key=ps.map(p=>p.key).sort().join('|');if(metricCache.has(key))return metricCache.get(key);
  const out=[];
- for(const id of modelIds()){const name=model.names.get(id)||'Item '+id;let r=null;try{r=L.calculate(id,name,ps,wom,model,U)}catch{}if(!r||!Number.isFinite(r.percentile))continue;const z=invNorm(r.percentile);if(Number.isFinite(z))out.push({id,name,r,z,players:ps.map(p=>p.key)})}
+ for(const id of modelIds()){const name=model.names.get(id)||'Item '+id;let r=null;try{r=L.calculate(id,name,ps,wom,model,U,doc)}catch{}if(!r||!Number.isFinite(r.percentile))continue;const z=invNorm(r.percentile);if(Number.isFinite(z))out.push({id,name,r,z,players:ps.map(p=>p.key)})}
  metricCache.set(key,out);return out
 }
 function excludedFor(ps){
@@ -305,8 +305,8 @@ function excludedFor(ps){
  const out=[];
  for(const id of modelIds()){
   const name=model.names.get(id)||'Item '+id;let reason=null,r=null;
-  try{reason=L.exclusion(id,name,ps,wom,model,U)}catch{}
-  if(!reason){try{r=L.calculate(id,name,ps,wom,model,U)}catch{};if(r)continue;reason={kind:'unknown',label:'Denominator or mechanic unavailable',detail:'The saved data does not contain enough information to reconstruct the eligible rolls reliably.'}}
+  try{reason=L.exclusion(id,name,ps,wom,model,U,doc)}catch{}
+  if(!reason){try{r=L.calculate(id,name,ps,wom,model,U,doc)}catch{};if(r)continue;reason={kind:'unknown',label:'Denominator or mechanic unavailable',detail:'The saved data does not contain enough information to reconstruct the eligible rolls reliably.'}}
   out.push({id,name,reason,count:countFor(id,ps)})
  }
  excludedCache.set(key,out);return out
@@ -450,7 +450,12 @@ function meaningfulRank(m,z=null,familySize=1){
  }
  const impactFactor=(.35+1.85*(1-Math.exp(-imp.w/3)))*importanceBoost;
  const searchPenalty=1/Math.sqrt(1+Math.log2(Math.max(1,familySize))/4);
- return{imp,impactFactor,importanceBoost,evidence,searchPenalty,familySize,score:evidence*impactFactor*searchPenalty,side:'lucky',signal,dryGate:ctx.dryGate,earlyUnlockBonus}
+ // Permanent personal unlocks are still highly valuable, but repeat copies do
+ // not represent the same progression jump as the first unlock. Apply the same
+ // marginal-copy utility directly to positive ranking evidence so multiple Dex/
+ // prayer-scroll drops cannot stay almost full-strength merely because RNG was extreme.
+ const positiveCopyFactor=signal>0&&imp.kind==='personal-unlock'?imp.copy:1;
+ return{imp,impactFactor,importanceBoost,evidence,searchPenalty,familySize,positiveCopyFactor,score:evidence*impactFactor*searchPenalty*positiveCopyFactor,side:'lucky',signal,dryGate:ctx.dryGate,earlyUnlockBonus}
 }
 function ranked(metrics){
  const familySizes=lens==='meaningful'?luckyFamilySizes(metrics):null;
@@ -472,7 +477,7 @@ function renderLists(){
    const raidText=stats.idx.portfolios.length?stats.idx.portfolios.map(p=>'<li><b>'+esc(p.label)+'</b><span>'+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected</span><small>volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)+'</small></li>').join(''):'<li><span>No raid portfolio with a usable expected-drop denominator.</span></li>';
    formula.innerHTML='<div class="rng-formula-summary"><span>Headline RNG Index</span><strong>'+scoreText(stats.idx.score)+'</strong><small>'+sig(stats.idx.meaningful)+' normalized impact signal</small></div>'+
    '<div class="rng-formula-equation"><span><small>Items</small><b>'+signed(stats.idx.itemNumerator)+'</b></span><em>+</em><span><small>Raid portfolios</small><b>'+signed(stats.idx.portfolioNumerator)+'</b></span><em>÷</em><span><small>Weight norm</small><b>'+stats.idx.denom.toFixed(2)+'</b></span><em>=</em><span><small>Combined</small><b>'+sig(stats.idx.meaningful)+'</b></span></div>'+
-   '<details class="rng-formula-detail"><summary>Calculation breakdown</summary><div><p><b>Evidence × impact × context.</b> Item impact comes from the explicit 885-item mature-GIM utility table. Assumption-heavy mechanics are confidence-damped; useful copies diminish with group coverage; complementary gear can add capped synergy; dry streaks can be softened when teammates already solved the slot.</p><ul>'+raidText+'</ul><p>Meaningful lucky drops use stronger relevance filtering plus a modest source-family look-elsewhere discount. A below-expectation item contributes as soon as fewer than half of comparable players would have this count or fewer. The negative contribution is scaled directly by gameplay impact, so missing a major upgrade can already matter in the low single digits before it is a serious dry streak. Below a 25% one-sided lower tail, dryness strengthens rapidly; extreme dry streaks are penalized more strongly than comparable positive deviations are rewarded. Major first copies obtained before one expected copy can receive a modest progression-timing bonus. Raid items represented in a pooled portfolio retain only part of their ordinary item-level weight to avoid double counting. Large source tables are L2-capped and item σ is capped at ±3.50.</p></div></details>';
+   '<details class="rng-formula-detail"><summary>Calculation breakdown</summary><div><p><b>Evidence × impact × context.</b> Item impact comes from the explicit 885-item mature-GIM utility table. Assumption-heavy mechanics are confidence-damped; useful copies diminish with group coverage; repeat permanent personal unlocks also directly lose positive rank weight; complementary gear can add capped synergy; dry streaks can be softened when teammates already solved the slot.</p><ul>'+raidText+'</ul><p>Meaningful lucky drops use stronger relevance filtering plus a modest source-family look-elsewhere discount. A below-expectation item contributes as soon as fewer than half of comparable players would have this count or fewer. The negative contribution is scaled directly by gameplay impact, so missing a major upgrade can already matter in the low single digits before it is a serious dry streak. Below a 25% one-sided lower tail, dryness strengthens rapidly; extreme dry streaks are penalized more strongly than comparable positive deviations are rewarded. Major first copies obtained before one expected copy can receive a modest progression-timing bonus. Raid items represented in a pooled portfolio retain only part of their ordinary item-level weight to avoid double counting. Large source tables are L2-capped and item σ is capped at ±3.50.</p></div></details>';
   }
  }
  const titles=lens==='raw'?['Most statistically lucky','Most statistically unlucky']:lens==='value'?['Biggest valuable spoons','Biggest valuable dry streaks']:['Luckiest meaningful drops','Unluckiest meaningful grinds'];
