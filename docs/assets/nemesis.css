@@ -1,0 +1,36 @@
+.nemesis-shell{margin-top:12px}
+.nemesis-intro{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(280px,.7fr);gap:12px;align-items:start}
+.nemesis-panel{border:1px solid #55442f;background:#120e0a;padding:14px}
+.nemesis-panel h2,.nemesis-panel h3{margin:0;color:#e6cd91}
+.nemesis-panel p{margin:5px 0 0;color:#a99a82;line-height:1.5}
+.nemesis-form{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:12px}
+.nemesis-form label{display:grid;gap:5px;flex:1 1 240px;color:#c8b99c;font-size:11px}
+.nemesis-form input{min-height:42px;border:1px solid #665036;background:#0d0a07;color:#ead7a7;padding:0 11px;font:inherit}
+.nemesis-form button{min-height:42px;border:1px solid #765a35;background:linear-gradient(#352619,#1d140d);color:#ead39c;padding:0 16px;cursor:pointer}
+.nemesis-form button:disabled{opacity:.6;cursor:wait}
+.nemesis-note{margin-top:7px;color:#8f836f;font-size:10px;line-height:1.45}
+.nem-source-row{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 0}
+.nem-source{display:inline-flex;align-items:center;gap:6px;border:1px solid #4c3d29;background:#100c08;padding:6px 8px;color:#aaa08d;font-size:10px}
+.nem-source i{width:7px;height:7px;border-radius:50%;background:#877966}
+.nem-source.ok i{background:#78a96d}.nem-source.missing i{background:#c59a4c}.nem-source.error i{background:#b65e56}
+.nem-empty{margin-top:12px;border:1px dashed #59452d;background:#100c08;padding:14px;color:#a99a82;line-height:1.5}
+.nem-empty strong{color:#e2ca94}
+.nem-results{display:grid;gap:12px;margin-top:12px}
+.nem-section{border:1px solid #55442f;background:#120e0a}
+.nem-section-head{display:flex;justify-content:space-between;gap:12px;align-items:end;padding:11px 13px;border-bottom:1px solid #443624;background:linear-gradient(#1a140e,#120e0a)}
+.nem-section-head h3{margin:0;color:#e6cd91;font:700 15px Georgia,serif}.nem-section-head p{margin:3px 0 0;color:#8f836f;font-size:10px}
+.nem-section-body{padding:10px}
+.nem-table{width:100%;border-collapse:collapse;min-width:720px}
+.nem-table th,.nem-table td{padding:8px 9px;border-bottom:1px solid #302519;text-align:right;color:#b9ad98;font-size:10px}
+.nem-table thead th{position:sticky;top:0;background:#17110c;color:#dac28d;font-size:9px;text-transform:uppercase;letter-spacing:.05em;z-index:1}
+.nem-table th:first-child,.nem-table td:first-child{text-align:left}.nem-table tbody th{font-weight:700;color:#d3c09a}
+.nem-table tr:last-child th,.nem-table tr:last-child td{border-bottom:0}
+.nem-table .pos{color:#9cc78b}.nem-table .neg{color:#d98b7f}
+.nemesis-row{background:#21170e}.nemesis-row th,.nemesis-row td{color:#efd69a}
+.nem-skills tbody th{display:flex;align-items:center;gap:7px}.nem-skills .skill-icon{width:18px;height:18px;object-fit:contain}
+.nem-clog-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-bottom:10px}
+.nem-clog-kpis>div{border:1px solid #443624;background:#0e0a07;padding:9px}
+.nem-clog-kpis span{display:block;color:#8f836f;font-size:9px;text-transform:uppercase;letter-spacing:.05em}
+.nem-clog-kpis b{display:block;color:#e2ca94;font:700 18px Georgia,serif;margin-top:3px}
+@media(max-width:800px){.nemesis-intro{grid-template-columns:1fr}.nem-clog-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.nemesis-panel{padding:11px}.nemesis-form{display:grid}.nemesis-form button{width:100%}.nem-clog-kpis{grid-template-columns:1fr 1fr}.nem-section-body{padding:7px}}
