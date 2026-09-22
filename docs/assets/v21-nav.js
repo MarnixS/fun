@@ -9,6 +9,7 @@ function init(){
  nav.closest('.main-nav')?.setAttribute('aria-label','Primary');
  const page=(location.pathname.split('/').pop()||'index.html').toLowerCase();
  const hash=location.hash.toLowerCase();
+ if(hash==='#nemesis-beta'){location.replace('nemesis.html');return}
  const isActive=href=>{const [target,targetHash='']=href.toLowerCase().split('#');if(page!==target)return false;if(targetHash)return hash===('#'+targetHash);return true};
  const link=([href,label,rune,badge])=>`<a class="nav-link ${isActive(href)?'active':''}" href="${href}" ${isActive(href)?'aria-current="page"':''}><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span>${badge==='beta'?'<span class="nav-badge">BETA</span>':''}</a>`;
  const group=(id,label,rune,items)=>`<div class="nav-dropdown"><button type="button" class="nav-trigger ${items.some(([href])=>isActive(href))?'active':''}" aria-expanded="false" aria-controls="nav-${id}"><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span><span aria-hidden="true">▾</span></button><div class="nav-dropdown-panel" id="nav-${id}" hidden>${items.map(link).join('')}</div></div>`;
