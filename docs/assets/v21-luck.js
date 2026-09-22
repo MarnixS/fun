@@ -135,7 +135,7 @@ function modelConfidence(m){
  if(/big dog aura cox caveat/.test(notes))return{f:.82,label:'scaled CoX points estimated'};
  if(/normal cox assumes|cox cm assumes/.test(notes))return{f:.90,label:'CoX points estimated'};
  if(/toa expert uses a fixed|toa normal uses a fixed/.test(notes))return{f:.90,label:'ToA raid level estimated'};
- if(/nightmare assumes|hueycoatl assumes|royal titans assumes|callisto assumes|venenatis assumes|vet'ion assumes|zalcano assumes/.test(notes))return{f:.78,label:'assumed contribution'};
+ if(/nightmare assumes|callisto uses an 80%|zalcano assumes/.test(notes))return{f:.78,label:'assumed contribution'};
  if(/theatre of blood.*assumes/.test(notes))return{f:.85,label:'assumed raid share'};
  if(/variable stack-size.*approximation/.test(notes))return{f:.9,label:'distribution approximation'};
  return{f:1,label:'direct / accepted model'}
@@ -315,16 +315,31 @@ function overview(){
  '<div class="clog-luck-kpi"><span>Data quality</span><b>'+esc(s.s.label)+'</b><small>'+esc(s.s.detail)+' · '+esc(sync.text)+'</small></div>';
  const badge=$('#clogLuckImpossibleCount');if(badge)badge.textContent=fmt(excluded.length)
 }
+function rngDetailTitle(m){
+ const parts=[];
+ const sources=m?.r?.sources||[];
+ if(sources.length)parts.push(sources.map(s=>{
+  const kc=Number.isFinite(+s.kc)?fmt(s.kc)+' KC':'KC unavailable';
+  const exp=Number.isFinite(+s.expected)?' → '+(+s.expected).toFixed(+s.expected<10?2:1)+' expected':'';
+  return String(s.label||s.source||'Source')+': '+kc+exp
+ }).join(' · '));
+ const notes=(m?.r?.notes||[]).filter(Boolean);
+ if(notes.length)parts.push('Model notes: '+notes.join(' · '));
+ return parts.join(' · ')
+}
+function rngInfo(m){
+ const detail=rngDetailTitle(m);return detail?'<span class="rng-assumption-info" tabindex="0" title="'+esc(detail)+'" aria-label="'+esc(detail)+'">ⓘ</span>':''
+}
 function itemRow(m){
  const expected=Number.isFinite(m.r.expected)?m.r.expected:null,actual=fmt(m.r.observed),pct=m.r.text,z=cappedZ(m.z);
  if(lens==='raw'){
   const sub=actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile';
-  return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(z)+'">'+sig(z)+'</strong><small>pure statistical deviation</small></div></article>'
+  return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+rngInfo(m)+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(z)+'">'+sig(z)+'</strong><small>pure statistical deviation</small></div></article>'
  }
  if(lens==='value'){
   const fw=financialWeight(m),delta=expected==null?null:(m.r.observed-expected)*fw.gp,contribution=z*fw.w;
   const sub=actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile · GE '+money(fw.gp)+' gp'+(delta==null?'':' · Δ '+(delta>=0?'+':'−')+money(Math.abs(delta))+' gp');
-  return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(contribution)+'">'+signed(contribution)+'</strong><small>'+sig(z)+' × '+fw.w.toFixed(2)+' value weight</small></div></article>'
+  return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+rngInfo(m)+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(contribution)+'">'+signed(contribution)+'</strong><small>'+sig(z)+' × '+fw.w.toFixed(2)+' value weight</small></div></article>'
  }
  const rank=m.meaningfulRank||meaningfulRank(m,z),imp=rank.imp,contribution=rank.score;
  const modifiers=[];
@@ -333,7 +348,7 @@ function itemRow(m){
  if(imp.deficit?.f<.98&&imp.deficit.label)modifiers.push('dryness softened: '+imp.deficit.label);
  if(imp.confidence.f<1)modifiers.push(Math.round(imp.confidence.f*100)+'% model confidence');
  const sub=actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile · '+imp.label+(modifiers.length?' · '+modifiers.join(' · '):'');
- return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(contribution)+'">'+signed(contribution)+'</strong><small>'+sig(z)+' evidence · '+imp.w.toFixed(2)+' impact · '+rank.impactFactor.toFixed(2)+'× rank modifier</small></div></article>'
+ return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+rngInfo(m)+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(contribution)+'">'+signed(contribution)+'</strong><small>'+sig(z)+' evidence · '+imp.w.toFixed(2)+' impact · '+rank.impactFactor.toFixed(2)+'× rank modifier</small></div></article>'
 }
 function excludedSearchRow(x){
  return '<article class="clog-luck-item clog-luck-search-excluded"><img src="https://static.runelite.net/cache/item/icon/'+x.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(x.id,x.name)+'</b><small>'+esc(x.reason.detail)+'</small></div><div class="clog-luck-item-score"><strong>Excluded</strong><small>'+esc(x.reason.label)+' · '+fmt(x.count)+' logged</small></div></article>'
@@ -369,18 +384,17 @@ function luckyFamilySizes(metrics){
 function meaningfulRank(m,z=null,familySize=1){
  z=z==null?cappedZ(m.z):cappedZ(z);
  const imp=impactWeight(m,z),severity=Math.abs(z),evidence=severity*severity;
+ // The old curve saturated too early: a 10/10 megarare was barely more
+ // important than a mid-tier upgrade. Preserve probability as the evidence
+ // base, but give genuinely progression-defining items meaningful leverage.
+ const importanceBoost=1+.20*Math.max(0,Math.min(5,imp.base-5));
  if(z<0){
-   // Dry grinds: statistical evidence dominates. Relevance nudges the order,
-   // because target value matters, but it cannot manufacture dryness.
-   const impactFactor=.75+1.25*(1-Math.exp(-imp.w/3));
-   return{imp,impactFactor,evidence,searchPenalty:1,familySize,score:-evidence*impactFactor,side:'dry'}
+   const impactFactor=(.75+1.25*(1-Math.exp(-imp.w/3)))*importanceBoost;
+   return{imp,impactFactor,importanceBoost,evidence,searchPenalty:1,familySize,score:-evidence*impactFactor,side:'dry'}
  }
- // Lucky drops: relevance matters more than on the dry side, but does not get
- // the 20x+ leverage of the previous version. A modest source-family discount
- // handles the look-elsewhere effect without a harsh Bonferroni-style correction.
- const impactFactor=.35+1.85*(1-Math.exp(-imp.w/3));
+ const impactFactor=(.35+1.85*(1-Math.exp(-imp.w/3)))*importanceBoost;
  const searchPenalty=1/Math.sqrt(1+Math.log2(Math.max(1,familySize))/4);
- return{imp,impactFactor,evidence,searchPenalty,familySize,score:evidence*impactFactor*searchPenalty,side:'lucky'}
+ return{imp,impactFactor,importanceBoost,evidence,searchPenalty,familySize,score:evidence*impactFactor*searchPenalty,side:'lucky'}
 }
 function ranked(metrics){
  const familySizes=lens==='meaningful'?luckyFamilySizes(metrics):null;
