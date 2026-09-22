@@ -131,7 +131,7 @@ function ensureFiveMast(){
  if(host.dataset.layout==='five')return;
  host.dataset.layout='five';
  host.classList.add('mast-status-five');
- host.innerHTML=`<div class="mast-stat mast-stat-clog mast-stat-iconed"><img class="mast-summary-icon mast-clog-icon" src="img/ui/collection-log.png" alt=""><div><span>Group Collection Log</span><b data-mast-log>—</b><small data-mast-log-sub>Across all five accounts</small></div></div><div class="mast-stat mast-stat-value mast-stat-clog mast-stat-clog-end" data-mast-value><span>Total Collection Log Value</span><small>Loading logged value split…</small></div><div class="mast-stat mast-stat-xp mast-stat-iconed"><img class="mast-summary-icon mast-skills-icon" src="img/ui/skills.png" alt=""><div><span>Total XP · 5-man GIM</span><b data-mast-xp>—</b><small data-mast-xp-exact>XP across all five accounts</small></div></div><div class="mast-stat mast-stat-drop"><img data-mast-drop-icon hidden alt=""><div><span>Latest item unlock</span><b data-mast-drop>—</b><small data-mast-drop-sub>item unlocks via Temple</small></div></div><div class="mast-stat mast-stat-level"><div class="mast-level-icons"><img class="mast-level-avatar" data-mast-level-icon hidden alt=""><img class="mast-level-skill-icon" data-mast-level-skill-icon hidden alt=""></div><div><span>Latest gained level</span><b data-mast-level>—</b><small data-mast-level-sub>saved WOM history</small></div></div>`;
+ host.innerHTML=`<div class="mast-stat mast-stat-clog mast-stat-iconed"><img class="mast-summary-icon mast-clog-icon" src="img/ui/collection-log.png" alt=""><div><span>Group Collection Log</span><b data-mast-log>—</b><small data-mast-log-sub>Collection Log via Temple</small></div></div><div class="mast-stat mast-stat-value mast-stat-clog mast-stat-clog-end" data-mast-value><span>Total Collection Log Value</span><small>Loading logged value split…</small></div><div class="mast-stat mast-stat-xp mast-stat-iconed"><img class="mast-summary-icon mast-skills-icon" src="img/ui/skills.png" alt=""><div><span>Total XP · 5-man GIM</span><b data-mast-xp>—</b><small data-mast-xp-exact>all five WOM accounts</small></div></div><div class="mast-stat mast-stat-drop"><img data-mast-drop-icon hidden alt=""><div><span>Latest item unlock</span><b data-mast-drop>—</b><small data-mast-drop-sub>item unlocks via Temple</small></div></div><div class="mast-stat mast-stat-level"><div class="mast-level-icons"><img class="mast-level-avatar" data-mast-level-icon hidden alt=""><img class="mast-level-skill-icon" data-mast-level-skill-icon hidden alt=""></div><div><span>Latest gained level</span><b data-mast-level>—</b><small data-mast-level-sub>saved WOM history</small></div></div>`;
 }
 async function renderMastValue(){
  const slots=$$('[data-mast-value]');if(!slots.length)return;
@@ -153,9 +153,9 @@ function renderMast(){
  ensureFiveMast();
  const gs=collectionModel(true),cov=templeCoverage(),totalXp=PLAYERS.reduce((n,p)=>n+(+overall(p.key).experience||0),0);
  $$('[data-mast-log]').forEach(x=>x.textContent=gs.known?`${fmt(gs.got)} / ${fmt(gs.known)}`:'—');
- $('[data-mast-log-sub]').forEach(x=>x.textContent='Across all five accounts');
- $$('[data-mast-xp]').forEach(x=>{x.textContent=totalXp?compact(totalXp):'—';x.title=`${fmt(totalXp)} XP across all five accounts`});
- $('[data-mast-xp-exact]').forEach(x=>x.textContent=`${fmt(totalXp)} XP across all five accounts`);
+ $$('[data-mast-log-sub]').forEach(x=>x.textContent=`${cov.synced}/5 Collection Logs available${cov.unsynced.length?' · '+cov.unsynced.join(', ')+' unavailable':''}`);
+ $$('[data-mast-xp]').forEach(x=>{x.textContent=totalXp?compact(totalXp):'—';x.title=`${fmt(totalXp)} XP across all five WOM accounts`});
+ $$('[data-mast-xp-exact]').forEach(x=>x.textContent=`${fmt(totalXp)} XP across all five WOM accounts`);
  const dr=templeRecent()[0];
  $$('[data-mast-drop]').forEach(x=>x.innerHTML=dr?window.UGV21.itemLink(dr.id,dr.name):'No recent feed yet');
  $$('[data-mast-drop-sub]').forEach(x=>x.textContent=dr?`${dr.player||'Group'} · ${dateOnly(dr.date)} · Temple`:'Temple recent unlocks');
