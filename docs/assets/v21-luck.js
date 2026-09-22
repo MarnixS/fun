@@ -232,6 +232,25 @@ function saturateSourceFamilies(units){
  }
  return units
 }
+function meaningfulContext(m,z){
+ z=clamp(+z,-3.5,3.5);
+ const expected=Number.isFinite(m?.r?.expected)?+m.r.expected:null,observed=Number.isFinite(+m?.r?.observed)?+m.r.observed:0,profile=impactProfile(m);
+ let dryGate=1,earlyUnlockBoost=0,signal=z;
+ // A missing sub-rate rare is usually still a normal outcome. Meaningful
+ // dryness only matures once the lower tail itself becomes genuinely small.
+ if(z<0&&Number.isFinite(+m?.r?.dryTail)){
+  const tail=+m.r.dryTail;
+  dryGate=clamp((.25-tail)/.15,0,1);
+  signal=z*dryGate;
+ }
+ // Progression is asymmetric: landing the first major item before one expected
+ // copy can matter even when it is not an extreme statistical spoon.
+ if(z>0&&observed>0&&expected!=null&&expected<1&&profile.base>=5){
+  earlyUnlockBoost=.08*Math.min(5,Math.max(0,profile.base-5))*(1-expected);
+  signal=clamp(z+earlyUnlockBoost,-3.5,3.5);
+ }
+ return{signal,dryGate,earlyUnlockBoost,expected,observed,profile}
+}
 function independentUnits(metrics){
  const groups=new Map();
  for(const m of metrics){
@@ -242,12 +261,15 @@ function independentUnits(metrics){
  }
  const units=[];
  for(const [key,rows] of groups){
-  if(rows.length===1){const m=rows[0],imp=impactWeight(m,cappedZ(m.z)),residual=portfolioResidual(m);units.push({key,rows,m,z:cappedZ(m.z),imp,residual,w:imp.w*residual});continue}
-  const parts=rows.map(m=>({m,imp:impactWeight(m,cappedZ(m.z)),residual:portfolioResidual(m),z:cappedZ(m.z)}));
+  if(rows.length===1){
+   const m=rows[0],ctx=meaningfulContext(m,cappedZ(m.z)),imp=impactWeight(m,ctx.signal),residual=portfolioResidual(m);
+   units.push({key,rows,m,z:ctx.signal,rawZ:cappedZ(m.z),context:ctx,imp,residual,w:imp.w*residual});continue
+  }
+  const parts=rows.map(m=>{const ctx=meaningfulContext(m,cappedZ(m.z));return{m,ctx,imp:impactWeight(m,ctx.signal),residual:portfolioResidual(m),z:ctx.signal}});
   const sumW=parts.reduce((n,x)=>n+x.imp.w*x.residual,0);
   const z=sumW?parts.reduce((n,x)=>n+x.z*x.imp.w*x.residual,0)/sumW:0;
   const strongest=parts.reduce((a,b)=>b.imp.w*b.residual>a.imp.w*a.residual?b:a);
-  units.push({key,rows,m:strongest.m,z:cappedZ(z),imp:{...strongest.imp,label:strongest.imp.label+' · shared roll group'},residual:strongest.residual,w:strongest.imp.w*strongest.residual});
+  units.push({key,rows,m:strongest.m,z:cappedZ(z),rawZ:cappedZ(strongest.m.z),context:strongest.ctx,imp:{...strongest.imp,label:strongest.imp.label+' · shared roll group'},residual:strongest.residual,w:strongest.imp.w*strongest.residual});
  }
  return saturateSourceFamilies(units)
 }
@@ -323,6 +345,12 @@ function rngDetailTitle(m){
   const exp=Number.isFinite(+s.expected)?' → '+(+s.expected).toFixed(+s.expected<10?2:1)+' expected':'';
   return String(s.label||s.source||'Source')+': '+kc+exp
  }).join(' · '));
+ const expected=Number.isFinite(m?.r?.expected)?+m.r.expected:null,observed=Number.isFinite(+m?.r?.observed)?+m.r.observed:null;
+ const chance=x=>{x=100*(+x||0);return x<.01?'<0.01%':x>99.99?'>99.99%':x<1||x>99?x.toFixed(2)+'%':Math.round(x)+'%'};
+ if(expected!=null&&observed!=null){
+  if(observed<expected&&Number.isFinite(+m?.r?.dryTail))parts.push('Chance of this count or fewer: '+chance(m.r.dryTail));
+  else if(observed>expected&&Number.isFinite(+m?.r?.luckyTail))parts.push('Chance of this count or more: '+chance(m.r.luckyTail));
+ }
  const notes=(m?.r?.notes||[]).filter(Boolean);
  if(notes.length)parts.push('Model notes: '+notes.join(' · '));
  return parts.join(' · ')
@@ -347,8 +375,11 @@ function itemRow(m){
  if(imp.synergy?.label)modifiers.push(imp.synergy.label);
  if(imp.deficit?.f<.98&&imp.deficit.label)modifiers.push('dryness softened: '+imp.deficit.label);
  if(imp.confidence.f<1)modifiers.push(Math.round(imp.confidence.f*100)+'% model confidence');
+ if(rank.earlyUnlockBonus>0)modifiers.push('early major-unlock timing');
+ if(z<0&&rank.dryGate<1)modifiers.push(rank.dryGate<=0?'not meaningfully dry yet':'dryness evidence still maturing');
  const sub=actual+' actual · '+(expected==null?'expected n/a':expected.toFixed(expected<10?2:1)+' expected')+' · '+pct+' percentile · '+imp.label+(modifiers.length?' · '+modifiers.join(' · '):'');
- return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+rngInfo(m)+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(contribution)+'">'+signed(contribution)+'</strong><small>'+sig(z)+' evidence · '+imp.w.toFixed(2)+' impact · '+rank.impactFactor.toFixed(2)+'× rank modifier</small></div></article>'
+ const evidenceLabel=Math.abs((rank.signal??z)-z)>.01?sig(rank.signal)+' contextual evidence (raw '+sig(z)+')':sig(z)+' evidence';
+ return '<article class="clog-luck-item"><img src="https://static.runelite.net/cache/item/icon/'+m.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(m.id,m.name)+'</b><small>'+sub+rngInfo(m)+'</small></div><div class="clog-luck-item-score"><strong class="clog-luck-'+tone(contribution)+'">'+signed(contribution)+'</strong><small>'+evidenceLabel+' · '+imp.w.toFixed(2)+' impact · '+rank.impactFactor.toFixed(2)+'× rank modifier</small></div></article>'
 }
 function excludedSearchRow(x){
  return '<article class="clog-luck-item clog-luck-search-excluded"><img src="https://static.runelite.net/cache/item/icon/'+x.id+'.png" alt=""><div class="clog-luck-item-copy"><b>'+U.itemLink(x.id,x.name)+'</b><small>'+esc(x.reason.detail)+'</small></div><div class="clog-luck-item-score"><strong>Excluded</strong><small>'+esc(x.reason.label)+' · '+fmt(x.count)+' logged</small></div></article>'
@@ -383,18 +414,22 @@ function luckyFamilySizes(metrics){
 }
 function meaningfulRank(m,z=null,familySize=1){
  z=z==null?cappedZ(m.z):cappedZ(z);
- const imp=impactWeight(m,z),severity=Math.abs(z),evidence=severity*severity;
- // The old curve saturated too early: a 10/10 megarare was barely more
- // important than a mid-tier upgrade. Preserve probability as the evidence
- // base, but give genuinely progression-defining items meaningful leverage.
+ const ctx=meaningfulContext(m,z),signal=ctx.signal,imp=impactWeight(m,signal),severity=Math.abs(signal);
+ let evidence=severity*severity,earlyUnlockBonus=0;
  const importanceBoost=1+.20*Math.max(0,Math.min(5,imp.base-5));
- if(z<0){
+ if(signal<0){
    const impactFactor=(.75+1.25*(1-Math.exp(-imp.w/3)))*importanceBoost;
-   return{imp,impactFactor,importanceBoost,evidence,searchPenalty:1,familySize,score:-evidence*impactFactor,side:'dry'}
+   return{imp,impactFactor,importanceBoost,evidence,searchPenalty:1,familySize,score:-evidence*impactFactor,side:'dry',signal,dryGate:ctx.dryGate,earlyUnlockBonus:0}
+ }
+ // First-copy timing gets a modest progression bonus for major items that
+ // arrived before one expected copy. This is not treated as extra raw RNG.
+ if(signal>0&&ctx.observed>0&&ctx.expected!=null&&ctx.expected<1&&imp.base>=5){
+  earlyUnlockBonus=Math.min(1.25,.30*Math.min(5,Math.max(0,imp.base-5))*(1-ctx.expected));
+  evidence+=earlyUnlockBonus;
  }
  const impactFactor=(.35+1.85*(1-Math.exp(-imp.w/3)))*importanceBoost;
  const searchPenalty=1/Math.sqrt(1+Math.log2(Math.max(1,familySize))/4);
- return{imp,impactFactor,importanceBoost,evidence,searchPenalty,familySize,score:evidence*impactFactor*searchPenalty,side:'lucky'}
+ return{imp,impactFactor,importanceBoost,evidence,searchPenalty,familySize,score:evidence*impactFactor*searchPenalty,side:'lucky',signal,dryGate:ctx.dryGate,earlyUnlockBonus}
 }
 function ranked(metrics){
  const familySizes=lens==='meaningful'?luckyFamilySizes(metrics):null;
