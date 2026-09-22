@@ -30,6 +30,19 @@
    </div>
    <div class="nem-coverage-note" id="nemesisProgressStatus">Add external WOM accounts to load progress history.</div>
    <div id="nemesisCompareChart" class="nem-compare-chart"></div>
+   <div class="nem-time-machine">
+    <div class="nem-time-head"><div><h4>Historical point-in-time</h4><p>Time Machine parity: use the closest real WOM snapshot for every available account. Nothing between snapshots is interpolated.</p></div></div>
+    <div class="nem-time-controls">
+     <label class="nem-select-label">Target date<input type="date" id="nemesisTimeDate"></label>
+     <button type="button" id="nemesisTimeGo">Compare date</button>
+     <button type="button" data-nem-time-preset="1y">1 year ago</button>
+     <button type="button" data-nem-time-preset="6m">6 months ago</button>
+     <button type="button" data-nem-time-preset="2026-01-01">1 Jan 2026</button>
+    </div>
+    <div class="nem-coverage-note" id="nemesisTimeStatus">Choose a date to compare the closest real WOM snapshots. No interpolation is used.</div>
+    <div id="nemesisTimeChart" class="nem-time-chart"></div>
+    <div id="nemesisTimeTable"></div>
+   </div>
   </div></section>
   <section class="nem-section"><div class="nem-section-head"><div><h3 id="nemesisResultTitle">Nemesis comparison</h3><p>Current saved United Gimps data against the available members of the external comparison group.</p></div><span class="nav-badge">BETA</span></div><div class="nem-section-body" id="nemesisSummary"></div></section>
   <section class="nem-section"><div class="nem-section-head"><div><h3>Skills</h3><p>Additive skill totals across both sides, with per-member averages for different group sizes.</p></div></div><div class="nem-section-body" id="nemesisSkills"></div></section>
@@ -37,4 +50,4 @@
   <section class="nem-section"><div class="nem-section-head"><div><h3>Collection Log overlap</h3><p>Temple-obtained slots compared as group unions, with per-external-member overlap shown underneath.</p></div></div><div class="nem-section-body" id="nemesisClog"></div></section>
  </div>
 </section></main>
-<footer class="wrap footer"><div>The United Gimps · 5-man Group Ironman · Collection Log & progress · all five are full group members.</div><div class="fan-disclaimer">Created using intellectual property belonging to Jagex Limited under the terms of Jagex's Fan Content Policy. This content is not endorsed by or affiliated with Jagex.</div></footer><script defer src="assets/wom-store.js?v=43"></script><script defer src="assets/history-rates.js?v=44"></script><script defer src="assets/history-model.js?v=44"></script><script defer src="assets/app.js?v=83"></script><script defer src="assets/v21-common.js?v=52"></script><script defer src="assets/v21-chartlib.js?v=45"></script><script defer src="assets/v21-progress.js?v=51"></script><script defer src="assets/v21-clog.js?v=43"></script><script defer src="assets/v21-nav.js?v=49" data-v21-nav></script><script defer src="assets/v25-nemesis.js?v=7"></script></body></html>
+<footer class="wrap footer"><div>The United Gimps · 5-man Group Ironman · Collection Log & progress · all five are full group members.</div><div class="fan-disclaimer">Created using intellectual property belonging to Jagex Limited under the terms of Jagex's Fan Content Policy. This content is not endorsed by or affiliated with Jagex.</div></footer><script defer src="assets/wom-store.js?v=43"></script><script defer src="assets/history-rates.js?v=44"></script><script defer src="assets/history-model.js?v=44"></script><script defer src="assets/app.js?v=83"></script><script defer src="assets/v21-common.js?v=52"></script><script defer src="assets/v21-chartlib.js?v=45"></script><script defer src="assets/v21-progress.js?v=51"></script><script defer src="assets/v21-clog.js?v=43"></script><script defer src="assets/v21-nav.js?v=49" data-v21-nav></script><script defer src="assets/v25-nemesis.js?v=8"></script></body></html>
