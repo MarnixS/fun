@@ -3,6 +3,8 @@ const {openPage,waitFor}=require('./audit_v25_jsdom');
 async function run(){
  const {dom,errors}=await openPage('chronicle.html');const w=dom.window,d=w.document;
  await waitFor(()=>d.querySelector('#sharedGoals'),'shared goals');
+ d.querySelector('[data-chrono-size="all"]').click();
+ await waitFor(()=>d.querySelector('[data-chrono-size="all"]')?.classList.contains('active')&&d.querySelectorAll('.chronicle-event[data-level]').length>1000,'expanded Chronicle history',30000);
  assert(!d.querySelector('#playerGoals'));assert(!d.querySelector('[data-set-goal]'));assert(!d.body.textContent.includes('Private goals on this device'));
  const groups=new Map();
  for(const el of d.querySelectorAll('.chronicle-event[data-level]')){
