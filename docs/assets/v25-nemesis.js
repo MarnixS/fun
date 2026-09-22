@@ -111,7 +111,7 @@ function signed(v,digits=0){
  if(v==null||!Number.isFinite(+v))return'—';const x=+v,opts=digits?{maximumFractionDigits:digits,minimumFractionDigits:digits}:{maximumFractionDigits:0};
  return(x>0?'+':'')+x.toLocaleString('en-GB',opts)
 }
-function sumValues(values){const a=values.filter(v=>Number.isFinite(+v)).map(Number);return{value:a.length?a.reduce((x,y)=>x+y,0):null,count:a.length}}
+function sumValues(values){const a=values.filter(v=>v!=null&&Number.isFinite(+v)).map(Number);return{value:a.length?a.reduce((x,y)=>x+y,0):null,count:a.length}}
 function unionClogs(rows){const items=new Map();for(const c of rows.filter(Boolean))for(const [id,v] of c.items)items.set(id,v);return items}
 function setOps(a,b){let shared=0;for(const id of a.keys())if(b.has(id))shared++;return{shared,aOnly:a.size-shared,bOnly:b.size-shared}}
 function extStats(){return externals.map(x=>x.stats).filter(Boolean)}
