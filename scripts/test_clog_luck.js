@@ -52,6 +52,19 @@ assert.equal(L.calculate(26370,'Ancient hilt',[players[0]],wom,genericModel,U),n
 assert.equal(L.calculate(4740,'Bolt rack',[players[0]],wom,genericModel,U),null);
 console.log('Luck exclusions passed: capped counters, Nex and bolt racks.');
 
+const zenyteModel=model({a:{19529:2},b:{}});
+const zenyteMissing=L.exclusion(19529,'Zenyte shard',[players[0]],wom,zenyteModel,U);
+assert(zenyteMissing&&zenyteMissing.kind==='rate','Zenyte must stay excluded until a real Demonic Gorilla KC denominator is saved');
+const zenyteTemple={bossKc:{a:{demonic_gorilla:600,tortured_gorilla:30}}};
+assert.equal(L.exclusion(19529,'Zenyte shard',[players[0]],wom,zenyteModel,U,zenyteTemple),null);
+const zenyte=L.calculate(19529,'Zenyte shard',[players[0]],wom,zenyteModel,U,zenyteTemple);
+assert(zenyte,'Zenyte should score when Temple gorilla KC exists');
+assert(Math.abs(zenyte.expected-(600/300+30/3000))<1e-12,'Zenyte expected count must use 1/300 Demonic and 1/3000 Tortured Gorilla rates');
+const demonicOnly=L.calculate(19529,'Zenyte shard',[players[0]],wom,zenyteModel,U,{bossKc:{a:{demonic_gorilla:600}}});
+assert(demonicOnly&&Math.abs(demonicOnly.expected-2)<1e-12,'missing Tortured Gorilla KC must be omitted rather than guessed');
+console.log('Zenyte RNG tests passed: Temple gorilla KC denominator and optional Tortured Gorilla contribution.');
+
+
 
 // Current saved log capped-entry audit.
 const fs=require('node:fs'),path=require('node:path');
