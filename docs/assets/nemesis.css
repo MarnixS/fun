@@ -34,3 +34,18 @@
 .nem-clog-kpis b{display:block;color:#e2ca94;font:700 18px Georgia,serif;margin-top:3px}
 @media(max-width:800px){.nemesis-intro{grid-template-columns:1fr}.nem-clog-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:480px){.nemesis-panel{padding:11px}.nemesis-form{display:grid}.nemesis-form button{width:100%}.nem-clog-kpis{grid-template-columns:1fr 1fr}.nem-section-body{padding:7px}}
+.nem-external-roster{margin-top:10px;border-top:1px solid #3e3020;padding-top:9px}
+.nem-roster-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}
+.nem-roster-head>div{display:grid;gap:2px}.nem-roster-head strong{color:#d8c08b;font-size:11px}.nem-roster-head small{color:#817765;font-size:9px}
+.nem-clear,.nem-remove{border:1px solid #554129;background:#17100b;color:#b8a88c;cursor:pointer;font:inherit}
+.nem-clear{min-height:30px;padding:0 9px;font-size:9px}.nem-remove{min-height:31px;padding:0 9px;font-size:9px}
+.nem-clear:hover,.nem-remove:hover{border-color:#80623b;color:#ead39c;background:#21170e}
+.nem-external-member{display:grid;grid-template-columns:minmax(130px,.7fr) minmax(260px,1.8fr) auto;gap:8px;align-items:center;padding:7px 0;border-top:1px solid #2f2418}
+.nem-external-name{min-width:0;display:grid;gap:1px}.nem-external-name strong{overflow:hidden;text-overflow:ellipsis;color:#e2ca94;font-size:11px}.nem-external-name small{overflow:hidden;text-overflow:ellipsis;color:#776e60;font-size:8px}
+.nem-external-sources{display:flex;gap:5px;flex-wrap:wrap;min-width:0}.nem-external-sources .nem-source{margin:0;padding:4px 6px;font-size:8px}
+.nem-coverage-note{margin:0 0 9px;padding:8px 10px;border:1px solid #3f3121;background:#0e0a07;color:#8f836f;font-size:9px;line-height:1.45}
+.nem-group-row th,.nem-group-row td{font-weight:700}.nem-table-divider td{padding:6px 9px!important;background:#0e0a07;color:#786e5f!important;font-size:8px!important;text-transform:uppercase;letter-spacing:.08em;text-align:left!important}
+.nem-table td small{display:inline-block;margin-left:3px;color:#776e60;font-size:8px;font-weight:400}
+.nem-clog-kpis{grid-template-columns:repeat(6,minmax(0,1fr))}
+@media(max-width:800px){.nem-external-member{grid-template-columns:1fr auto}.nem-external-sources{grid-column:1/-1;grid-row:2}.nem-clog-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:480px){.nem-roster-head{align-items:flex-start}.nem-external-member{grid-template-columns:minmax(0,1fr) auto}.nem-external-sources .nem-source{font-size:7px}.nem-clog-kpis{grid-template-columns:1fr 1fr}}
