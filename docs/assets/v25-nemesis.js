@@ -316,6 +316,83 @@ function renderBosses(){
  }).filter(x=>x.max>0).sort((a,b)=>b.max-a.max).slice(0,40);
  h.innerHTML=rows.length?'<div class="nem-coverage-note">Boss KC is summed across '+es.length+'/'+externals.length+' external WOM accounts and '+os.length+'/'+selectedPlayers().length+' selected United Gimps accounts.</div><div class="table-scroll"><table class="nem-table"><thead><tr><th>Boss</th><th>External group KC</th><th>United Gimps KC</th><th>Difference</th></tr></thead><tbody>'+rows.map(x=>'<tr><th>'+escapeHtml(nice(x.k))+'</th><td>'+fmt(x.ev)+'</td><td>'+fmt(x.ov)+'</td><td class="'+(x.diff>=0?'pos':'neg')+'">'+signed(x.diff)+'</td></tr>').join('')+'</tbody></table></div>':'<div class="notice">No comparable boss KC was found.</div>'
 }
+
+function selectorKeys(){
+ const own=selectedPlayers().map(p=>U.snapData(ownWom,p.key)||{}),ext=externals.map(externalLatestData).filter(Boolean);
+ const bosses=[...new Set([...own,...ext].flatMap(d=>Object.keys(d?.bosses||{})).filter(k=>[...own,...ext].some(d=>Math.max(0,+d?.bosses?.[k]?.kills||0)>0)))].sort((a,b)=>nice(a).localeCompare(nice(b)));
+ const activities=[...new Set([...own,...ext].flatMap(d=>Object.keys(d?.activities||{})).filter(k=>[...own,...ext].some(d=>Math.max(0,+d?.activities?.[k]?.score||0)>0)))].sort((a,b)=>nice(a).localeCompare(nice(b)));
+ return{bosses,activities}
+}
+function populateProgressSelectors(){
+ const metric=$('#nemesisMetric'),skill=$('#nemesisSkill'),boss=$('#nemesisBoss'),activity=$('#nemesisActivity');
+ if(!metric||!skill||!boss||!activity)return;
+ metric.value=compareMetric;
+ skill.innerHTML=SKILLS.map(k=>'<option value="'+escapeHtml(k)+'">'+escapeHtml(nice(k))+'</option>').join('');
+ if(!SKILLS.includes(compareSkill))compareSkill='slayer';skill.value=compareSkill;
+ const keys=selectorKeys();
+ boss.innerHTML=keys.bosses.length?keys.bosses.map(k=>'<option value="'+escapeHtml(k)+'">'+escapeHtml(nice(k))+'</option>').join(''):'<option value="">No boss data</option>';
+ if(!keys.bosses.includes(compareBoss))compareBoss=keys.bosses[0]||'';boss.value=compareBoss;
+ activity.innerHTML=keys.activities.length?keys.activities.map(k=>'<option value="'+escapeHtml(k)+'">'+escapeHtml(nice(k))+'</option>').join(''):'<option value="">No activity data</option>';
+ if(!keys.activities.includes(compareActivity))compareActivity=keys.activities[0]||'';activity.value=compareActivity;
+ $('#nemesisSkillWrap').hidden=compareMetric!=='skill';
+ $('#nemesisBossWrap').hidden=compareMetric!=='boss';
+ $('#nemesisActivityWrap').hidden=compareMetric!=='activity';
+ document.querySelectorAll('[data-nem-mode]').forEach(b=>b.classList.toggle('active',b.dataset.nemMode===compareMode));
+ document.querySelectorAll('[data-nem-view]').forEach(b=>b.classList.toggle('active',b.dataset.nemView===compareView));
+ document.querySelectorAll('[data-nem-period]').forEach(b=>b.classList.toggle('active',b.dataset.nemPeriod===String(comparePeriod)));
+}
+function comparisonCoverage(spec){
+ const extWom=externals.filter(x=>x.womProfile),own=selectedPlayers();
+ const extSeries=extWom.filter(x=>metricSeries(externalSnapshots(x),spec).length>=2).length;
+ const ownSeries=own.filter(p=>metricSeries(ownSnapshots(p),spec).length>=2).length;
+ return{extWom:extWom.length,extSeries,ownWom:own.length,ownSeries}
+}
+function renderShareChart(host,spec){
+ host.innerHTML='<div class="nem-share-grid"><section><h4>External group</h4><div data-nem-share-external></div></section><section><h4>United Gimps</h4><div data-nem-share-united></div></section></div>';
+ const extEntries=externals.map(x=>({name:x.displayName||x.name,color:x.color,value:externalMemberValue(x,spec)}));
+ const ownEntries=selectedPlayers().map(p=>({name:p.name,color:p.color,value:ownMemberValue(p,spec)}));
+ C.drawPie(host.querySelector('[data-nem-share-external]'),extEntries,{format:spec.format,note:(compareMode==='gain'?'Gain':'Current')+' share within the external group.'});
+ C.drawPie(host.querySelector('[data-nem-share-united]'),ownEntries,{format:spec.format,note:(compareMode==='gain'?'Gain':'Current')+' share within the selected United Gimps accounts.'})
+}
+function renderProgressComparison(){
+ const host=$('#nemesisCompareChart'),status=$('#nemesisProgressStatus');if(!host||!status)return;
+ populateProgressSelectors();
+ if(!externals.length){host.innerHTML='';status.textContent='Add external accounts to compare progress.';return}
+ const spec=metricSpec(),needsHistory=compareMode==='gain'||compareView==='timeline'||(compareView==='share'&&compareMode==='gain');
+ if(needsHistory&&!historyPromise){
+  const need=externals.some(x=>x.womProfile&&(comparePeriod==='all'?!x.history?.allLoaded:!(x.history?.yearLoaded||x.history?.allLoaded))&&!x.history?.loading);
+  if(need){historyPromise=ensureExternalHistory().finally(()=>{historyPromise=null;renderProgressComparison()})}
+ }
+ const cov=comparisonCoverage(spec),loading=externals.filter(x=>x.history?.loading).length,errors=externals.filter(x=>x.history?.error).length;
+ const range=periodLabel(comparePeriod),modeLabel=compareMode==='gain'?'gains':'current totals';
+ status.textContent=range+' · '+modeLabel+' · external WOM history '+cov.extSeries+'/'+cov.extWom+' · United WOM history '+cov.ownSeries+'/'+cov.ownWom+(loading?' · loading '+loading+' external histor'+(loading===1?'y':'ies'):'')+(errors?' · '+errors+' external history request'+(errors===1?' failed':'s failed'):'');
+ const bars=groupBarEntries(spec);
+ if(compareView==='bars'){C.drawBars(host,bars,{format:spec.format,note:(compareMode==='gain'?'Gain over '+range:'Current')+' group-vs-group '+spec.label+' comparison.'});return}
+ if(compareView==='share'){renderShareChart(host,spec);return}
+ const ext=externalGroupSeries(spec),uni=unitedGroupSeries(spec);
+ if(ext.length<2&&uni.length<2){
+  C.drawBars(host,bars,{format:spec.format,note:'Bar comparison shown because neither side has two usable WOM timeline points for '+range+'.'});
+  return
+ }
+ C.drawLine(host,[
+  {name:'External group',color:GROUP_COLORS.external,data:ext},
+  {name:'United Gimps',color:GROUP_COLORS.united,data:uni}
+ ],{format:spec.format,gainMode:compareMode==='gain',bars,domain:comparisonWindow()})
+}
+function bindProgressControls(){
+ const metric=$('#nemesisMetric'),skill=$('#nemesisSkill'),boss=$('#nemesisBoss'),activity=$('#nemesisActivity');
+ if(metric&&!metric.dataset.bound){metric.dataset.bound='1';metric.onchange=()=>{compareMetric=metric.value;populateProgressSelectors();renderProgressComparison()}}
+ if(skill&&!skill.dataset.bound){skill.dataset.bound='1';skill.onchange=()=>{compareSkill=skill.value;renderProgressComparison()}}
+ if(boss&&!boss.dataset.bound){boss.dataset.bound='1';boss.onchange=()=>{compareBoss=boss.value;renderProgressComparison()}}
+ if(activity&&!activity.dataset.bound){activity.dataset.bound='1';activity.onchange=()=>{compareActivity=activity.value;renderProgressComparison()}}
+ document.querySelectorAll('[data-nem-mode]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{compareMode=b.dataset.nemMode;renderProgressComparison()}});
+ document.querySelectorAll('[data-nem-view]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{compareView=b.dataset.nemView;renderProgressComparison()}});
+ document.querySelectorAll('[data-nem-period]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{comparePeriod=b.dataset.nemPeriod==='all'?'all':+b.dataset.nemPeriod;renderProgressComparison()}});
+ document.addEventListener('click',e=>{
+  const sk=e.target.closest?.('[data-nem-skill]');if(sk){compareMetric='skill';compareSkill=sk.dataset.nemSkill;renderProgressComparison();$('#nemesisProgress')?.scrollIntoView({behavior:'smooth',block:'start'});return}
+  const bk=e.target.closest?.('[data-nem-boss]');if(bk){compareMetric='boss';compareBoss=bk.dataset.nemBoss;renderProgressComparison();$('#nemesisProgress')?.scrollIntoView({behavior:'smooth',block:'start'})}
+ })
+}
 function renderClog(){
  const h=$('#nemesisClog');if(!h)return;
  const ec=extClogs(),ours=ownRows().filter(x=>x.clog),eu=unionClogs(ec),ou=unionClogs(ours.map(x=>x.clog));
