@@ -9,7 +9,7 @@ for(const page of ['docs/nemesis.html','docs/nemesis-beta.html']){
   const html=fs.readFileSync(page,'utf8');
   const ids=['nemesisProgress','nemesisMode','nemesisPeriods','nemesisView','nemesisMetric','nemesisSkill','nemesisBoss','nemesisActivity','nemesisProgressStatus','nemesisCompareChart'];
   for(const id of ids)assert(html.includes(`id="${id}"`),`${page}: missing ${id}`);
-  assert(html.includes('v25-nemesis.js?v=5'),`${page}: wrong Nemesis JS version`);
+  assert(html.includes('v25-nemesis.js?v=6'),`${page}: wrong Nemesis JS version`);
   assert(html.includes('nemesis.css?v=3'),`${page}: wrong Nemesis CSS version`);
   assert(html.indexOf('v21-chartlib.js')<html.indexOf('v25-nemesis.js'),`${page}: chart library must load before Nemesis`);
   for(const range of ['all','365','180','90','30','7'])assert(html.includes(`data-nem-period="${range}"`),`${page}: missing period ${range}`);
