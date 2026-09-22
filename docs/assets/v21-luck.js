@@ -236,14 +236,23 @@ function meaningfulContext(m,z){
  z=clamp(+z,-3.5,3.5);
  const expected=Number.isFinite(m?.r?.expected)?+m.r.expected:null,observed=Number.isFinite(+m?.r?.observed)?+m.r.observed:0,profile=impactProfile(m);
  let dryGate=1,drySeverity=1,earlyUnlockBoost=0,signal=z;
- // Meaningful dryness is deliberately asymmetric. Ordinary missing drops are
- // ignored until the one-sided lower tail falls below 25%, but once that
- // happens the evidence matures quickly and genuinely rare dry streaks become
- // increasingly more costly than equally-sized positive deviations are useful.
+ // Meaningful dryness is deliberately asymmetric. Mild below-expectation outcomes
+ // can contribute a small negative once fewer than half of comparable players
+ // would be this dry. Below a 25% lower tail the evidence ramps much harder, and
+ // genuinely rare dry streaks become increasingly more costly than equally-sized
+ // positive deviations are useful.
  if(z<0&&Number.isFinite(+m?.r?.dryTail)){
   const tail=clamp(+m.r.dryTail,0,1);
-  const maturity=clamp((.25-tail)/.20,0,1); // zero at 25%, fully mature by 5%
-  dryGate=Math.sqrt(maturity);              // avoids suppressing real 10–20% tails too harshly
+  // Below-expectation outcomes can still carry a small negative signal when
+  // fewer than half of comparable players would be this dry. The 25% mark is
+  // therefore no longer an on/off switch; it separates background bad luck
+  // from genuinely meaningful dryness.
+  if(tail>=.25){
+   dryGate=clamp((.50-tail)/.25,0,1)*.30;   // 0 at 50%+, rising only to 0.30 at 25%
+  }else{
+   const maturity=clamp((.25-tail)/.20,0,1);
+   dryGate=.30+.70*Math.sqrt(maturity);     // continuous at 25%, fully mature by 5%
+  }
   const rarity=tail>0?clamp(Math.log(.10/tail)/Math.log(100),0,1):1;
   drySeverity=1+.45*rarity;                 // up to 45% extra weight for extreme established dryness
   signal=clamp(z*dryGate*drySeverity,-3.5,3.5);
@@ -459,7 +468,7 @@ function renderLists(){
    const raidText=stats.idx.portfolios.length?stats.idx.portfolios.map(p=>'<li><b>'+esc(p.label)+'</b><span>'+fmt(p.observed)+' actual vs '+p.expected.toFixed(1)+' expected</span><small>volume '+sig(p.volumeZ)+' · quality '+sig(p.qualityZ)+' · coverage '+sig(p.coverageZ)+' → '+sig(p.z)+'</small></li>').join(''):'<li><span>No raid portfolio with a usable expected-drop denominator.</span></li>';
    formula.innerHTML='<div class="rng-formula-summary"><span>Headline RNG Index</span><strong>'+scoreText(stats.idx.score)+'</strong><small>'+sig(stats.idx.meaningful)+' normalized impact signal</small></div>'+
    '<div class="rng-formula-equation"><span><small>Items</small><b>'+signed(stats.idx.itemNumerator)+'</b></span><em>+</em><span><small>Raid portfolios</small><b>'+signed(stats.idx.portfolioNumerator)+'</b></span><em>÷</em><span><small>Weight norm</small><b>'+stats.idx.denom.toFixed(2)+'</b></span><em>=</em><span><small>Combined</small><b>'+sig(stats.idx.meaningful)+'</b></span></div>'+
-   '<details class="rng-formula-detail"><summary>Calculation breakdown</summary><div><p><b>Evidence × impact × context.</b> Item impact comes from the explicit 885-item mature-GIM utility table. Assumption-heavy mechanics are confidence-damped; useful copies diminish with group coverage; complementary gear can add capped synergy; dry streaks can be softened when teammates already solved the slot.</p><ul>'+raidText+'</ul><p>Meaningful lucky drops use stronger relevance filtering plus a modest source-family look-elsewhere discount. A missing rare is not treated as meaningful dryness until its one-sided lower tail falls below 25%; after that threshold, dryness matures quickly and extreme established dry streaks are deliberately penalized more strongly than comparable positive deviations are rewarded. Major first copies obtained before one expected copy can receive a modest progression-timing bonus. Raid items represented in a pooled portfolio retain only part of their ordinary item-level weight to avoid double counting. Large source tables are L2-capped and item σ is capped at ±3.50.</p></div></details>';
+   '<details class="rng-formula-detail"><summary>Calculation breakdown</summary><div><p><b>Evidence × impact × context.</b> Item impact comes from the explicit 885-item mature-GIM utility table. Assumption-heavy mechanics are confidence-damped; useful copies diminish with group coverage; complementary gear can add capped synergy; dry streaks can be softened when teammates already solved the slot.</p><ul>'+raidText+'</ul><p>Meaningful lucky drops use stronger relevance filtering plus a modest source-family look-elsewhere discount. A below-expectation item can contribute a small negative when fewer than half of comparable players would have this count or fewer. Below a 25% one-sided lower tail, dryness becomes meaningfully stronger; extreme established dry streaks are deliberately penalized more strongly than comparable positive deviations are rewarded. Major first copies obtained before one expected copy can receive a modest progression-timing bonus. Raid items represented in a pooled portfolio retain only part of their ordinary item-level weight to avoid double counting. Large source tables are L2-capped and item σ is capped at ±3.50.</p></div></details>';
   }
  }
  const titles=lens==='raw'?['Most statistically lucky','Most statistically unlucky']:lens==='value'?['Biggest valuable spoons','Biggest valuable dry streaks']:['Luckiest meaningful drops','Unluckiest meaningful grinds'];
