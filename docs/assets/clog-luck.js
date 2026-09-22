@@ -11,7 +11,7 @@ const COX_REG_WEIGHTS={"dexterous prayer scroll":14,"arcane prayer scroll":14,"t
 const COX_CM_WEIGHTS={"dexterous prayer scroll":12,"arcane prayer scroll":12,"twisted buckler":4,"dragon hunter crossbow":4,"dinh's bulwark":3,"ancestral hat":4,"ancestral robe top":4,"ancestral robe bottom":4,"dragon claws":3,"elder maul":2,"kodai insignia":2,"twisted bow":2};
 const COX_REWORK_AT=Date.parse('2026-08-12T00:00:00Z');
 const TOA_WEIGHTS={"osmumten's fang":7,"lightbearer":7,"elidinis' ward":3,"masori mask":2,"masori body":2,"masori chaps":2,"tumeken's shadow (uncharged)":1};
-const ASSUME={cox:30000,bigDogCox:33000,coxCm:62000,toa:16667,toaLevel:150,toaPurple:1/45,toaExpert:21875,toaExpertLevel:350,toaExpertPurple:1/16,tobShare:.25,tobHmShare:.2,nightmareTeam:5,nightmareShare:.202,hueyShare:.367,royalShare:.5,callistoShare:.2,venenatisShare:.5,vetionShare:.5,scurriusMvp:1,zalcanoShare:.25,zalcanoPoints:300};
+const ASSUME={cox:30000,bigDogCox:33000,coxCm:62000,toa:16667,toaLevel:150,toaPurple:1/45,toaExpert:21875,toaExpertLevel:350,toaExpertPurple:1/16,tobShare:.25,tobHmShare:.2,nightmareTeam:5,nightmareShare:.202,callistoShare:.8,scurriusMvp:1,zalcanoPoints:300};
 const F={COX:1,COXCM:2,TOB:4,TOBHM:8,TOAE:16,TOA:32,TOAX:64,NMTEAM:128,NMSHARE:256,NEX:512,HUEY:1024,ROYAL:2048,CALLISTO:4096,VENENATIS:8192,VETION:16384,SCURRIUS:32768,ZALCANO:65536,ZALCANO_PTS:131072,FIRE_CAPES:262144,INFERNAL_CAPES:524288,SKOTIZO_OLD:1048576,KQ_OLD:2097152,KBD_OLD:4194304,NM_OLD:8388608,PNM_OLD:16777216};
 const SPECIAL_UNSUPPORTED=F.FIRE_CAPES|F.INFERNAL_CAPES|F.SKOTIZO_OLD|F.KQ_OLD|F.KBD_OLD|F.NM_OLD|F.PNM_OLD;
 const ACTIVITY={BEGINNER_CLUES_COMPLETED:'clue_scrolls_beginner',EASY_CLUES_COMPLETED:'clue_scrolls_easy',MEDIUM_CLUES_COMPLETED:'clue_scrolls_medium',HARD_CLUES_COMPLETED:'clue_scrolls_hard',ELITE_CLUES_COMPLETED:'clue_scrolls_elite',MASTER_CLUES_COMPLETED:'clue_scrolls_master',TOTAL_CLUES_COMPLETED:'clue_scrolls_all',RIFTS_CLOSED:'guardians_of_the_rift'};
@@ -103,13 +103,8 @@ function chance(rec,roll,name,notes,coxRegime='post'){
  if(src==='NIGHTMARE_KILLS'&&(flags&F.NMSHARE)){p*=(1+Math.max(0,Math.min(75,ASSUME.nightmareTeam-5))/100)*ASSUME.nightmareShare;notes.add('Nightmare assumes 5-player teams and 20.2% personal contribution')}
  if(src==='NIGHTMARE_KILLS'&&+rec._id===24495){p*=1+(1/ASSUME.nightmareTeam)*.05;notes.add('Nightmare jar assumes a 5-player team')}
  if(src==='NIGHTMARE_KILLS'&&+rec._id===24491){p*=1/ASSUME.nightmareTeam;notes.add('Nightmare pet assumes a 5-player team')}
- if(src==='HUEYCOATL_KILLS'&&(flags&F.HUEY)){p*=ASSUME.hueyShare;notes.add('Hueycoatl assumes 36.7% average personal contribution')}
- if(src==='ROYAL_TITAN_KILLS'&&(flags&F.ROYAL)){p*=ASSUME.royalShare;notes.add('Royal Titans assumes 50% average contribution')}
- if(src==='CALLISTO_KILLS'&&(flags&F.CALLISTO)){p*=ASSUME.callistoShare;notes.add('Callisto assumes 20% average contribution')}
- if(src==='VENENATIS_KILLS'&&(flags&F.VENENATIS)){p*=ASSUME.venenatisShare;notes.add('Venenatis assumes 50% average contribution')}
- if(src==='VETION_KILLS'&&(flags&F.VETION)){p*=ASSUME.vetionShare;notes.add("Vet'ion assumes 50% average contribution")}
- if(src==='SCURRIUS_KILLS'&&(flags&F.SCURRIUS)){p*=ASSUME.scurriusMvp;notes.add('Scurrius assumes solo/MVP rate 100%')}
- if(src==='ZALCANO_KILLS'&&(flags&F.ZALCANO)){p*=ASSUME.zalcanoShare;notes.add('Zalcano assumes 25% average contribution')}
+ if(src==='CALLISTO_KILLS'&&(flags&F.CALLISTO)){p*=ASSUME.callistoShare;notes.add('Callisto uses an 80% average personal-contribution assumption')}
+ if(src==='SCURRIUS_KILLS'&&(flags&F.SCURRIUS)){p*=ASSUME.scurriusMvp;notes.add('Scurrius uses the full recorded player KC')}
  if(src==='ZALCANO_KILLS'&&(flags&F.ZALCANO_PTS)){p*=zShardBoost(ASSUME.zalcanoPoints);notes.add('Zalcano assumes 300 points per kill')}
  return clamp(p)
 }
