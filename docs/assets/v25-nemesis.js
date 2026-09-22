@@ -157,6 +157,7 @@ async function loadExternalHistory(x,all=false){
    if(!batch)throw new Error('WOM returned an invalid history response');
    rows.push(...batch.filter(r=>r?.createdAt&&r?.data));
    if(batch.length<50)break;
+   if(offset===950)throw new Error('WOM history exceeded the 1,000-snapshot safety limit');
    await sleep(90)
   }
   h.snapshots=uniqSnapshots([...(h.snapshots||[]),...rows,latest].filter(Boolean));
@@ -272,7 +273,16 @@ function renderExternalRoster(){
  if(!externals.length){host.innerHTML='';return}
  const rows=externals.map(x=>{
   const states=[sourceState(x.wom,'WOM'),sourceState(x.templeStats,'Temple stats'),sourceState(x.templeClog,'Temple CLog')];
-  return '<div class="nem-external-member"><div class="nem-external-name"><strong>'+escapeHtml(x.displayName||x.name)+'</strong><small>'+escapeHtml(x.name)+'</small></div><div class="nem-external-sources">'+states.map(s=>pill(s.label,s.cls,s.detail||s.text)).join('')+'</div><button type="button" class="nem-remove" data-remove-external="'+escapeHtml(x.id)+'" aria-label="Remove '+escapeHtml(x.name)+'">Remove</button></div>'
+  let history='';
+  if(x.womProfile){
+   const h=x.history||{};
+   if(h.loading)history=pill('History loading','missing','WOM snapshot history is loading');
+   else if(h.error)history=pill('History unavailable','error',h.error);
+   else if(h.allLoaded)history=pill('History · all · '+externalSnapshots(x).length,'ok','All retrieved WOM snapshots');
+   else if(h.yearLoaded)history=pill('History · 1Y · '+externalSnapshots(x).length,'ok','At least one year of WOM snapshot history loaded');
+   else history=pill('History queued','missing','History loads automatically when a timeline or gain view needs it')
+  }
+  return '<div class="nem-external-member"><div class="nem-external-name"><strong>'+escapeHtml(x.displayName||x.name)+'</strong><small>'+escapeHtml(x.name)+'</small></div><div class="nem-external-sources">'+states.map(s=>pill(s.label,s.cls,s.detail||s.text)).join('')+history+'</div><button type="button" class="nem-remove" data-remove-external="'+escapeHtml(x.id)+'" aria-label="Remove '+escapeHtml(x.name)+'">Remove</button></div>'
  }).join('');
  host.innerHTML='<div class="nem-roster-head"><div><strong>External comparison group</strong><small>'+externals.length+' account'+(externals.length===1?'':'s')+' added</small></div><button type="button" class="nem-clear" id="nemesisClear">Clear group</button></div>'+rows;
  host.querySelectorAll('[data-remove-external]').forEach(b=>b.addEventListener('click',()=>{externals=externals.filter(x=>x.id!==b.dataset.removeExternal);render()}));
@@ -286,13 +296,13 @@ function renderCoverage(){
 }
 function sourceLabel(x){return[x.womProfile?'WOM':null,(x.templeStatsProfile||x.clog)?'Temple':null].filter(Boolean).join(' + ')||'—'}
 function summaryRow(name,stats,clog,source,enemy=false){
- return '<tr class="'+(enemy?'nemesis-row':'')+'"><th>'+escapeHtml(name)+'</th><td>'+escapeHtml(source||'—')+'</td><td>'+fmt(stats?.overall?.level)+'</td><td>'+compact(stats?.overall?.experience)+'</td><td>'+f1(stats?.ehp)+'</td><td>'+f1(stats?.ehb)+'</td><td>'+(clog?fmt(clog.total):'—')+'</td></tr>'
+ return '<tr class="'+(enemy?'nemesis-row':'')+'"><th>'+escapeHtml(name)+'</th><td>'+escapeHtml(source||'—')+'</td><td>'+fi(stats?.overall?.level)+'</td><td>'+ci(stats?.overall?.experience)+'</td><td>'+f1(stats?.ehp)+'</td><td>'+f1(stats?.ehb)+'</td><td>'+(clog?fmt(clog.total):'—')+'</td></tr>'
 }
 function renderSummary(){
  const h=$('#nemesisSummary');if(!h)return;
  const ours=ownRows(),em=groupMetrics(extStats(),extClogs(),externals.length),om=groupMetrics(ours.map(x=>x.stats).filter(Boolean),ours.map(x=>x.clog).filter(Boolean),ours.length);
- const groupRows='<tr class="nemesis-row nem-group-row"><th>External group</th><td>'+em.members+' members · stats '+em.statsMembers+'/'+em.members+' · CLog '+em.clogMembers+'/'+em.members+'</td><td>'+fi(em.level.value)+'</td><td>'+ci(em.xp.value)+'</td><td>'+f1(em.ehp.value)+'</td><td>'+f1(em.ehb.value)+'</td><td>'+fmt(em.union.size)+'</td></tr>'+
- '<tr class="nem-group-row"><th>United Gimps selection</th><td>'+om.members+' members · stats '+om.statsMembers+'/'+om.members+' · CLog '+om.clogMembers+'/'+om.members+'</td><td>'+fi(om.level.value)+'</td><td>'+ci(om.xp.value)+'</td><td>'+f1(om.ehp.value)+'</td><td>'+f1(om.ehb.value)+'</td><td>'+fmt(om.union.size)+'</td></tr>';
+ const groupRows='<tr class="nemesis-row nem-group-row"><th>External group</th><td>'+em.members+' members · stats '+em.statsMembers+'/'+em.members+' · CLog '+em.clogMembers+'/'+em.members+'</td><td>'+fi(em.level.value)+'</td><td>'+ci(em.xp.value)+'</td><td>'+f1(em.ehp.value)+'</td><td>'+f1(em.ehb.value)+'</td><td>'+(em.clogMembers?fmt(em.union.size):'—')+'</td></tr>'+
+ '<tr class="nem-group-row"><th>United Gimps selection</th><td>'+om.members+' members · stats '+om.statsMembers+'/'+om.members+' · CLog '+om.clogMembers+'/'+om.members+'</td><td>'+fi(om.level.value)+'</td><td>'+ci(om.xp.value)+'</td><td>'+f1(om.ehp.value)+'</td><td>'+f1(om.ehb.value)+'</td><td>'+(om.clogMembers?fmt(om.union.size):'—')+'</td></tr>';
  const members=externals.map(x=>summaryRow(x.displayName||x.name,x.stats,x.clog,sourceLabel(x),true)).join('')+ours.map(x=>summaryRow(x.p.name,x.stats,x.clog,[x.stats?'WOM':null,x.clog?'Temple':null].filter(Boolean).join(' + '))).join('');
  h.innerHTML='<div class="table-scroll"><table class="nem-table"><thead><tr><th>Group / player</th><th>Coverage / source</th><th>Total level</th><th>Total XP</th><th>EHP</th><th>EHB</th><th>Collection Log</th></tr></thead><tbody>'+groupRows+'<tr class="nem-table-divider"><td colspan="7">Individual members</td></tr>'+members+'</tbody></table></div>'
 }
