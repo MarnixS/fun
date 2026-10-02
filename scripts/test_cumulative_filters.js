@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict');
+const XP=require('../docs/assets/cumulative-xp-model');
+const F=require('../docs/assets/ownership-filter');
+assert.equal(XP.thresholds[2],83);assert.equal(XP.thresholds[10],1154);assert.equal(XP.thresholds[92],6517253);assert.equal(XP.thresholds[99],13034431);assert.equal(XP.thresholds[126],188884740);
+for(const level of [2,10,50,92,99,126,144,160]){assert.equal(XP.levelForXp(XP.thresholds[level]-1),level-1);assert.equal(XP.levelForXp(XP.thresholds[level]),level)}
+assert.equal(XP.levelForXp(null),null);assert.equal(XP.levelForXp(-1),null);assert.equal(XP.levelForXp(0),1);assert.equal(XP.levelForXp(200000000),126);
+const doc={profiles:{a:{latestSnapshot:{data:{skills:{overall:{experience:999999999},attack:{experience:83},strength:{experience:174}}}}},b:{latestSnapshot:{data:{skills:{overall:{experience:888888888},attack:{experience:91},strength:{experience:102}}}}}}};
+let r=XP.aggregate(doc,['a','b']);assert.equal(r.xp,450);assert.equal(r.rows.find(r=>r.skill==='attack').level,3);assert.equal(r.rows.find(r=>r.skill==='strength').level,4);assert.equal(r.gameTotal,7);assert.equal(r.level,5);assert.equal(r.contributions.reduce((n,p)=>n+p.xp,0),r.xp);assert(r.complete);
+r=XP.aggregate(doc,['a'],['attack']);assert.equal(r.xp,83);assert.equal(r.gameTotal,2);assert.equal(r.contributions[0].xp,83);
+r=XP.aggregate(doc,['a','absent'],['attack']);assert.equal(r.xp,83);assert(!r.complete);assert.equal(r.contributions[1].xp,null);assert.equal(r.rows[0].members[1].xp,null);
+r=XP.aggregate(doc,['a'],[]);assert.equal(r.xp,null);assert.equal(r.level,null);
+const real=require('../docs/data/wom-cache.json'),keys=Object.keys(real.profiles),skills=XP.skillKeys(real);r=XP.aggregate(real,keys);assert(r.complete);assert.equal(r.xp,r.contributions.reduce((n,p)=>n+p.xp,0));assert.equal(r.xp,r.rows.reduce((n,row)=>n+row.xp,0));assert(r.level>126);assert(r.rows.every(row=>row.gameLevel<=99));assert.equal(r.gameTotal,skills.length*99);
+const row={counts:{a:2,b:1,c:0}},known=['a','b','c'],selected=['a','b','c'];let rules=new Map([['a','has'],['b','any'],['c','missing']]);assert(F.matches(row,selected,known,rules));rules.set('c','has');assert(!F.matches(row,selected,known,rules));assert(F.matches(row,['a','b'],known,rules),'unselected conditions ignored');rules.set('c','missing');rules.set('a','dupes');assert(F.matches(row,selected,known,rules));rules.set('b','dupes');assert(!F.matches(row,selected,known,rules));rules.set('b','any');assert(!F.matches(row,selected,['a','b'],rules),'unknown is not missing');rules.set('c','any');assert(F.matches(row,selected,['a','b'],rules));assert(F.matches(row,selected,known,rules,{minOwners:2,maxOwners:2,minCopies:3,maxCopies:3}));assert(!F.matches(row,selected,known,rules,{maxOwners:1}));assert(!F.matches(row,selected,known,rules,{minCopies:4}));assert(!F.matches(row,selected,known,rules,{minOwners:3,maxOwners:1}));
+console.log('XP thresholds, merged accounts, skill subsets, shares, missing data and ownership combinations passed.');
