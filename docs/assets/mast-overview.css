@@ -34,3 +34,6 @@
 .clog-value-total>b{font-size:28px;color:#e4c587}
 .clog-value-total>small{color:#b6a487}
 [data-gim-panel]{scroll-margin-top:12px}
+
+.mast-status-six .mast-award-icon{height:34px;width:26px;flex-basis:26px}
+@media(max-width:700px){.mast-status-six .mast-card-body>[data-mast-xp]{font-size:clamp(14px,4.35vw,18px);font-variant-numeric:tabular-nums;white-space:nowrap}}
