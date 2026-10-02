@@ -1,0 +1,20 @@
+.mast-status.mast-status-six{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))!important;grid-auto-rows:1fr;gap:1px;background:#6b5232;border-top:1px solid #725a35}
+.mast-status-six .mast-stat{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;min-width:0;min-height:138px;margin:0;padding:12px;border:0!important;grid-column:auto!important;background:linear-gradient(150deg,#2b1e11,#130e09);box-shadow:inset 0 2px #786039;gap:10px;overflow-wrap:anywhere}
+.mast-status-six .mast-card-title{display:flex;align-items:center;gap:7px;min-height:32px;min-width:0}
+.mast-status-six .mast-card-title>span{font-size:10px;letter-spacing:.06em;line-height:1.35;white-space:normal;color:#c9ad74}
+.mast-status-six .mast-card-body{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1;justify-content:center}
+.mast-status-six .mast-card-body>b{margin:0;font-size:20px;line-height:1.15;white-space:normal;overflow-wrap:anywhere;overflow:visible;text-overflow:clip}
+.mast-status-six .mast-card-body small{display:block;font-size:10px;line-height:1.4;color:#b6a487;white-space:normal;overflow-wrap:anywhere}
+.mast-status-six .mast-card-body strong{font-size:13px;line-height:1.3;color:#e4c587}
+.mast-status-six .mast-summary-icon,.mast-status-six .mast-stat-drop img{width:24px;height:24px;flex:0 0 24px;object-fit:contain}
+.mast-status-six .mast-level-icons{gap:4px}
+.mast-status-six .mast-level-icons .mast-level-avatar{width:24px;height:30px;flex-basis:24px}
+.mast-status-six .mast-level-icons .mast-level-skill-icon{width:18px;height:18px;flex-basis:18px}
+.mast-status-six .mast-value-amount{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
+.mast-status-six .mast-value-amount>b{font-size:20px;margin:0;white-space:normal}
+.mast-status-six .mast-value-pie{width:38px;height:38px;flex:0 0 38px}
+.mast-status-six .mast-value-pie>i{inset:8px}
+@media(min-width:1180px){.mast-status.mast-status-six{grid-template-columns:repeat(6,minmax(0,1fr))!important}}
+@media(max-width:700px){.mast-status.mast-status-six{grid-template-columns:repeat(2,minmax(0,1fr))!important}.mast-status-six .mast-stat{padding:10px;min-height:146px;gap:8px}.mast-status-six .mast-card-body>b,.mast-status-six .mast-value-amount>b{font-size:18px}.mast-status-six .mast-card-title>span{font-size:10px}.mast-status-six .mast-value-pie{width:32px;height:32px;flex-basis:32px}.mast-status-six .mast-value-pie>i{inset:7px}}
+
+@media(max-width:700px){.banner-frame .group-banner{width:100%;max-width:100%;height:auto;left:auto;transform:none}}

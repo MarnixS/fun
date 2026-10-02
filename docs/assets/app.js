@@ -126,22 +126,27 @@ async function loadMastPrices(){
 }
 function mastItemPrice(id){id=+id;const ge=x=>{const p=mastPrices?.[x];if(!p)return 0;const h=+p.high,l=+p.low;return h>0&&l>0?(h+l)/2:h>0?h:l>0?l:0};if(id===33634)return Math.max(0,ge(33639)-ge(19547));if(id===13274||id===13275||id===13276)return ge(13263)/3;if(id===29799)return Math.max(0,ge(29801)-ge(19553));if(id===29790||id===29792||id===29794)return ge(29796)/3;if(id===28319||id===28321||id===28323||id===28325)return ge(28338)/4;if(id===28279)return Math.max(0,ge(28316)-ge(28301)-500*ge(565)-3*ge(28276));if(id===28281)return Math.max(0,ge(28313)-ge(28304)-500*ge(565)-3*ge(28276));if(id===28283)return Math.max(0,ge(28310)-ge(28298)-500*ge(565)-3*ge(28276));if(id===28285)return Math.max(0,ge(28307)-ge(28295)-500*ge(565)-3*ge(28276));return ge(id)}
 function mastMoney(n){if(!Number.isFinite(+n)||+n<=0)return'—';n=+n;return n>=1e9?(n/1e9).toFixed(2)+'b':n>=1e6?(n/1e6).toFixed(1)+'m':n>=1e3?(n/1e3).toFixed(1)+'k':fmt(n)}
-function ensureFiveMast(){
- const host=$('.mast-status');if(!host)return;
- if(host.dataset.layout==='five')return;
- host.dataset.layout='five';
- host.classList.add('mast-status-five');
- host.innerHTML=`<div class="mast-stat mast-stat-clog mast-stat-iconed"><img class="mast-summary-icon mast-clog-icon" src="img/ui/collection-log.png" alt=""><div><span>Group Collection Log</span><b data-mast-log>—</b><small data-mast-log-sub>Collection Log via Temple</small></div></div><div class="mast-stat mast-stat-value mast-stat-clog mast-stat-clog-end" data-mast-value><span>Total Collection Log Value</span><small>Loading logged value split…</small></div><div class="mast-stat mast-stat-xp mast-stat-iconed"><img class="mast-summary-icon mast-skills-icon" src="img/ui/skills.png" alt=""><div><span>Total XP · 5-man GIM</span><b data-mast-xp>—</b><small data-mast-xp-exact>all five WOM accounts</small></div></div><div class="mast-stat mast-stat-drop"><img data-mast-drop-icon hidden alt=""><div><span>Latest item unlock</span><b data-mast-drop>—</b><small data-mast-drop-sub>item unlocks via Temple</small></div></div><div class="mast-stat mast-stat-level"><div class="mast-level-icons"><img class="mast-level-avatar" data-mast-level-icon hidden alt=""><img class="mast-level-skill-icon" data-mast-level-skill-icon hidden alt=""></div><div><span>Latest gained level</span><b data-mast-level>—</b><small data-mast-level-sub>saved WOM history</small></div></div>`;
+function ensureSixMast(){
+ const host=$('.mast-status');if(!host||host.dataset.layout==='six')return;
+ host.dataset.layout='six';host.classList.remove('mast-status-five');host.classList.add('mast-status-six');
+ host.innerHTML=`<div class="mast-stat mast-stat-clog"><div class="mast-card-title"><img class="mast-summary-icon" src="img/ui/collection-log.png" alt=""><span>Group Collection Log</span></div><div class="mast-card-body"><b data-mast-log>—</b><small data-mast-log-sub>Across all five accounts</small></div></div><div class="mast-stat mast-stat-value" data-mast-value><div class="mast-card-title"><span>Total Collection Log Value</span></div><div class="mast-card-body"><b>—</b><small>Loading GE value…</small></div></div><div class="mast-stat mast-stat-xp"><div class="mast-card-title"><img class="mast-summary-icon" src="img/ui/skills.png" alt=""><span>Total XP</span></div><div class="mast-card-body"><b data-mast-xp>—</b><small data-mast-xp-exact>Across all five accounts</small></div></div><div class="mast-stat mast-stat-drop"><div class="mast-card-title"><img data-mast-drop-icon hidden alt=""><span>Latest item unlock</span></div><div class="mast-card-body"><b data-mast-drop>—</b><small data-mast-drop-sub>Saved Temple unlocks</small></div></div><div class="mast-stat mast-stat-level"><div class="mast-card-title"><div class="mast-level-icons"><img class="mast-level-avatar" data-mast-level-icon hidden alt=""><img class="mast-level-skill-icon" data-mast-level-skill-icon hidden alt=""></div><span>Latest gained level</span></div><div class="mast-card-body"><b data-mast-level>—</b><small data-mast-level-sub>Saved WOM history</small></div></div><div class="mast-stat mast-stat-weekly"><div class="mast-card-title"><img class="mast-summary-icon" src="img/ui/skills.png" alt=""><span>Top weekly XP gainer</span></div><div class="mast-card-body"><b data-mast-weekly-player>—</b><strong data-mast-weekly-xp>—</strong><small data-mast-weekly-sub>Last 7 days · saved WOM</small></div></div>`;
+}
+function renderWeeklyLeader(){
+ const rows=PLAYERS.map(p=>{const node=state.gains?.week?.[p.key]?.data?state.gains.week[p.key]:derivedGain(p.key,7),xp=node?.data?.skills?.overall?.experience?.gained;return{p,node,xp}}).filter(x=>typeof x.xp==='number'&&Number.isFinite(x.xp)&&x.xp>=0),best=rows.length?Math.max(...rows.map(x=>x.xp)):null,winners=rows.filter(x=>x.xp===best),label=best==null?'Weekly gains unavailable':best===0?'No XP gained':winners.length===5?'All accounts tied':winners.map(x=>x.p.name).join(' & '),periods=winners.map(x=>`${x.p.name}: ${dateOnly(x.node.startsAt||x.node.start)} – ${dateOnly(x.node.endsAt||x.node.end)}`);
+ $$('[data-mast-weekly-player]').forEach(x=>{x.textContent=label;x.title=label});
+ $$('[data-mast-weekly-xp]').forEach(x=>x.textContent=best==null?'—':`+${fmt(best)} XP`);
+ $$('[data-mast-weekly-sub]').forEach(x=>{x.textContent=`Last 7 days · saved WOM${rows.length<5?' · '+rows.length+'/5 accounts':''}`;x.title=periods.join('; ')});
 }
 async function renderMastValue(){
  const slots=$$('[data-mast-value]');if(!slots.length)return;
- slots.forEach(x=>{x.className='mast-stat mast-stat-value mast-stat-clog mast-stat-clog-end';x.innerHTML='<span>Total Collection Log Value</span><small>Loading logged value split…</small>'});
- const prices=await loadMastPrices();if(!prices){slots.forEach(x=>x.innerHTML='<span>Total Collection Log Value</span><b>—</b><small>GE prices unavailable</small>');return}
+ slots.forEach(x=>{x.className='mast-stat mast-stat-value';x.innerHTML='<div class="mast-card-title"><span>Total Collection Log Value</span></div><div class="mast-card-body"><b>—</b><small>Loading GE value…</small></div>'});
+ const prices=await loadMastPrices();if(!prices){slots.forEach(x=>x.innerHTML='<div class="mast-card-title"><span>Total Collection Log Value</span></div><div class="mast-card-body"><b>—</b><small>GE prices unavailable</small></div>');return}
  const m=collectionModel(true),vals=m.keys.map(k=>{const p=PLAYERS.find(x=>x.key===k),value=m.rows.reduce((n,row)=>n+mastItemPrice(row.id)*(row.counts[k]||0),0);return{key:k,name:p?.name||k,color:p?.color||'#8b887f',value}}).filter(x=>x.value>0),total=vals.reduce((n,x)=>n+x.value,0);
- if(!total){slots.forEach(x=>x.innerHTML='<span>Total Collection Log Value</span><b>—</b><small>No priced logged items</small>');return}
+ if(!total){slots.forEach(x=>x.innerHTML='<div class="mast-card-title"><span>Total Collection Log Value</span></div><div class="mast-card-body"><b>—</b><small>No priced logged items</small></div>');return}
  let cursor=0;const stops=[];for(const v of vals){const start=cursor,end=cursor+v.value/total*100;stops.push(`${v.color} ${start.toFixed(2)}% ${end.toFixed(2)}%`);cursor=end}
- const legend=vals.map(v=>`<span class="mast-value-person"><i style="--pc:${v.color}"></i><em>${v.name}</em><strong>${(100*v.value/total).toFixed(1)}%</strong></span>`).join('');
- slots.forEach(x=>{x.innerHTML=`<div class="mast-value-wrap"><div class="mast-value-pie" style="background:conic-gradient(${stops.join(',')})" role="img" aria-label="Logged item value contribution: ${vals.map(v=>v.name+' '+(100*v.value/total).toFixed(1)+'%').join(', ')}"><i></i></div><div class="mast-value-copy"><div class="mast-value-head"><span>Total Collection Log Value</span><b>${mastMoney(total)} gp</b></div><div class="mast-value-legend">${legend}</div></div></div>`});
+ const description=vals.map(v=>`${v.name}: ${mastMoney(v.value)} gp (${(100*v.value/total).toFixed(1)}%)`).join('; ');
+ slots.forEach(x=>{x.innerHTML=`<div class="mast-card-title"><span>Total Collection Log Value</span></div><div class="mast-card-body"><div class="mast-value-amount"><div class="mast-value-pie" style="background:conic-gradient(${stops.join(',')})" role="img" title="${esc(description)}" aria-label="${esc('Logged item value contribution: '+description)}"><i></i></div><b>${mastMoney(total)} gp</b></div><small>Across all five accounts</small></div>`});
+
 }
 function latestRecordedLevel(){
  const events=PLAYERS.flatMap(derivedLevelEvents).filter(x=>x?.date>0&&x?.type==='level');
@@ -150,12 +155,12 @@ function latestRecordedLevel(){
  return events[0]
 }
 function renderMast(){
- ensureFiveMast();
+ ensureSixMast();
  const gs=collectionModel(true),cov=templeCoverage(),totalXp=PLAYERS.reduce((n,p)=>n+(+overall(p.key).experience||0),0);
  $$('[data-mast-log]').forEach(x=>x.textContent=gs.known?`${fmt(gs.got)} / ${fmt(gs.known)}`:'—');
  $$('[data-mast-log-sub]').forEach(x=>x.textContent=`${cov.synced}/5 Collection Logs available${cov.unsynced.length?' · '+cov.unsynced.join(', ')+' unavailable':''}`);
- $$('[data-mast-xp]').forEach(x=>{x.textContent=totalXp?compact(totalXp):'—';x.title=`${fmt(totalXp)} XP across all five WOM accounts`});
- $$('[data-mast-xp-exact]').forEach(x=>x.textContent=`${fmt(totalXp)} XP across all five WOM accounts`);
+ $$('[data-mast-xp]').forEach(x=>{x.textContent=totalXp?compact(totalXp):'—';x.title=`${fmt(totalXp)} XP across all five accounts`});
+ $$('[data-mast-xp-exact]').forEach(x=>x.textContent=`${fmt(totalXp)} XP across all five accounts`);
  const dr=templeRecent()[0];
  $$('[data-mast-drop]').forEach(x=>x.innerHTML=dr?window.UGV21.itemLink(dr.id,dr.name):'No recent feed yet');
  $$('[data-mast-drop-sub]').forEach(x=>x.textContent=dr?`${dr.player||'Group'} · ${dateOnly(dr.date)} · Temple`:'Temple recent unlocks');
@@ -164,7 +169,7 @@ function renderMast(){
  $$('[data-mast-level]').forEach(x=>x.textContent=lv?`${fmt(lv.level)} ${nice(lv.metric)}`:'No recorded level yet');
  $$('[data-mast-level-sub]').forEach(x=>x.textContent=lv?`${lv.player} · ${dateOnly(lv.date)} · WOM`:'Saved WOM history');
  $$('[data-mast-level-icon]').forEach(x=>{if(lv&&lp?.portrait){x.src=lp.portrait;x.alt=lp.name;x.hidden=false}else x.hidden=true});$$('[data-mast-level-skill-icon]').forEach(x=>{const src=lv?window.UGV21.skillIconUrl?.(lv.metric):'';if(src){x.src=src;x.alt=nice(lv.metric);x.hidden=false;x.onerror=()=>{x.hidden=true}}else x.hidden=true});
- renderMastValue()
+ renderWeeklyLeader();renderMastValue()
 }
 
 function cardFor(p,side=false,wide=false){const o=overall(p.key),ehp=currentComputed(p.key,'ehp'),ehb=currentComputed(p.key,'ehb'),raid=['chambers_of_xeric','chambers_of_xeric_challenge_mode','theatre_of_blood','theatre_of_blood_hard_mode','tombs_of_amascut','tombs_of_amascut_expert'].reduce((n,b)=>n+(currentBoss(p.key,b)||0),0),synced=syncedKeys().includes(p.key);if(side)return `<article class="side-card" style="--pc:${p.color}"><img src="${p.portrait}" alt="${p.name}"><div><h3>${p.name}</h3><div class="side-rule">${p.role} · ${synced?'WOM + Temple':'WOM; Collection Log unavailable'}</div><div class="side-stats"><div><span>${window.UGV21.summaryMetric('Total level')}</span><b>${fmt(o.level)}</b></div><div><span>${window.UGV21.summaryMetric('Total XP')}</span><b>${compact(o.experience)}</b></div><div><span>${window.UGV21.summaryMetric('EHP')} / ${window.UGV21.summaryMetric('EHB')}</span><b>${fmt1(ehp)} / ${fmt1(ehb)}</b></div></div><span class="side-badge">${synced?'Collection Log included in current group totals':'Collection Log unknown, not counted as zero'}</span></div></article>`;return `<article class="player-card${wide?' player-card-wide':''}" style="--pc:${p.color}"><div class="player-card-head"><img class="player-portrait" src="${p.portrait}" alt="${p.name}"><div><h3>${p.name}</h3><div class="player-role">${p.role}</div></div></div><div class="player-mantra">${p.mantra}</div><div class="stat-grid"><div class="stat-box"><span>${window.UGV21.summaryMetric('Total level')}</span><b>${fmt(o.level)}</b></div><div class="stat-box"><span>${window.UGV21.summaryMetric('Total XP')}</span><b>${compact(o.experience)}</b></div><div class="stat-box"><span>${window.UGV21.summaryMetric('EHP')}</span><b>${fmt1(ehp)}</b></div><div class="stat-box"><span>${window.UGV21.summaryMetric('EHB')}</span><b>${fmt1(ehb)}</b></div><div class="stat-box"><span>${window.UGV21.summaryMetric('Raid KC')}</span><b>${fmt(raid)}</b></div><div class="stat-box"><span>Saved WOM</span><b class="small-value">${dateOnly(state.profiles[p.key]?.updatedAt||state.profiles[p.key]?.latestSnapshot?.createdAt)}</b></div></div></article>`}
@@ -295,7 +300,7 @@ async function renderPage(){
 window.addEventListener('ug:members-changed',()=>renderPage());
 window.addEventListener('ug:data-updated',function dataUpdatedListener(e){if(e.detail?.source==='app')return;const key=e.detail?.key,doc=e.detail?.document||loadJSON(key);if(key===WKEY&&doc?.profiles)applyWomDoc(doc);else if(key===TKEY&&doc?.players)state.temple=doc;else return;renderPage()});
 async function init(){
- ensureFiveMast();
+ ensureSixMast();
  bindCommon();
  if(document.body.dataset.page==='gim'){bindGimTabs();bindRecovery()}
  const loaded=await Promise.allSettled([loadTempleSaved(),loadWomSaved()]);
