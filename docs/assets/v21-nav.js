@@ -2,7 +2,8 @@
 'use strict';
 const logs=[['clog-beta.html','Collection Log Classic','G'],['gim.html','Collection Log Advanced','G'],['hypothetical.html','Hypothetical Log','?'],['rng.html','RNG Index','R']];
 const levels=[['hiscores.html','Current Stats','H'],['progress.html','Stat Progress','XP'],['cumulative-xp.html','Cumulative XP','XP'],['time-machine.html','Time Machine','⧖']];
-const records=[['chronicle.html','Chronicle','✦'],['history.html','Timeline','T'],['goals.html','Goals','◎'],['nemesis-beta.html','Nemesis Comparison','VS','beta']];
+const records=[['chronicle.html','Chronicle','✦'],['history.html','Timeline','T'],['goals.html','Goals','◎','beta'],['kc-comparison.html','KC comparison','KC','beta'],['nemesis-beta.html','Nemesis Comparison','VS','beta']];
+const other=[['faq.html','FAQ','?'],['news.html','News','N']];
 function loadV22(){if(document.querySelector('script[data-v22-ui]'))return;const s=document.createElement('script');s.src='assets/v22-ui.js?v=34';s.dataset.v22Ui='1';document.head.append(s)}
 function init(){
  const nav=document.querySelector('.nav-inner');if(!nav){loadV22();return}
@@ -14,7 +15,7 @@ function init(){
  const link=([href,label,rune,badge])=>`<a class="nav-link ${isActive(href)?'active':''}" href="${href}" ${isActive(href)?'aria-current="page"':''}><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span>${badge==='beta'?'<span class="nav-badge">BETA</span>':''}</a>`;
  const group=(id,label,rune,items)=>`<div class="nav-dropdown"><button type="button" class="nav-trigger ${items.some(([href])=>isActive(href))?'active':''}" aria-expanded="false" aria-controls="nav-${id}"><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span><span aria-hidden="true">▾</span></button><div class="nav-dropdown-panel" id="nav-${id}" hidden>${items.map(link).join('')}</div></div>`;
  const brand=nav.querySelector('.nav-brand')?.outerHTML||'<a class="nav-brand" href="index.html" aria-label="United Gimps overview"><img src="img/gim-crest.svg" alt=""></a>';
- nav.innerHTML=brand+link(['index.html','Overview','O'])+group('logs','Collection Log','G',logs)+group('levels','Levels','XP',levels)+group('record','Records','✦',records)+`<span class="nav-spacer" aria-hidden="true"></span>`+link(['faq.html','FAQ','?']);
+ nav.innerHTML=brand+link(['index.html','Overview','O'])+group('logs','Collection Log','G',logs)+group('levels','Stats','XP',levels)+group('record','Records','✦',records)+`<span class="nav-spacer" aria-hidden="true"></span>`+group('other','Other','?',other);
  const nemesisLink=nav.querySelector('a[href="nemesis-beta.html"]');
  if(nemesisLink)nemesisLink.addEventListener('click',e=>{e.preventDefault();window.location.assign('nemesis-beta.html')});
  const mobile=window.matchMedia?.('(max-width:700px)')||{matches:false,addEventListener(){}};
@@ -34,11 +35,11 @@ function init(){
   g.addEventListener('keydown',e=>{if(e.key==='Escape'){setOpen(g,false);button.focus();e.preventDefault()}else if(e.target===button&&e.key==='ArrowDown'){open();g.querySelector('a').focus();e.preventDefault()}});
  }
  document.addEventListener('click',e=>{if(!nav.contains(e.target))closeAll()});
- const recordPages=records.filter(([, , ,badge])=>badge!=='beta');
- const local=levels.some(([href])=>href.split('#')[0]===page)?levels:recordPages.some(([href])=>href.split('#')[0]===page)?recordPages:null;
- if(local){const main=document.querySelector('main.wrap');if(main&&!document.querySelector('#historyLocalNav')){const d=document.createElement('nav');d.id='historyLocalNav';d.className='v21-local-nav';const title=local===levels?'Levels':'Records';d.setAttribute('aria-label',title+' sections');d.innerHTML=`<strong aria-hidden="true">${title}</strong>`+local.map(([h,l])=>`<a href="${h}" class="${isActive(h)?'active':''}" ${isActive(h)?'aria-current="page"':''}>${l}</a>`).join('');const anchor=local===levels?(main.querySelector('#statsMemberPicker')||main.querySelector('.api-courtesy')):main.querySelector('.api-courtesy');anchor?.insertAdjacentElement('afterend',d)}}
+ const recordPages=records.filter(([href])=>href!=='nemesis-beta.html');
+ const local=recordPages.some(([href])=>href.split('#')[0]===page)?recordPages:null;
+ if(local){const main=document.querySelector('main.wrap');if(main&&!document.querySelector('#historyLocalNav')){const d=document.createElement('nav');d.id='historyLocalNav';d.className='v21-local-nav';const title='Records';d.setAttribute('aria-label',title+' sections');d.innerHTML=`<strong aria-hidden="true">${title}</strong>`+local.map(([h,l,,badge])=>`<a href="${h}" class="${isActive(h)?'active':''}" ${isActive(h)?'aria-current="page"':''}>${l}${badge==='beta'?'<span class="nav-badge">BETA</span>':''}</a>`).join('');const anchor=main.querySelector('#kcMemberPicker')||main.querySelector('.api-courtesy');anchor?.insertAdjacentElement('afterend',d)}}
  const localNav=document.querySelector('#historyLocalNav');
- if(localNav){const label=document.createElement('label');label.className='mobile-view-picker';label.textContent=(local===levels?'Levels':'Records')+' view';const select=document.createElement('select');select.setAttribute('aria-label',label.textContent);local.forEach(([href,name])=>select.add(new Option(name,href,false,isActive(href))));select.onchange=()=>location.assign(select.value);label.append(select);localNav.append(label)}
+ if(localNav){const label=document.createElement('label');label.className='mobile-view-picker';label.textContent='Records view';const select=document.createElement('select');select.setAttribute('aria-label',label.textContent);local.forEach(([href,name,,badge])=>select.add(new Option(name+(badge==='beta'?' · Beta':''),href,false,isActive(href))));select.onchange=()=>location.assign(select.value);label.append(select);localNav.append(label)}
  const tabs=[...document.querySelectorAll('[data-gim-tab]')];
  if(tabs.length){const label=document.createElement('label');label.className='mobile-view-picker';label.textContent='Advanced Log view';const select=document.createElement('select');select.id='clogView';select.setAttribute('aria-label',label.textContent);tabs.forEach(b=>select.add(new Option(b.textContent,b.dataset.gimTab,false,b.classList.contains('active'))));select.onchange=()=>tabs.find(b=>b.dataset.gimTab===select.value)?.click();label.append(select);document.querySelector('#clogMemberPicker').before(label);document.addEventListener('ug:gim-view-changed',e=>select.value=e.detail.view)}
  loadV22();

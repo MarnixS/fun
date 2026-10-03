@@ -3,17 +3,20 @@
 const U=window.UGV21,G=window.UGGoalProgress;if(!U||!G||!['chronicle','goals'].includes(document.body.dataset.page)||window.__sharedGoalsLoaded)return;window.__sharedGoalsLoaded=true;
 const API='https://united-gimps-temple-proxy.vercel.app/api/player-goals';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let doc={goals:{}},wom,temple,enabled=false;
+let doc={goals:{}},wom,temple,enabled=false,scrolledGoal='';
+function scrollToGoal(){const hash=location.hash;if(!/^#goal-[a-z-]+$/.test(hash)||hash===scrolledGoal)return;const el=document.getElementById(hash.slice(1));if(el){scrolledGoal=hash;requestAnimationFrame(()=>el.scrollIntoView?.({block:'start'}))}}
+window.addEventListener('hashchange',scrollToGoal);
 const host=document.createElement('section');host.className='section';host.id='sharedGoals';
 document.querySelector('#chronicleGoals')?.closest('section')?.before(host);
 async function request(body){const r=await fetch(API,{method:body?'POST':'GET',cache:'no-store',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(45000)});const data=await r.json().catch(()=>({error:'Shared goal publishing is temporarily unavailable.'}));if(!r.ok)throw new Error(data.error||'Shared goals are unavailable.');return data;}
 async function stats(){[wom,temple]=await Promise.all([U.loadWom(),U.loadClog()]);render();}
 function render(){
- host.innerHTML='<div class="section-head"><div><h2>Shared player goals</h2><div class="section-note">Visible to everyone. WOM and Temple progress follows the latest data loaded on this device; use their refresh buttons for newer stats.</div></div><button type="button" id="reloadSharedGoals">Reload shared goals</button></div><p id="sharedGoalNotice" aria-live="polite"></p><div class="goal-grid" id="sharedGoalCards"></div>';
+ host.innerHTML='<div class="section-head"><div><h2>Shared player goals <span class="feature-beta">Beta</span></h2><div class="section-note">Visible to everyone. WOM and Temple progress follows the latest data loaded on this device; use their refresh buttons for newer stats.</div></div><button type="button" id="reloadSharedGoals">Reload shared goals</button></div><p id="sharedGoalNotice" aria-live="polite"></p><div class="goal-grid" id="sharedGoalCards"></div>';
  host.querySelector('#sharedGoalCards').innerHTML=U.PLAYERS.filter(p=>U.loadMemberSelection().has(p.key)).map(p=>{
   const g=doc.goals?.[p.key],active=Boolean(g?.text),s=active?G.progress(g,p.key,wom,temple):null;
-  return `<article class="goal-card" style="--pc:${p.color}"><div class="v22-player-goal-head"><h3>${esc(p.name)}</h3><button type="button" data-edit-shared="${esc(p.key)}" ${enabled?'':'disabled'}>${active?'Update goal':'Set a goal'}</button></div><p>${active?esc(g.text):'No shared goal yet.'}</p>${s?(s.unknown?`<p>Progress unknown · ${s.source} data unavailable</p>`:`<progress max="100" value="${s.percent}" aria-label="${esc(p.name)} goal progress"></progress><p>${U.fmt(s.value)} / ${U.fmt(s.target)} · ${s.complete?'Complete':Math.floor(s.percent)+'%'} · ${s.source}</p>`):''}${active&&g.updatedAt?`<small>Goal updated ${esc(new Date(g.updatedAt).toLocaleString('en-GB'))}</small>`:''}</article>`;
+  return `<article class="goal-card" id="goal-${p.key.replace(/ /g,'-')}" style="--pc:${p.color}"><div class="v22-player-goal-head"><h3>${esc(p.name)}</h3><button type="button" data-edit-shared="${esc(p.key)}" ${enabled?'':'disabled'}>${active?'Update goal':'Set a goal'}</button></div><p>${active?esc(g.text):'No shared goal yet.'}</p>${s?(s.unknown?`<p>Progress unknown · ${s.source} data unavailable</p>`:`<progress max="100" value="${s.percent}" aria-label="${esc(p.name)} goal progress"></progress><p>${U.fmt(s.value)} / ${U.fmt(s.target)} · ${s.complete?'Complete':Math.floor(s.percent)+'%'} · ${s.source}</p>`):''}${active&&g.updatedAt?`<small>Goal updated ${esc(new Date(g.updatedAt).toLocaleString('en-GB'))}</small>`:''}</article>`;
  }).join('');
+ scrollToGoal();
  host.querySelector('#reloadSharedGoals').onclick=()=>reload();
  host.querySelectorAll('[data-edit-shared]').forEach(b=>b.onclick=()=>edit(b.dataset.editShared));
 }

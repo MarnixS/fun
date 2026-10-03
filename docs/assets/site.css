@@ -458,3 +458,18 @@
  .mast-summary-icon{width:25px;height:25px;flex-basis:25px}
  .mast-clog-icon{width:27px;height:27px;flex-basis:27px}
 }
+
+.mast-home-link{color:inherit;text-decoration:none}.mast-home-link:focus-visible{outline:2px solid #e4c587;outline-offset:3px}.feature-beta{display:inline-block;padding:2px 5px;border:1px solid #927442;border-radius:3px;color:#e8c66f;font:700 9px/1.3 Arial,sans-serif;letter-spacing:.05em;text-transform:uppercase;vertical-align:middle}.overview-goal{display:block;padding:11px 12px;margin:10px 0 0;border:1px solid #665137;border-left:3px solid var(--pc,#ac8c4d);border-radius:3px;background:#18120c;color:#e2c785;text-decoration:none;overflow-wrap:anywhere}.overview-goal:hover{background:#281e12}.overview-goal:focus-visible{outline:2px solid #e4c587;outline-offset:2px}.overview-goal-head{display:flex;align-items:center;gap:7px;font-size:10px;color:#b9a687;margin-bottom:5px}.overview-goal>strong{display:block;font-size:13px;line-height:1.4}.overview-goal>small{display:block;font-size:10px;color:#b6a487;margin-top:5px}.overview-goal progress{display:block;width:100%;height:7px;margin:7px 0 0;accent-color:var(--pc,#bfa25a)}[id^="goal-"]{scroll-margin-top:16px}
+
+/* Short dated site bulletin. */
+.news-section{max-width:1000px;margin-left:auto;margin-right:auto}
+.news-feed{border-top:1px solid #705638}
+.news-entry{display:grid;grid-template-columns:155px minmax(0,1fr);gap:24px;padding:24px 0;border-bottom:1px solid #4f402c}
+.news-entry time{color:#c6ad7a;font-size:13px;padding-top:4px}
+.news-entry h3{margin:0 0 10px;font-size:21px;line-height:1.25}
+.news-entry ul{margin:0;padding-left:18px;color:#cec3ae}
+.news-entry li+li{margin-top:8px}
+.news-entry li a{color:inherit;text-decoration:none;line-height:1.6}
+.news-entry li a:hover{text-decoration:underline;color:#f1d590}
+.news-entry li a:focus-visible{outline:2px solid #efd596;outline-offset:3px}
+@media(max-width:700px){.news-entry{grid-template-columns:minmax(0,1fr);gap:7px;padding:20px 0}.news-entry time{padding:0}.news-entry h3{font-size:20px}}
