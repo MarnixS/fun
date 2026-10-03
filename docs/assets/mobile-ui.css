@@ -30,3 +30,6 @@
  .pager{flex-wrap:wrap}.pager>span{flex:1 1 100%;text-align:center;order:-1}
  .nav-trigger:focus-visible,.mobile-view-picker select:focus-visible{outline:2px solid #efd596;outline-offset:2px}
 }
+
+/* Keep wide chart canvases inside their cards on small screens. */
+@media(max-width:760px){main .grid>*,main .grid{min-width:0;max-width:100%}}

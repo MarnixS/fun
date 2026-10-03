@@ -360,7 +360,7 @@ function selectorKeys(){
  return{bosses,activities}
 }
 function populateProgressSelectors(){
- const metric=$('#nemesisMetric'),skill=$('#nemesisSkill'),boss=$('#nemesisBoss'),activity=$('#nemesisActivity'),timeGo=$('#nemesisTimeGo'),timeDate=$('#nemesisTimeDate');
+ const metric=$('#nemesisMetric'),skill=$('#nemesisSkill'),boss=$('#nemesisBoss'),activity=$('#nemesisActivity');
  if(!metric||!skill||!boss||!activity)return;
  metric.value=compareMetric;
  skill.innerHTML=SKILLS.map(k=>'<option value="'+escapeHtml(k)+'">'+escapeHtml(nice(k))+'</option>').join('');
@@ -462,7 +462,7 @@ function renderTimeMachineComparison(){
  '</tbody></table></div>'
 }
 function bindProgressControls(){
- const metric=$('#nemesisMetric'),skill=$('#nemesisSkill'),boss=$('#nemesisBoss'),activity=$('#nemesisActivity');
+ const metric=$('#nemesisMetric'),skill=$('#nemesisSkill'),boss=$('#nemesisBoss'),activity=$('#nemesisActivity'),timeGo=$('#nemesisTimeGo'),timeDate=$('#nemesisTimeDate');
  if(metric&&!metric.dataset.bound){metric.dataset.bound='1';metric.onchange=()=>{compareMetric=metric.value;populateProgressSelectors();renderProgressComparison();renderTimeMachineComparison()}}
  if(skill&&!skill.dataset.bound){skill.dataset.bound='1';skill.onchange=()=>{compareSkill=skill.value;renderProgressComparison();renderTimeMachineComparison()}}
  if(boss&&!boss.dataset.bound){boss.dataset.bound='1';boss.onchange=()=>{compareBoss=boss.value;renderProgressComparison();renderTimeMachineComparison()}}

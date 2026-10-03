@@ -17,7 +17,8 @@ const {openPage,waitFor}=require('./audit_v25_jsdom');
  assert.equal(w.UGTempleStore.merge(failed,full).membersWithClog,5);
  // A fresh page must render the retained player in both its common and specialised modules.
  const next=await openPage('gim.html',{savedTemple:partial,templeDocument:full,selection:['lompste']});
- await waitFor(()=>next.dom.window.document.querySelector('#clogSummary').textContent.includes(String(expected)),'Lompste retained after navigation');
+ assert.equal((await next.dom.window.UGV21.loadClog()).players.lompste.data.total_collections_finished,expected,'Lompste retained after navigation');
+ assert(next.dom.window.document.querySelector('#clogItemTable tbody tr [data-item-id]'),'retained member log renders');
  assert.equal((await next.dom.window.UGV21.loadClog()).membersWithClog,5);
  assert.equal(errors.length+next.errors.length,0);
  console.log('Temple retention passed: missing/failed players, stale source dates, navigation and all-player coverage');

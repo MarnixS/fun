@@ -58,15 +58,16 @@ function memberSummary(sel){const a=PLAYERS.filter(p=>sel.has(p.key));return a.l
 let pickerSeq=0;
 function renderMemberPicker(host,selection,onChange,{title='Members',subtitle='Add or remove members',fallback=ALL_KEYS,availability=null}={}){
  if(typeof host==='string')host=$(host);if(!host)return;
- const sel=cleanSelection(selection,fallback),base=(host.id||`v21-members-${++pickerSeq}`).replace(/[^a-z0-9_-]/gi,'-'),helpId=`${base}-help`,statusId=`${base}-status`;
+ const sel=cleanSelection(selection,fallback),base=(host.id||host.dataset.memberPickerId||(host.dataset.memberPickerId=`v21-members-${++pickerSeq}`)).replace(/[^a-z0-9_-]/gi,'-'),helpId=`${base}-help`,statusId=`${base}-status`;
  host.classList.add('v21-member-picker');
- host.innerHTML=`<fieldset class="v21-member-fieldset"><legend>${title}</legend><div class="v21-member-head"><span id="${statusId}" class="v21-member-status" aria-live="polite">${memberSummary(sel)}</span><div class="v21-member-actions"><button type="button" data-v21-preset="all">All five</button><button type="button" data-v21-preset="core">Core three</button></div></div><div class="v21-member-list" role="group" aria-label="${title}">${PLAYERS.map(p=>{const known=availability?availability.has(p.key):true;return `<label style="--pc:${p.color}"><input type="checkbox" value="${p.key}" ${sel.has(p.key)?'checked':''} aria-describedby="${helpId}"><i aria-hidden="true"></i><span>${p.name}</span>${known?'':'<em>no Collection Log data yet</em>'}</label>`}).join('')}</div><div id="${helpId}" class="v21-member-help">${subtitle} Each username is an independent additive filter.</div></fieldset>`;
+ if(!$('.v21-member-fieldset',host))host.innerHTML=`<fieldset class="v21-member-fieldset"><legend>${title}</legend><div class="v21-member-head"><span id="${statusId}" class="v21-member-status" aria-live="polite">${memberSummary(sel)}</span></div><div class="v21-member-list" role="group" aria-label="${title}">${PLAYERS.map(p=>{const known=availability?availability.has(p.key):true;return `<label style="--pc:${p.color}"><input type="checkbox" value="${p.key}" ${sel.has(p.key)?'checked':''} aria-describedby="${helpId}"><i aria-hidden="true"></i><span>${p.name}</span>${known?'':'<em>no Collection Log data yet</em>'}</label>`}).join('')}</div><div id="${helpId}" class="v21-member-help">${subtitle} Each username is an independent additive filter.</div></fieldset>`;
  const status=$(`#${statusId}`,host),checks=$$('input[type="checkbox"]',host);
+ status.textContent=memberSummary(sel);
+ $('legend',host).textContent=title;
+ $('.v21-member-help',host).textContent=subtitle+' Each username is an independent additive filter.';
+ checks.forEach(c=>{c.checked=sel.has(c.value);const label=c.closest('label'),known=!availability||availability.has(c.value),note=$('em',label);if(known)note?.remove();else if(!note){const em=document.createElement('em');em.textContent='no Collection Log data yet';label.append(em)}});
  const commit=next=>{if(!next.size){if(status)status.textContent='Keep at least one member selected';return false}if(status)status.textContent=memberSummary(next);onChange(new Set(next));return true};
  checks.forEach(c=>c.onchange=()=>{const n=new Set(checks.filter(x=>x.checked).map(x=>x.value));if(!n.size){c.checked=true;const restored=new Set([c.value]);if(status)status.textContent='At least one member must stay selected';onChange(restored);return}commit(n)});
- const preset=keys=>{const next=new Set(keys);checks.forEach(c=>c.checked=next.has(c.value));commit(next)};
- $('[data-v21-preset="all"]',host).onclick=()=>preset(PLAYERS.map(p=>p.key));
- $('[data-v21-preset="core"]',host).onclick=()=>preset(CORE_KEYS);
 }
 const TERMS=[
  [/Actual WOM snapshot/g,'Closest WOM snapshot in time'],

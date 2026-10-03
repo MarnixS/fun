@@ -12,3 +12,9 @@ html[data-theme="osrs"] .theme-toggle [data-theme-choice][data-selected="true"]{
 html[data-theme="osrs"] .theme-toggle-track{border-color:#625744;background:#181610;box-shadow:inset 1px 1px #080704}
 html[data-theme="osrs"] .theme-toggle-track i{border-color:#b19c72;border-top-color:#e3ce9b;border-left-color:#e3ce9b;background:#7f7155}
 @media(prefers-reduced-motion:reduce){.theme-toggle-track i{transition:none}}
+.theme-toolbar{flex-direction:column;align-items:center;gap:2px}
+.jump-to-content{display:inline-flex;align-items:center;gap:5px;min-height:36px;padding:2px 12px;font:12px Arial,sans-serif;color:#d7c39e;text-decoration:underline;text-underline-offset:3px}
+.jump-to-content:hover{color:#f1d8a0}
+.jump-to-content:focus-visible{outline:2px solid #efd596;outline-offset:2px}
+html[data-theme="osrs"] .jump-to-content{font:16px OSRSGame,Georgia,serif;color:#ffcf40;text-shadow:1px 1px #000}
+.mast-price-status{font-size:10px;line-height:1.4;overflow-wrap:anywhere;text-align:center}

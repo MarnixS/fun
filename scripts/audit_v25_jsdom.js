@@ -27,7 +27,7 @@ function jsonResponse(value, status = 200) {
   });
 }
 
-async function openPage(path, { selection, templeResponse, templeDocument, womResponse, womDocument, liveSync=false, savedTemple, fetchLog, sharedDocs, indexedDB, deferredReadyState=false, priceData={}, priceResponse, directTempleResponse, localState={} } = {}) {
+async function openPage(path, { selection, templeResponse, templeDocument, womResponse, womDocument, liveSync=false, savedTemple, fetchLog, sharedDocs, indexedDB, deferredReadyState=false, priceData={}, priceResponse, directTempleResponse, localState={}, deployedDocs } = {}) {
   const {mergeWom,mergeTemple}=require('../docs/assets/wom-store');
   const templeTools=require('../api/temple-collection-log')._test;
   const backend=sharedDocs||{wom:JSON.parse(fs.readFileSync('docs/data/wom-cache.json')),temple:savedTemple||JSON.parse(fs.readFileSync('docs/data/temple-clog.json'))};
@@ -88,6 +88,7 @@ async function openPage(path, { selection, templeResponse, templeDocument, womRe
           const revision=new URL(url).pathname.split('/')[3];
           return backend.revisions.has(revision)?jsonResponse(backend.revisions.get(revision)):jsonResponse({error:'Unknown revision'},404);
         }
+        if(deployedDocs){const file=new URL(url).pathname.split('/').pop(),source={'wom-cache.json':'wom','temple-clog.json':'temple'}[file];if(source&&deployedDocs[source])return jsonResponse(deployedDocs[source]);}
         if(savedTemple&&url.endsWith('/data/temple-clog.json'))return jsonResponse(savedTemple);
         if (url.includes('__TEMPLE_PROXY_URL__') || url.includes('/api/temple-collection-log')) {
           if (!templeResponse) return jsonResponse({ error: 'Temple test response not configured' }, 502);
@@ -378,6 +379,7 @@ async function testTempleButtonAction() {
   assert.equal(Object.keys(saved.players).length, 5);
   assert(saved.recent.some((row) => row.name === 'Recovered lijpste item' && row.player === 'Lijpste'), 'full Collection Log recovers a missing recent-feed item');
   assert(!saved.recent.some((row) => row.Code || !row.id || !row.name), 'Temple error objects are removed');
+  click(window, document.querySelector('[data-gim-tab="recent"]'));
   await waitFor(() => document.querySelector('#recentDrops')?.textContent.includes('Recovered lijpste item'), 'Collection Log recent view redraw');
   assert(!document.querySelector('#recentDrops').textContent.includes('undefined'));
   assert.equal(errors.length, 0, errors.join('; '));

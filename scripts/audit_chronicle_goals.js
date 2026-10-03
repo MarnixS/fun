@@ -2,7 +2,7 @@ const assert=require('node:assert/strict');
 const {openPage,waitFor}=require('./audit_v25_jsdom');
 async function run(){
  const {dom,errors}=await openPage('chronicle.html');const w=dom.window,d=w.document;
- await waitFor(()=>d.querySelector('#sharedGoals'),'shared goals');
+ await waitFor(()=>d.querySelector('#chronicle'),'Chronicle');
  d.querySelector('[data-chrono-size="all"]').click();
  await waitFor(()=>d.querySelector('[data-chrono-size="all"]')?.classList.contains('active')&&d.querySelectorAll('.chronicle-event[data-level]').length>1000,'expanded Chronicle history',30000);
  assert(!d.querySelector('#playerGoals'));assert(!d.querySelector('[data-set-goal]'));assert(!d.body.textContent.includes('Private goals on this device'));
@@ -17,8 +17,8 @@ async function run(){
  assert(!d.querySelector('#chronicle').textContent.includes('1970'));
  // jsdom does not implement modal dialog methods; real browser flow is checked separately.
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false};
- const suggestions=d.querySelector('.goal-card[data-goal-player="lijpste"]');assert.equal(suggestions.querySelectorAll('.goal-line').length,10);assert.equal(suggestions.querySelectorAll(':scope > .goal-line').length,4);assert(!suggestions.querySelector('details').open);
- assert.equal(errors.length,0,errors.join('; '));
+ const goals=await openPage('goals.html');const suggestions=goals.dom.window.document.querySelector('.goal-card[data-goal-player="lijpste"]');assert.equal(suggestions.querySelectorAll('.goal-line').length,10);assert.equal(suggestions.querySelectorAll(':scope > .goal-line').length,4);assert(!suggestions.querySelector('details').open);
+ assert.equal(errors.length+goals.errors.length,0,[...errors,...goals.errors].join('; '));
  console.log('Chronicle level order, suggested goals and removal of private goals passed');
 }
 run().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)});

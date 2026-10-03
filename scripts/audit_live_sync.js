@@ -22,10 +22,10 @@ async function run(){
   assert(!w.ugLiveSync,'automatic scheduler is not installed');
   d.querySelector('[data-refresh-temple]').click();
   await waitFor(()=>d.querySelector('[data-mast-drop]')?.textContent==='Ancient ceremonial gloves','manual gloves mast');
-  assert.equal(d.querySelector('[data-mast-drop-sub]').textContent.split(' · ')[0],'Big Dog Aura');
+  assert(d.querySelector('[data-mast-drop-sub]').textContent.includes('Big Dog Aura'));
   assert(requests.some(x=>x.url.includes('/api/shared-data')&&x.method==='POST'&&JSON.parse(x.body).source==='temple'),'refresh button requests a persisted Temple update');
   assert(!requests.some(x=>x.url.includes('api.wiseoldman.net')),'Temple update does not refresh WOM');
-  if(path==='gim.html')await waitFor(()=>d.querySelector('#recentDrops').textContent.includes('Ancient ceremonial gloves'),'automatic Collection Log recent');
+  if(path==='gim.html'){d.querySelector('[data-gim-tab="recent"]').click();await waitFor(()=>d.querySelector('#recentDrops').textContent.includes('Ancient ceremonial gloves'),'manual Collection Log recent');}
   if(path==='chronicle.html')await waitFor(()=>d.querySelector('#chronicle').textContent.includes('Ancient ceremonial gloves'),'automatic Chronicle');
   assert(!d.querySelector('#liveSyncStatus'),'no automatic status banner');
   const stored=JSON.parse(w.localStorage.getItem('ug-v20-temple-cache'));

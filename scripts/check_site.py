@@ -16,6 +16,8 @@ class Page(HTMLParser):
 
 for path in root.glob('*.html'):
     text=path.read_text(encoding='utf-8');p=Page();p.feed(text)
+    assert 'main-content' in p.ids,f'{path}: missing jump target'
+    assert 'class="jump-to-content" href="#main-content"' in text,f'{path}: missing visible jump link'
     assert len(p.ids)==len(set(p.ids)),f'{path}: duplicate IDs'
     for link in p.links:
         u=urlsplit(link)
@@ -24,6 +26,8 @@ for path in root.glob('*.html'):
     assert not any('live-sync.js' in x for x in p.scripts),f'{path}: automatic sync must be disabled'
     script_paths=[urlsplit(s).path for s in p.scripts]
     if 'assets/app.js' in script_paths:
+        assert 'assets/ge-prices.js' in script_paths,f'{path}: app.js requires shared GE pricing'
+        assert script_paths.index('assets/ge-prices.js')<script_paths.index('assets/app.js')
         assert 'assets/history-model.js' in script_paths,f'{path}: app.js requires history-model.js'
         assert 'assets/wom-store.js' in script_paths,f'{path}: app.js requires wom-store.js'
         assert script_paths.index('assets/history-model.js')<script_paths.index('assets/app.js')

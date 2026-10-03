@@ -1,0 +1,21 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {openPage,waitFor,click}=require('./audit_v25_jsdom');
+(async()=>{
+ const requests=[],{dom,errors}=await openPage('gim.html#value',{fetchLog:requests,priceData:{13263:{high:30000000,low:30000000},33639:{high:80000000,low:80000000},19547:{high:20000000,low:20000000}}});
+ const w=dom.window,d=w.document;
+ await waitFor(()=>d.querySelector('[data-clog-value-total]')&&d.querySelector('[data-ge-freshness]'),'shared price consumers');
+ assert.equal(requests.filter(r=>r.url.includes('prices.runescape.wiki')).length,1);
+ assert.equal(w.UGPrices.price(33634),60000000);assert.match(d.querySelector('[data-ge-freshness]').textContent,/GE checked/);
+ click(w,d.querySelector('[data-gim-tab="collection"]'));
+ const input=d.querySelector('#clogMemberPicker input[value="dikste"]'),rule=d.querySelector('[data-ownership-member="dikste"]'),bound=d.querySelector('[data-ownership-bound="minCopies"]');
+ rule.value='has';rule.dispatchEvent(new w.Event('change',{bubbles:true}));
+ input.focus();input.click();assert.equal(d.activeElement,input);assert.equal(d.querySelector('#clogMemberPicker input[value="dikste"]'),input);assert.equal(d.querySelector('[data-ownership-member="dikste"]'),rule);assert(rule.hidden);
+ input.click();assert(!rule.hidden);assert.equal(rule.value,'has');assert.equal(d.querySelector('[data-ownership-bound="minCopies"]'),bound);
+ for(const c of d.querySelectorAll('#clogMemberPicker input'))if(c!==input&&c.checked)c.click();
+ input.click();assert(input.checked,'last member remains selected');
+ d.querySelector('#clogClearRules').click();assert.equal(rule.value,'any');assert.equal(d.querySelector('[data-ownership-bound="minCopies"]'),bound);
+ assert.equal(d.querySelectorAll('.v21-member-actions,[data-shared-refresh]').length,0);assert.equal(d.querySelectorAll('.footer .v22-dev-link').length,1);
+ assert.equal(errors.length,0,errors.join('; '));w.close();
+ console.log('Cleanup runtime passed: one GE request, freshness, stable filter focus, ownership persistence, reset and minimum selection.');
+})().catch(e=>{console.error(e);process.exit(1)});

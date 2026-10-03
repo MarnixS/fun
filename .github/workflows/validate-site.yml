@@ -21,6 +21,9 @@ jobs:
       - name: Syntax and proxy tests
         run: |
           for file in docs/assets/*.js; do node --check "$file"; done
+          python scripts/build_site.py --check
+          node scripts/test_ge_prices.js
+          node scripts/test_chronicle_prices.js
           node scripts/test_temple_proxy.js
           node scripts/test_history_model.js
           node scripts/test_player_goals.js
@@ -47,6 +50,7 @@ jobs:
           trap 'kill "$server"' EXIT
           node scripts/audit_v25_jsdom.js
           node scripts/audit_nemesis_runtime.js
+          node scripts/audit_cleanup_runtime.js
           node scripts/audit_sync.js
           node scripts/audit_live_sync.js
           node scripts/audit_chronicle_goals.js

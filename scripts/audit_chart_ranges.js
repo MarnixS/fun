@@ -3,15 +3,15 @@ const {openPage,waitFor}=require('./audit_v25_jsdom');
 async function run(){
  const {dom,errors}=await openPage('progress.html');const w=dom.window,d=w.document,C=w.UGV21Charts;
  await waitFor(()=>d.querySelector('#skillGainTable tbody tr'),'skill gains');
- const skillOrder=()=>Array.from(d.querySelectorAll('#skillGainTable tbody tr'),r=>r.querySelector('button').dataset.v21Skill);
+ const skillOrder=()=>Array.from(d.querySelectorAll('#skillGainTable tbody tr:not(.total-level-row)'),r=>r.querySelector('button').dataset.v21Skill);
  const normal=skillOrder();
  assert.equal(d.querySelector('#skillGainTable [aria-sort="descending"]'),null,'no default XP sort');
  for(const key of ['lijpste','dikste']){
   d.querySelector(`[data-gain-sort="${key}"]`).click();
   const th=d.querySelector('#skillGainTable [aria-sort="descending"]');
   const column=Array.from(th.parentNode.children).indexOf(th);
-  const values=Array.from(d.querySelectorAll('#skillGainTable tbody tr'),r=>r.children[column].textContent);
-  const number=t=>parseFloat(t.replaceAll(',',''))*({K:1e3,M:1e6,B:1e9}[t.slice(-1).toUpperCase()]||1);
+  const values=Array.from(d.querySelectorAll('#skillGainTable tbody tr:not(.total-level-row)'),r=>r.children[column].textContent);
+  const number=t=>{const m=t.replaceAll(',','').match(/^[+-]?([\d.]+)([KMB]?)/i);return m?Number(m[1])*({K:1e3,M:1e6,B:1e9}[m[2].toUpperCase()]||1):NaN};
   assert(values.every((v,i)=>!i||number(values[i-1])>=number(v)),'descending XP gains');
  }
  d.querySelector('[data-gain-sort="dikste"]').click();assert.deepEqual(skillOrder(),normal,'repeat click restores order');

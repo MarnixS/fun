@@ -30,10 +30,10 @@ async function run(){
   await waitFor(()=>d.querySelector('[data-wom-status] b').textContent.includes('2026'),'status');
   if(page==='index.html'){
    const total=keys.reduce((sum,key)=>sum+w.profiles[key].latestSnapshot.data.skills.overall.experience,0);
-   await waitFor(()=>d.querySelector('[data-mast-xp-exact]').textContent.includes(total.toLocaleString('en-GB')),'group XP summed from all five current WOM profiles');
+   await waitFor(()=>d.querySelector('[data-mast-xp]').textContent.includes(total.toLocaleString('en-GB')),'group XP summed from all five current WOM profiles');
    const updatedWom=structuredClone(w);updatedWom.profiles.lompste.latestSnapshot.data.skills.overall.experience+=1;
    send(win,W,updatedWom);
-   await waitFor(()=>d.querySelector('[data-mast-xp-exact]').textContent.includes((total+1).toLocaleString('en-GB')),'even a one-XP gain updates the exact group total');
+   await waitFor(()=>d.querySelector('[data-mast-xp]').textContent.includes((total+1).toLocaleString('en-GB')),'even a one-XP gain updates the exact group total');
    await waitFor(()=>d.querySelector('#standingTable').textContent.includes('2,222'),'standing refreshed');
    await waitFor(()=>d.querySelector('.player-card .v22-clog-quick')?.textContent.includes('Unlocked1'),'overview clog refreshed');
    click(win,d.querySelector('[data-period-button="7"]'));
@@ -46,6 +46,7 @@ async function run(){
   }
   if(page==='progress.html')await waitFor(()=>d.querySelector('#gainCards').textContent.includes('9.88M'),'gain refresh');
   if(page==='gim.html'){
+   click(win,d.querySelector('[data-gim-tab="recent"]'));
    await waitFor(()=>d.querySelector('#recentDrops').textContent.includes('Sync regression item'),'drop refresh');
    for(const b of d.querySelectorAll('[data-gim-tab]')){click(win,b);await new Promise(r=>setTimeout(r,30));}
    click(win,d.querySelector('[data-gim-tab="items"]')||d.querySelector('[data-gim-tab]'));
@@ -66,7 +67,7 @@ async function run(){
  await waitFor(()=>pw.document.querySelector('#pageNotice').textContent.includes('updated from Temple for 1/5'),'partial refresh count');
  assert(pw.document.querySelector('#pageNotice').textContent.includes('saved data retained'));
  // Storage quota errors must not prevent the specialised module from seeing successful sync data.
- const {dom:qd}=await openPage('gim.html',{templeResponse:t});
+ const {dom:qd}=await openPage('gim.html#recent',{templeResponse:t});
  const qw=qd.window;
  qw.Storage.prototype.setItem=function(){throw new Error('simulated storage quota')};
  click(qw,qw.document.querySelector('[data-refresh-temple]'));
@@ -76,7 +77,7 @@ async function run(){
  // An unavailable selection remains unknown throughout the Collection Log.
  const missing=JSON.parse(fs.readFileSync('docs/data/temple-clog.json'));delete missing.players.lompste;
  const {dom:ud}=await openPage('gim.html',{selection:['lompste'],savedTemple:missing});
- await waitFor(()=>ud.window.document.querySelector('#clogSummary').textContent.includes('Unknown'),'unsynced summary');
+ await waitFor(()=>ud.window.document.querySelector('#clogMemberPicker').textContent.includes('no Collection Log data yet'),'unsynced summary');
  assert(ud.window.document.querySelector('#clogItemTable').textContent.includes('unknown data'));
  const {dom:rd}=await openPage('developer.html');const rw=rd.window;
  const restore=rw.document.querySelector('[data-reload-temple]');
