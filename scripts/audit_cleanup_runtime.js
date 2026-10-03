@@ -22,7 +22,7 @@ const {openPage,waitFor,click}=require('./audit_v25_jsdom');
  const hd=home.dom.window.document,hw=home.dom.window;
  await waitFor(()=>hd.querySelector('[data-ge-freshness]')?.textContent.includes('latest quote'),'Overview source timestamp');
  const stamp=hd.querySelector('[data-ge-freshness]'),snapshot=hd.querySelector('[data-temple-status]');
- assert.equal(stamp.parentElement,snapshot);assert(snapshot.querySelector('b').compareDocumentPosition(stamp)&4,'timestamp follows Temple snapshot date');
+ assert.equal(stamp.parentElement,snapshot.parentElement);assert.equal(stamp.parentElement.className,'overview-snapshots');assert(snapshot.querySelector('b').compareDocumentPosition(stamp)&4,'timestamp follows Temple snapshot date');
  assert.match(stamp.textContent,/17 Sept? 2026/);assert.equal(hw.UGPrices.status().sourceLatestAt,sourceSeconds*1000);assert.equal(hd.querySelector('.mast-status [data-ge-freshness]'),null);
  hw.dispatchEvent(new hw.CustomEvent('ug:prices-updated'));assert.match(stamp.textContent,/17 Sept? 2026/);
  const unknown=await openPage('index.html',{priceData:{13263:{high:30000000}}});await waitFor(()=>unknown.dom.window.document.querySelector('[data-ge-freshness]').textContent.includes('source date unavailable'),'missing source date');

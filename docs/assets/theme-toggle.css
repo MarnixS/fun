@@ -17,4 +17,6 @@ html[data-theme="osrs"] .theme-toggle-track i{border-color:#b19c72;border-top-co
 .jump-to-content:hover{color:#f1d8a0}
 .jump-to-content:focus-visible{outline:2px solid #efd596;outline-offset:2px}
 html[data-theme="osrs"] .jump-to-content{font:16px OSRSGame,Georgia,serif;color:#ffcf40;text-shadow:1px 1px #000}
-.overview-ge-status{display:block;margin-top:4px;font-size:10px;line-height:1.4;overflow-wrap:anywhere}
+.overview-snapshots{display:flex;flex-wrap:wrap;gap:6px;min-width:0;max-width:100%}.overview-snapshots .overview-ge-status{flex-basis:100%;font-size:10px;line-height:1.4;overflow-wrap:anywhere}
+
+body[data-page="home"] #standingTable .rank-1{background:#68521f;color:#fff1b1}body[data-page="home"] #standingTable .rank-2{background:#414b48;color:#e7eee9}body[data-page="home"] #standingTable .rank-3{background:#533723;color:#efc79c}body[data-page="home"] #standingTable :is(.rank-1,.rank-2,.rank-3) .rank-chip{color:inherit}

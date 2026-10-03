@@ -231,3 +231,17 @@ html[data-theme="osrs"] .banner-frame{position:relative}
 html[data-theme="osrs"] .osrs-banner-pets{position:absolute;inset:0;pointer-events:none}
 html[data-theme="osrs"] .osrs-banner-pet{position:absolute;display:block;overflow:hidden}
 html[data-theme="osrs"] .osrs-banner-pet img{position:absolute;max-width:none;height:auto;image-rendering:pixelated;border:0;box-shadow:none}
+
+/* Overview character panels use the game's dark stone and gold UI palette. */
+html[data-theme="osrs"] body[data-page="home"] .player-card{background:#4b4334!important;color:#e7d7b3!important;border:2px solid #21180f!important;box-shadow:inset 1px 1px #96815b,inset -1px -1px #2b241a!important}
+html[data-theme="osrs"] body[data-page="home"] .player-card-head{background:#342d22!important;border-color:#21180f!important}
+html[data-theme="osrs"] body[data-page="home"] .player-card h3{color:#ffdf80!important;text-shadow:1px 1px #16120c}
+html[data-theme="osrs"] body[data-page="home"] .player-card :is(.player-role,.player-mantra,.overview-goal-head,.overview-goal small,.stat-box span){color:#d6c5a3!important}
+html[data-theme="osrs"] body[data-page="home"] .player-card :is(.stat-box,.overview-goal,.v22-clog-quick){background:#393226!important;color:#e7d7b3!important;border-color:#766446!important;box-shadow:inset 1px 1px #231d15!important}
+html[data-theme="osrs"] body[data-page="home"] .player-card :is(.stat-box b,.overview-goal strong,.v22-clog-quick b){color:#ffdd76!important}
+html[data-theme="osrs"] body[data-page="home"] .player-card :is(.v22-clog-quick span,.v22-clog-quick small){color:#d6c5a3!important}
+html[data-theme="osrs"] body[data-page="home"] #standingTable .rank-1{background:#7b6026!important;color:#fff0b8!important}
+html[data-theme="osrs"] body[data-page="home"] #standingTable .rank-2{background:#59625b!important;color:#eff3e9!important}
+html[data-theme="osrs"] body[data-page="home"] #standingTable .rank-3{background:#67452e!important;color:#ffddac!important}
+html[data-theme="osrs"] body[data-page="home"] #standingTable :is(.rank-1,.rank-2,.rank-3) .rank-chip{color:inherit!important}
+html[data-theme="osrs"] body[data-page="home"] #standingTable .rank-chip{background:transparent!important;color:inherit!important;border-color:currentColor!important}

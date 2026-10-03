@@ -5,9 +5,9 @@ const {$,$$,fmt,escapeHtml:esc}=U;let doc=null,wom=null,temple=null,failed=false
 function render(){
  for(const card of $$('.player-card[data-player-key]')){
   const key=card.dataset.playerKey,p=U.player(key);if(!p)continue;
-  $('.overview-goal',card)?.remove();const a=document.createElement('a');a.className='overview-goal';a.href='goals.html#goal-'+key.replace(/ /g,'-');a.setAttribute('aria-label',p.name+' goals · Beta');
+  $('.overview-goal',card)?.remove();const a=document.createElement('a');a.className='overview-goal';a.href='goals.html#goal-'+key.replace(/ /g,'-');a.setAttribute('aria-label',p.name+' goals');
   const goal=doc?.goals?.[key],active=Boolean(goal?.text),progress=active?G.progress(goal,key,wom,temple):null;
-  a.innerHTML=`<span class="overview-goal-head">Player goal <span class="feature-beta">Beta</span><span aria-hidden="true">↗</span></span><strong>${active?esc(goal.text):doc?'No goal set yet':failed?'Goal unavailable':'Loading saved goal…'}</strong>${progress?(progress.unknown?'<small>Progress unknown</small>':`<progress max="100" value="${progress.percent}" aria-label="${esc(p.name)} goal progress"></progress><small>${fmt(progress.value)} / ${fmt(progress.target)} · ${progress.complete?'Complete':Math.floor(progress.percent)+'%'}</small>`):''}`;
+  a.innerHTML=`<span class="overview-goal-head">Player goal <span aria-hidden="true">↗</span></span><strong>${active?esc(goal.text):doc?'No goal set yet':failed?'Goal unavailable':'Loading saved goal…'}</strong>${progress?(progress.unknown?'<small>Progress unknown</small>':`<progress max="100" value="${progress.percent}" aria-label="${esc(p.name)} goal progress"></progress><small>${fmt(progress.value)} / ${fmt(progress.target)} · ${progress.complete?'Complete':Math.floor(progress.percent)+'%'}</small>`):''}`;
   const log=$('.v22-clog-quick',card);if(log)log.before(a);else card.append(a);
  }
 }

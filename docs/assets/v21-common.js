@@ -78,8 +78,8 @@ const TERMS=[
  [/WOM \+ Temple/g,'WOM + Collection Log'],
  [/Temple refresh finished/g,'Collection Log refresh finished'],
  [/shared saved Temple snapshot restored/g,'shared saved Collection Log snapshot restored'],
- [/Supporting cast/g,'Additional group members'],
- [/supporting cast/g,'additional group members']
+ [/Supporting cast/g,'Group members'],
+ [/supporting cast/g,'group members']
 ];
 function replaceTextNode(n){if(!n||n.nodeType!==Node.TEXT_NODE)return;let s=n.nodeValue||'',z=s;for(const [a,b] of TERMS)z=z.replace(a,b);if(z!==s)n.nodeValue=z}
 function normalizeVisibleTerminology(root=document){const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode()))replaceTextNode(n)}
