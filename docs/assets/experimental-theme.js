@@ -45,7 +45,7 @@ function restoreImages(){
  originalImages.clear();
 }
 try{enabled=localStorage.getItem(key)!=='off'}catch{storageAvailable=false}
-const iconMap={'index.html':'play.gif','clog-beta.html':'manual.gif','gim.html':'shop.gif','hypothetical.html':'vote.gif','rng.html':'bonds.gif','hiscores.html':'hiscore.gif','progress.html':'status-icon.gif','time-machine.html':'worldmap.gif','chronicle.html':'manual.gif','history.html':'globe.gif','goals.html':'vote.gif','kc-comparison.html':'hiscore.gif','nemesis-beta.html':'create.gif','faq.html':'support.png','news.html':'comment.gif','experimental.html':'beta.gif'};
+const iconMap={'index.html':'play.gif','clog-beta.html':'manual.gif','gim.html':'shop.gif','hypothetical.html':'vote.gif','rng.html':'bonds.gif','hiscores.html':'hiscore.gif','cumulative-xp.html':'hiscore.gif','progress.html':'status-icon.gif','time-machine.html':'worldmap.gif','chronicle.html':'manual.gif','history.html':'globe.gif','goals.html':'vote.gif','kc-comparison.html':'hiscore.gif','nemesis.html':'create.gif','nemesis-beta.html':'create.gif','faq.html':'support.png','news.html':'comment.gif','experimental.html':'beta.gif'};
 function decoratedLink(link){
  const copy=link.cloneNode(true),icon=document.createElement('img');
  copy.className='osrs-menu-link'+(link.classList.contains('active')?' active':'');
