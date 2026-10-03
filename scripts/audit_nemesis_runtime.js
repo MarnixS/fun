@@ -79,6 +79,5 @@ const {openPage,waitFor,click}=require('./audit_v25_jsdom');
   assert.equal(document.querySelectorAll('.nem-external-member').length,2);
   click(window,document.querySelector('#nemesisClear'));assert(document.querySelector('#nemesisResults').hidden);
   assert.equal(errors.length,0,errors.join('; '));
-  window.close();
   console.log('Nemesis runtime audit passed: add account, current bars, share pies, Collection Log pie, metric links, dates/presets, multiple accounts, missing sources, duplicate detection and removal.');
-})().catch(error=>{console.error(error);process.exit(1)});
+})().then(()=>process.exit(0)).catch(error=>{console.error(error);process.exit(1)});

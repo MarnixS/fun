@@ -16,6 +16,6 @@ const {openPage,waitFor,click}=require('./audit_v25_jsdom');
  input.click();assert(input.checked,'last member remains selected');
  d.querySelector('#clogClearRules').click();assert.equal(rule.value,'any');assert.equal(d.querySelector('[data-ownership-bound="minCopies"]'),bound);
  assert.equal(d.querySelectorAll('.v21-member-actions,[data-shared-refresh]').length,0);assert.equal(d.querySelectorAll('.footer .v22-dev-link').length,1);
- assert.equal(errors.length,0,errors.join('; '));w.close();
+ assert.equal(errors.length,0,errors.join('; '));
  console.log('Cleanup runtime passed: one GE request, freshness, stable filter focus, ownership persistence, reset and minimum selection.');
-})().catch(e=>{console.error(e);process.exit(1)});
+})().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)});

@@ -15,7 +15,7 @@ const settle=()=>new Promise(r=>setTimeout(r,80));
  const button=gd.querySelector('[data-v21-skill]');button.focus();button.click();await waitFor(()=>gd.querySelector('#v21MetricModal:not([hidden])'),'summary graph');
  const modal=gd.querySelector('#v21MetricModal');modal.querySelector('[data-v21-modal-view="bars"]').click();assert(modal.querySelector('svg rect'));gd.dispatchEvent(new gw.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert(modal.hidden);assert.equal(gd.activeElement,button);
  button.click();await settle();modal.click();assert(modal.hidden,'backdrop closes graph');
- assert.equal(graph.errors.length,0);gw.close();
+ assert.equal(graph.errors.length,0); // Keep queued jsdom frames alive until the audit process exits.
  // A manual shared restore must bypass a lagging static Pages snapshot.
  sharedDocs.temple.fetchedAt=Math.max(Date.now(),temple.fetchedAt)+10000;sharedDocs.temple.recent.unshift({id:700099,name:'Newest shared restore item',player:'Dikste',date_unix:Math.floor(sharedDocs.temple.fetchedAt/1000)});
  d.querySelector('#clogReset').click();await waitFor(()=>d.querySelector('#pageNotice').textContent.includes('override cleared'),'reset completion');assert.equal((await w.UGV21.loadClog()).recent[0].name,'Newest shared restore item','restore loads current shared commit');
