@@ -120,7 +120,7 @@ function bindCommon(){ensureTempleRefreshButton();$$('[data-reload-temple]').for
 let mastPrices=null;
 async function loadMastPrices(){mastPrices=await window.UGPrices.load();return mastPrices}
 function mastItemPrice(id){return window.UGPrices.price(id)}
-function renderPriceFreshness(){const s=window.UGPrices.status();$$('[data-ge-freshness]').forEach(x=>{x.textContent=(s.stale?'Stale GE check · ':'GE checked · ')+dateTime(s.checkedAt);x.dataset.stale=String(s.stale)})}
+function renderPriceFreshness(){const s=window.UGPrices.status();$$('[data-ge-freshness]').forEach(x=>{x.textContent=!s.available?(s.stale?'GE prices · unavailable':'GE prices · loading…'):(s.stale?'Stale GE prices · ':'GE prices · ')+(s.sourceLatestAt?'latest quote '+dateTime(s.sourceLatestAt):'source date unavailable');x.title=s.available?`Latest source quote in the RuneScape Wiki price feed; individual item quote times vary. Retrieved ${dateTime(s.checkedAt)}.`:'RuneScape Wiki GE price feed';x.dataset.stale=String(s.stale)})}
 window.addEventListener('ug:prices-updated',renderPriceFreshness);
 function mastMoney(n){if(!Number.isFinite(+n)||+n<=0)return'—';n=+n;return n>=1e9?(n/1e9).toFixed(2)+'b':n>=1e6?(n/1e6).toFixed(2)+'m':n>=1e3?(n/1e3).toFixed(2)+'k':fmt(n)}
 function ensureSixMast(){
@@ -143,7 +143,7 @@ async function renderMastValue(){
  if(!total){slots.forEach(x=>x.innerHTML='<div class="mast-card-title"><img class="mast-summary-icon mast-coins-icon" src="img/ui/coins-10000.png" alt=""><span>Total Collection Log Value</span></div><div class="mast-card-body"><b>—</b><small>No priced logged items</small></div>');return}
  let cursor=0;const stops=[];for(const v of vals){const start=cursor,end=cursor+v.value/total*100;stops.push(`${v.color} ${start.toFixed(2)}% ${end.toFixed(2)}%`);cursor=end}
  const description=vals.map(v=>`${v.name}: ${mastMoney(v.value)} gp (${(100*v.value/total).toFixed(1)}%)`).join('; ');
- slots.forEach(x=>{x.innerHTML=`<div class="mast-card-title"><img class="mast-summary-icon mast-coins-icon" src="img/ui/coins-10000.png" alt=""><span>Total Collection Log Value</span></div><div class="mast-card-body"><div class="mast-value-amount"><div class="mast-value-pie" style="background:conic-gradient(${stops.join(',')})" role="img" title="${esc(description)}" aria-label="${esc('Logged item value contribution: '+description)}"><i></i></div><b title="${fmt(Math.round(total))} gp">${mastMoney(total)} gp</b></div><div class="mast-value-legend" aria-label="Player colours">${PLAYERS.map(p=>`<span><i style="background:${p.color}"></i><span>${esc(p.name)}</span></span>`).join('')}</div><small class="mast-price-status" data-ge-freshness>${window.UGPrices.status().stale?'Stale GE check · ':'GE checked · '}${dateTime(window.UGPrices.status().checkedAt)}</small></div>`});
+ slots.forEach(x=>{x.innerHTML=`<div class="mast-card-title"><img class="mast-summary-icon mast-coins-icon" src="img/ui/coins-10000.png" alt=""><span>Total Collection Log Value</span></div><div class="mast-card-body"><div class="mast-value-amount"><div class="mast-value-pie" style="background:conic-gradient(${stops.join(',')})" role="img" title="${esc(description)}" aria-label="${esc('Logged item value contribution: '+description)}"><i></i></div><b title="${fmt(Math.round(total))} gp">${mastMoney(total)} gp</b></div><div class="mast-value-legend" aria-label="Player colours">${PLAYERS.map(p=>`<span><i style="background:${p.color}"></i><span>${esc(p.name)}</span></span>`).join('')}</div></div>`});
 
 }
 function latestRecordedLevel(){

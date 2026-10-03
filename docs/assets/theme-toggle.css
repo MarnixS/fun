@@ -17,4 +17,4 @@ html[data-theme="osrs"] .theme-toggle-track i{border-color:#b19c72;border-top-co
 .jump-to-content:hover{color:#f1d8a0}
 .jump-to-content:focus-visible{outline:2px solid #efd596;outline-offset:2px}
 html[data-theme="osrs"] .jump-to-content{font:16px OSRSGame,Georgia,serif;color:#ffcf40;text-shadow:1px 1px #000}
-.mast-price-status{font-size:10px;line-height:1.4;overflow-wrap:anywhere;text-align:center}
+.overview-ge-status{display:block;margin-top:4px;font-size:10px;line-height:1.4;overflow-wrap:anywhere}
