@@ -1,9 +1,10 @@
 (()=>{
 'use strict';
 const logs=[['clog-beta.html','Collection Log Classic','G'],['gim.html','Collection Log Advanced','G'],['hypothetical.html','Hypothetical Log','?'],['rng.html','RNG Index','R']];
-const levels=[['hiscores.html','Current Stats','H'],['progress.html','Stat Progress','XP'],['cumulative-xp.html','Cumulative XP','XP'],['time-machine.html','Time Machine','⧖']];
-const records=[['chronicle.html','Chronicle','✦'],['history.html','Timeline','T'],['goals.html','Goals','◎','beta'],['kc-comparison.html','KC comparison','KC','beta'],['group-chemistry.html','Group Chemistry','✧','beta'],['nemesis-beta.html','Nemesis Comparison','VS','beta']];
-const other=[['faq.html','FAQ','?'],['news.html','News','N']];
+const levels=[['hiscores.html','Current Stats','H'],['progress.html','Stat Progress','XP'],['time-machine.html','Time Machine','⧖']];
+const records=[['chronicle.html','Chronicle','✦'],['history.html','Timeline','T'],['goals.html','Goals','◎','beta'],['kc-comparison.html','KC comparison','KC','beta'],['nemesis-beta.html','Nemesis Comparison','VS','beta']];
+const other=[['faq.html','FAQ','?'],['news.html','News','N'],['experimental.html','Experimental','⚗','beta']];
+const experimentalPages=['experimental.html','group-chemistry.html','cumulative-xp.html'];
 function loadV22(){if(document.querySelector('script[data-v22-ui]'))return;const s=document.createElement('script');s.src='assets/v22-ui.js?v=34';s.dataset.v22Ui='1';document.head.append(s)}
 function init(){
  const nav=document.querySelector('.nav-inner');if(!nav){loadV22();return}
@@ -13,7 +14,7 @@ function init(){
  if(hash==='#nemesis-beta'){location.replace('nemesis-beta.html');return}
  const isActive=href=>{const [target,targetHash='']=href.toLowerCase().split('#');if(page!==target)return false;if(targetHash)return hash===('#'+targetHash);return true};
  const link=([href,label,rune,badge])=>`<a class="nav-link ${isActive(href)?'active':''}" href="${href}" ${isActive(href)?'aria-current="page"':''}><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span>${badge==='beta'?'<span class="nav-badge">BETA</span>':''}</a>`;
- const group=(id,label,rune,items)=>`<div class="nav-dropdown"><button type="button" class="nav-trigger ${items.some(([href])=>isActive(href))?'active':''}" aria-expanded="false" aria-controls="nav-${id}"><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span><span aria-hidden="true">▾</span></button><div class="nav-dropdown-panel" id="nav-${id}" hidden>${items.map(link).join('')}</div></div>`;
+ const group=(id,label,rune,items)=>`<div class="nav-dropdown"><button type="button" class="nav-trigger ${items.some(([href])=>isActive(href))||id==='other'&&experimentalPages.includes(page)?'active':''}" aria-expanded="false" aria-controls="nav-${id}"><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span><span aria-hidden="true">▾</span></button><div class="nav-dropdown-panel" id="nav-${id}" hidden>${items.map(link).join('')}</div></div>`;
  const brand=nav.querySelector('.nav-brand')?.outerHTML||'<a class="nav-brand" href="index.html" aria-label="United Gimps overview"><img src="img/gim-crest.svg" alt=""></a>';
  nav.innerHTML=brand+link(['index.html','Overview','O'])+group('logs','Collection Log','G',logs)+group('levels','Stats','XP',levels)+group('record','Records','✦',records)+`<span class="nav-spacer" aria-hidden="true"></span>`+group('other','Other','?',other);
  const nemesisLink=nav.querySelector('a[href="nemesis-beta.html"]');

@@ -1,0 +1,35 @@
+{
+  "description": "Original in-game appearance uploads, copied without pixel changes; used only by the opt-in OSRS theme.",
+  "images": [
+    {
+      "player": "dikste",
+      "original_upload": "f2fb972c-4510-4b9a-ad53-52b9ecdbc121.png",
+      "file": "dikste.png",
+      "sha256": "3ba318838066dc485781b27ee23812cc1c1e5885868b8b9ade1db00024607f5d"
+    },
+    {
+      "player": "big-dog-aura",
+      "original_upload": "f9883c70-943d-4b41-bcb3-127a5ad38f91.png",
+      "file": "big-dog-aura.png",
+      "sha256": "487c29132b1554177f11c7cc9d2506e6517abf286f791ff8e01a1926cd076f1a"
+    },
+    {
+      "player": "lijpste",
+      "original_upload": "d99e16be-2c7c-4e83-8030-f52853c82236.png",
+      "file": "lijpste.png",
+      "sha256": "54955540f520fbf3506d35766f9272f092da249c43de37cfdd8812211b211699"
+    },
+    {
+      "player": "poep-aura",
+      "original_upload": "7b1f80a4-ba93-418f-bc8d-2396d9be71de.png",
+      "file": "poep-aura.png",
+      "sha256": "b71135d693010f903d8f33f482e78d9d723f0c9535c756a7b98fd827c90d375f"
+    },
+    {
+      "player": "lompste",
+      "original_upload": "83d3ee3d-8290-4661-bfc7-0c4366e95a06.png",
+      "file": "lompste.png",
+      "sha256": "51cf9e48c6f3948553995f516dc933b07f6a7391ced9a4bd577904461353433e"
+    }
+  ]
+}

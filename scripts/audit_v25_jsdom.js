@@ -27,7 +27,7 @@ function jsonResponse(value, status = 200) {
   });
 }
 
-async function openPage(path, { selection, templeResponse, templeDocument, womResponse, womDocument, liveSync=false, savedTemple, fetchLog, sharedDocs, indexedDB, deferredReadyState=false, priceData={}, priceResponse, directTempleResponse } = {}) {
+async function openPage(path, { selection, templeResponse, templeDocument, womResponse, womDocument, liveSync=false, savedTemple, fetchLog, sharedDocs, indexedDB, deferredReadyState=false, priceData={}, priceResponse, directTempleResponse, localState={} } = {}) {
   const {mergeWom,mergeTemple}=require('../docs/assets/wom-store');
   const templeTools=require('../api/temple-collection-log')._test;
   const backend=sharedDocs||{wom:JSON.parse(fs.readFileSync('docs/data/wom-cache.json')),temple:savedTemple||JSON.parse(fs.readFileSync('docs/data/temple-clog.json'))};
@@ -49,6 +49,7 @@ async function openPage(path, { selection, templeResponse, templeDocument, womRe
     pretendToBeVisual: true,
     virtualConsole,
     beforeParse(window) {
+      for(const [key,value] of Object.entries(localState))window.localStorage.setItem(key,typeof value==='string'?value:JSON.stringify(value));
       // Real deferred scripts execute while readyState is interactive, before DOMContentLoaded.
       if(deferredReadyState){const get=Object.getOwnPropertyDescriptor(window.Document.prototype,'readyState').get;Object.defineProperty(window.document,'readyState',{get(){const value=get.call(this);return value==='loading'?'interactive':value}})}
       if(indexedDB)window.indexedDB=indexedDB;

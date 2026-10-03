@@ -26,6 +26,10 @@ jobs:
           node scripts/test_player_goals.js
           node scripts/test_shared_baseline.js
           node scripts/test_clog_luck.js
+          node scripts/test_chart_baseline.js
+          node scripts/test_experimental_theme.js
+          node scripts/test_theme_player_images.js
+          node scripts/audit_hypothetical_header.js
           node scripts/test_mobile_navigation.js
           node scripts/audit_mast_overview.js
           node scripts/test_cumulative_filters.js

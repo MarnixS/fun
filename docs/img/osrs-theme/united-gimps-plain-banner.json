@@ -1,0 +1,15 @@
+{
+  "description": "Plain OSRS-style banner generated from the five original in-game appearance uploads. Only used by the opt-in OSRS theme.",
+  "created": "2026-10-03",
+  "tool": "image_gen",
+  "reference_images": [
+    "players/dikste.png",
+    "players/big-dog-aura.png",
+    "players/lijpste.png",
+    "players/poep-aura.png",
+    "players/lompste.png"
+  ],
+  "width": 2161,
+  "height": 728,
+  "prompt": "Arrange the five original in-game characters side by side in a plain OSRS stone courtyard. Preserve outfits, poses, faces and authentic polygon models. No animals, weapons, text, cinematic effects or fantasy illustration."
+}

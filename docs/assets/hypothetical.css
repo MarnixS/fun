@@ -87,7 +87,7 @@
 }
 @media(max-width:760px){
  .hypo-kpis{grid-template-columns:1fr 1fr}
- .hypo-controls{grid-template-columns:1fr}
+ .hypo-controls,.hypo-controls.has-raid-setting{grid-template-columns:1fr}
  .hypo-columns{grid-template-columns:1fr}
  .hypo-source-meta{flex-direction:column}
  .hypo-source-meta span{text-align:left}
