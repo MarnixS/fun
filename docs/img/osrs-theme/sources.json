@@ -223,6 +223,14 @@
       "file": "worldmap.gif",
       "source": "https://www.runescape.com/img/rsp777/title2/worldmap.gif",
       "bytes": 1039
+    },
+    {
+      "file": "group-ironman-helm.png",
+      "source": "https://static.runelite.net/cache/item/icon/26156.png",
+      "identity_source": "https://github.com/runelite/runelite/blob/master/runelite-api/src/main/java/net/runelite/api/ItemID.java",
+      "description": "Original OSRS Group Ironman helm inventory icon (item 26156), used without modification.",
+      "bytes": 645,
+      "sha256": "2ecb81dd17286fc37f150bc3b458658643b0d5ec9ee07c3e262e3233b1b843fa"
     }
   ]
 }

@@ -18,7 +18,7 @@ function refreshImages(){
   if(playerFiles[key])swapImage(image,'img/osrs-theme/players/'+playerFiles[key]+'.png',key);
  });
  document.querySelectorAll('.group-banner').forEach(image=>{swapImage(image,'img/osrs-theme/united-gimps-plain-banner.webp','',true);mountPets(image)});
- document.querySelectorAll('.mast-crest').forEach(image=>swapImage(image,'img/osrs-theme/gim-crest.svg'));
+ document.querySelectorAll('.mast-crest').forEach(image=>swapImage(image,'img/osrs-theme/group-ironman-helm.png'));
  for(const image of originalImages.keys())if(!image.isConnected)originalImages.delete(image);
 }
 // Companion sprites sit above the untouched banner; original character pixels are never redrawn.
@@ -74,7 +74,7 @@ function mount(){
 }
 function syncControls(){
  document.querySelectorAll('[data-osrs-theme-switch]').forEach(control=>{
-  if(control.tagName==='BUTTON'){control.setAttribute('aria-checked',String(enabled));control.querySelector('[data-theme-state]').textContent=enabled?'Old School':'Modern';control.querySelector('[data-theme-action]').textContent=enabled?'Switch to Modern':'Switch to Old School'}
+  if(control.tagName==='BUTTON'){control.setAttribute('aria-checked',String(enabled));control.querySelectorAll('[data-theme-choice]').forEach(choice=>choice.dataset.selected=String((choice.dataset.themeChoice==='osrs')===enabled));control.title=enabled?'Old School selected. Switch to Modern.':'Modern selected. Switch to Old School.'}
   else control.checked=enabled;
  });
  document.querySelectorAll('[data-osrs-theme-status]').forEach(node=>node.textContent=(enabled?'Old School is active. Use the toggle at the top to switch to Modern.':'Modern is active. Use the toggle at the top to switch to Old School.')+(storageAvailable?' Your choice is remembered on this browser.':' This browser cannot save preferences; the choice lasts for this page.'));
@@ -82,7 +82,7 @@ function syncControls(){
 function apply(){
  if(enabled){
   root.dataset.theme='osrs';
-  if(!document.querySelector('#osrsThemeStyles')){const link=document.createElement('link');link.id='osrsThemeStyles';link.rel='stylesheet';link.href='assets/osrs-theme.css?v=2';document.head.append(link)}
+  if(!document.querySelector('#osrsThemeStyles')){const link=document.createElement('link');link.id='osrsThemeStyles';link.rel='stylesheet';link.href='assets/osrs-theme.css?v=3';document.head.append(link)}
   mount();
  }else{restoreImages();delete root.dataset.theme;document.querySelector('#osrsThemeStyles')?.remove();document.querySelectorAll('[data-osrs-banner],[data-osrs-nav],[data-osrs-pets]').forEach(node=>node.remove())}
  syncControls();window.dispatchEvent(new CustomEvent('ug:theme-changed',{detail:{enabled}}));
@@ -92,7 +92,7 @@ window.UGExperimentalTheme={get enabled(){return enabled},setEnabled};
 // This script is deliberately in the head, after ordinary CSS: restore a saved
 // preference before first paint, fetching the theme stylesheet only when on.
 apply();
-function init(){ready=true;mount();syncControls();document.querySelectorAll('[data-osrs-theme-switch]').forEach(control=>{if(control.tagName==='BUTTON')control.addEventListener('click',()=>setEnabled(!enabled));else control.addEventListener('change',()=>setEnabled(control.checked))})}
+function init(){ready=true;mount();syncControls();document.querySelectorAll('[data-osrs-theme-switch]').forEach(control=>{if(control.tagName==='BUTTON')control.addEventListener('click',event=>{const choice=event.target.closest('[data-theme-choice]');setEnabled(choice?choice.dataset.themeChoice==='osrs':!enabled)});else control.addEventListener('change',()=>setEnabled(control.checked))})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 window.addEventListener('storage',event=>{if(event.key===key||event.key===null){try{enabled=localStorage.getItem(key)!=='off'}catch{enabled=true;storageAvailable=false}apply()}});
 })();

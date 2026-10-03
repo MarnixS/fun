@@ -11,7 +11,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),crypto=require(
  w.UGExperimentalTheme.setEnabled(true);
  assert.equal(d.querySelectorAll('[data-osrs-player]').length,6);assert.equal(d.querySelector('.skill-icon').getAttribute('src'),'skill.png');
  for(const image of d.querySelectorAll('[data-osrs-player]')){assert(image.src.includes('/img/osrs-theme/players/'));assert.equal(image.getAttribute('srcset'),null)}
- assert.equal(d.querySelectorAll('[data-osrs-pets] img').length,5);assert.equal(d.querySelector('[data-osrs-pets]').getAttribute('aria-label').includes('EOC ghost'),true);assert(d.querySelector('.group-banner').src.endsWith('united-gimps-plain-banner.webp'));assert(d.querySelector('.mast-crest').src.endsWith('osrs-theme/gim-crest.svg'));
+ assert.equal(d.querySelectorAll('[data-osrs-pets] img').length,5);assert.equal(d.querySelector('[data-osrs-pets]').getAttribute('aria-label').includes('EOC ghost'),true);assert(d.querySelector('.group-banner').src.endsWith('united-gimps-plain-banner.webp'));assert(d.querySelector('.mast-crest').src.endsWith('osrs-theme/group-ironman-helm.png'));
  w.UGExperimentalTheme.setEnabled(false);assert.equal(d.querySelector('main').innerHTML,original);assert.equal(d.querySelector('.group-banner').outerHTML,banner);assert.equal(d.querySelector('[data-osrs-pets]'),null);assert.equal(d.querySelector('.mast-crest').getAttribute('src'),'crest.svg');
  w.UGExperimentalTheme.setEnabled(true);
  const fresh=d.createElement('img');fresh.className='mast-player-avatar';fresh.src='refreshed-player.png';fresh.alt='Lijpste';d.body.append(fresh);

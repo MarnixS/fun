@@ -1,11 +1,14 @@
-.theme-toolbar{display:flex;justify-content:center;padding:2px 0 16px}
-.theme-toggle{display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:60px;min-width:300px;max-width:100%;padding:10px 20px;border:2px solid #b38c4e;background:#21170e;color:#e7cf98;font:700 14px Arial,sans-serif;cursor:pointer}
-.theme-toggle>span:first-child{display:flex;flex-direction:column;align-items:flex-start;gap:2px;font-size:10px;letter-spacing:.06em}
-.theme-toggle b{color:#eed38b;font-size:19px;font-weight:bold;letter-spacing:0}
-.theme-toggle [data-theme-action]{color:#fff;text-decoration:underline;text-underline-offset:3px;font-size:13px}
-.theme-toggle:hover{background:#342415;border-color:#b28b4c}
+.theme-toolbar{display:flex;justify-content:center;padding:2px 0 10px}
+.theme-toggle{display:flex;align-items:center;justify-content:center;gap:10px;min-height:44px;max-width:100%;padding:5px 12px;border:1px solid #685439;border-radius:3px;background:#21170e;color:#ad9b7e;font:12px Arial,sans-serif;cursor:pointer}
+.theme-toggle [data-theme-choice]{min-width:62px;line-height:1.4;text-align:center}
+.theme-toggle [data-theme-choice][data-selected="true"]{color:#efd596;font-weight:700}
+.theme-toggle-track{display:block;position:relative;width:38px;height:20px;flex:0 0 auto;border:1px solid #806849;background:#100c08;box-shadow:inset 1px 1px 2px #0008}
+.theme-toggle-track i{position:absolute;left:2px;top:2px;width:14px;height:14px;border:1px solid #d2b076;background:#ac884d;box-sizing:border-box;transition:transform .12s ease}
+.theme-toggle[aria-checked="false"] .theme-toggle-track i{transform:translateX(18px)}
+.theme-toggle:hover{border-color:#ab8a53}
 .theme-toggle:focus-visible{outline:2px solid #efd596;outline-offset:3px}
-html[data-theme="osrs"] .theme-toggle{border:0;border-radius:0;background:#30271d url('../img/osrs-theme/button_small.gif') no-repeat center/100% 100%;color:#ffcf40;text-shadow:1px 1px #000;font-weight:400}
-html[data-theme="osrs"] .theme-toggle b{color:#fff}
-html[data-theme="osrs"] .theme-toggle:hover{color:#fff;filter:brightness(1.15)}
-@media(max-width:360px){.theme-toggle{min-width:0;width:100%;gap:10px;padding:10px 16px}.theme-toggle [data-theme-action]{font-size:12px}}
+html[data-theme="osrs"] .theme-toggle{border-radius:0;background:#2c271f;border-color:#70644f;border-top-color:#93836b;border-left-color:#93836b;color:#c5b797;text-shadow:1px 1px #000}
+html[data-theme="osrs"] .theme-toggle [data-theme-choice][data-selected="true"]{color:#ffcf40}
+html[data-theme="osrs"] .theme-toggle-track{border-color:#625744;background:#181610;box-shadow:inset 1px 1px #080704}
+html[data-theme="osrs"] .theme-toggle-track i{border-color:#b19c72;border-top-color:#e3ce9b;border-left-color:#e3ce9b;background:#7f7155}
+@media(prefers-reduced-motion:reduce){.theme-toggle-track i{transition:none}}

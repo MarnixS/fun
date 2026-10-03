@@ -14,7 +14,7 @@ html[data-theme="osrs"] .mast-wordmark{background:#000;border:2px solid #382418;
 html[data-theme="osrs"] .mast-wordmark h1{font:400 clamp(29px,4vw,44px)/1 OSRSPetrock,Georgia,serif;color:#e6d5a4;text-shadow:2px 2px #000;letter-spacing:.015em}
 html[data-theme="osrs"] .mast-the{color:#d9c27e;letter-spacing:.15em;font:400 15px OSRSPetrockLight,Georgia,serif;margin-bottom:0}
 html[data-theme="osrs"] .mast-subtitle{color:#fff;border:0;padding:0;font:13px Arial,Helvetica,sans-serif;letter-spacing:0}
-html[data-theme="osrs"] .mast-crest{width:36px;height:44px;image-rendering:pixelated;filter:none}
+html[data-theme="osrs"] .mast-crest{width:36px;height:32px;object-fit:contain;image-rendering:pixelated;filter:none}
 html[data-theme="osrs"] .banner-frame{background:transparent;padding:0;margin:0 0 14px;border:0;overflow:hidden;border-image:url('../img/osrs-theme/border.webp') 62 / 14px / 0 stretch}
 html[data-theme="osrs"] .group-banner{border:0;box-shadow:none}
 html[data-theme="osrs"] .mast-status{background:transparent;border:0;gap:10px;padding:6px 0 18px}
@@ -106,16 +106,30 @@ html[data-theme="osrs"] main :is(.unknown-cell,.cell-sub,.rank-chip,.small-value
 html[data-theme="osrs"] main svg text{fill:#352613!important;font-family:Arial,sans-serif!important}
 html[data-theme="osrs"] main :is(.v21-pie,.skill-share-chart,.chart,.skill-modal-chart){color:#352613}
 html[data-theme="osrs"] main :is(.v21-chart-legend,.legend,.kc-player-row,.kc-counts){color:#352613!important}
-html[data-theme="osrs"] main :is(.v21-member-head strong,.v21-member-status,.v21-member-list label){color:#352613!important}
-html[data-theme="osrs"] main .v21-member-list label{background:rgba(74,56,31,.1)!important;border-color:#826d40!important}
-html[data-theme="osrs"] main .v21-member-list label:has(input:checked){background:rgba(84,117,34,.16)!important;border-color:#556931!important}
-/* Opaque parchment prevents dark wrapper colours showing through the filters. */
-html[data-theme="osrs"] main :is(.clog-member-filter,.v21-member-list label,.v22-rules-grid fieldset,.ownership-bounds fieldset){background:#d4c393!important;color:#21190e!important;border:1px solid #78633d!important;border-radius:0;box-shadow:none!important}
-html[data-theme="osrs"] main .v21-member-list label:has(input:checked){background:#bdc58e!important;border-color:#566431!important;box-shadow:none!important}
-html[data-theme="osrs"] main :is(.v21-member-list label span,.v21-member-list label em,.v22-rules-grid label,.ownership-bounds label,.ownership-summary,.ownership-summary b,#clogRuleSummary,#clogActiveRules){color:#21190e!important;text-shadow:none}
-html[data-theme="osrs"] main .v21-member-list label span{font-weight:bold}
-html[data-theme="osrs"] main :is(select,textarea,input[type="search"],input[type="number"],input[type="text"]){background:#e0d0a3;border:2px solid #675637;border-top-color:#f0ddb0;border-left-color:#f0ddb0;box-shadow:none}
-html[data-theme="osrs"] main input::placeholder{color:#5a4b30;opacity:1}
+/* Native game-style filter panels; shared selection and ownership logic stay unchanged. */
+@font-face{font-family:OSRSGame;src:url('fonts/runescape.ttf') format('truetype');font-display:swap}
+html[data-theme="osrs"] main :is(.v21-member-picker .v21-member-fieldset,.ownership-body,.ownership-bounds fieldset,.xp-skill-filter){background:#3b342a!important;color:#ead8b1!important;border:3px ridge #83775b!important;border-radius:0;box-shadow:inset 0 0 0 1px #211d17!important}
+html[data-theme="osrs"] main .v21-member-fieldset{padding:10px 12px 12px}
+html[data-theme="osrs"] main :is(.v21-member-fieldset legend,.ownership-bounds legend,.ownership-body legend,.xp-skill-filter summary){color:#ffcf40!important;font:22px OSRSGame,'Trebuchet MS',sans-serif;text-shadow:1px 1px #000}
+html[data-theme="osrs"] main :is(.v21-member-head strong,.v21-member-status){color:#ead8b1!important;font:19px OSRSGame,'Trebuchet MS',sans-serif}
+html[data-theme="osrs"] main .v21-member-picker .v21-member-help{color:#d6c7a7!important;font-size:11px;line-height:1.5}
+html[data-theme="osrs"] main :is(.clog-member-filter,.v21-member-list label,.v22-rules-grid fieldset){background:#302b24!important;color:#ffcf40!important;border:1px solid #211b14!important;border-top-color:#776d5a!important;border-left-color:#776d5a!important;border-radius:0;box-shadow:none!important}
+html[data-theme="osrs"] main .v21-member-list label:has(input:checked){background:#514738!important;border-color:#a18b60!important;border-bottom-color:#211b14!important;box-shadow:inset 0 0 0 1px #2d261b!important}
+html[data-theme="osrs"] main :is(.v21-member-list label span,.v21-member-list label em,.ownership-body label,.ownership-body #clogRuleSummary,.ownership-body #clogActiveRules){color:#ffcf40!important;text-shadow:1px 1px #000}
+html[data-theme="osrs"] main .v21-member-list label span{font:21px OSRSGame,'Trebuchet MS',sans-serif;overflow-wrap:anywhere}
+html[data-theme="osrs"] main .v21-member-list label em{font-size:11px}
+html[data-theme="osrs"] main :is(.ownership-body,.xp-skill-filter) :is(p,small,span){color:#ead8b1!important}
+html[data-theme="osrs"] main .ownership-body{padding:12px}
+html[data-theme="osrs"] main .ownership-summary{padding:10px;background:#3b342a!important;color:#ffcf40!important;border:2px ridge #83775b;font:19px OSRSGame,'Trebuchet MS',sans-serif;text-shadow:1px 1px #000}
+html[data-theme="osrs"] main .ownership-summary :is(b,span){color:#ffcf40!important}
+html[data-theme="osrs"] main .ownership-summary #clogRuleSummary{color:#ead8b1!important;font:12px Arial,sans-serif;text-shadow:none}
+html[data-theme="osrs"] main :is(select,textarea,input:not([type]),input[type="search"],input[type="number"],input[type="text"],input[type="date"]){background:#25211b!important;color:#f1d8a0!important;border:2px solid #211b14!important;border-top-color:#8d7e61!important;border-left-color:#8d7e61!important;border-radius:0;box-shadow:inset 1px 1px #100d09!important}
+html[data-theme="osrs"] main option{background:#302b24;color:#f1d8a0}
+html[data-theme="osrs"] main input::placeholder{color:#c3b496;opacity:1}
+html[data-theme="osrs"] main :is(input[type="checkbox"],input[type="radio"]){appearance:none;position:relative;display:inline-block;flex:0 0 auto;width:18px;height:18px;min-height:0;padding:0;border:2px solid #211b14;border-top-color:#8d7e61;border-left-color:#8d7e61;border-radius:0;background:#25211b;vertical-align:middle;cursor:pointer}
+html[data-theme="osrs"] main :is(input[type="checkbox"],input[type="radio"]):checked::after{content:"";position:absolute;width:8px;height:4px;left:2px;top:3px;border-left:3px solid #ffcf40;border-bottom:3px solid #ffcf40;transform:rotate(-45deg)}
+html[data-theme="osrs"] main :is(.xp-skill-actions,.ownership-actions) button{background:#514738!important;color:#ffcf40!important;border:2px outset #8d7e61!important;font:19px OSRSGame,'Trebuchet MS',sans-serif;text-shadow:1px 1px #000}
+html[data-theme="osrs"] main .xp-skills label{color:#ffcf40;text-shadow:1px 1px #000}
 html[data-theme="osrs"] [data-osrs-player]{image-rendering:pixelated;filter:none;object-position:center}
 html[data-theme="osrs"] [data-osrs-player="dikste"]{object-position:-25% center;clip-path:inset(0 0 0 10%)}
 html[data-theme="osrs"] main :is(.v21-local-nav,.subnav){background:transparent;border-color:#826d40;box-shadow:none}
@@ -189,7 +203,7 @@ html[data-theme="osrs"] .osrs-navigation :focus-visible{outline-color:#b5e06c}
  html[data-theme="osrs"] .osrs-banner{min-height:0;margin:8px 0 12px}
  html[data-theme="osrs"] .mast-wordmark{min-height:62px;padding:8px 10px;gap:8px;margin-bottom:12px}
  html[data-theme="osrs"] .mast-wordmark h1{font-size:32px}
- html[data-theme="osrs"] .mast-crest{width:24px;height:32px}
+ html[data-theme="osrs"] .mast-crest{width:27px;height:24px}
  html[data-theme="osrs"] .mast-subtitle{font-size:11px}
  html[data-theme="osrs"] .mast-stat{min-height:174px;padding:15px 14px}
  html[data-theme="osrs"] .mast-card-title span{font-size:11px}
