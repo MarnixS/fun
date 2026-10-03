@@ -1,0 +1,17 @@
+{
+  "created": "2026-10-03",
+  "tool": "image_gen built-in",
+  "asset": "banner-pets.png",
+  "sha256": "c893b4b360f936b5f9ca98ceedcd0ccb8360f6255e89b75d67da915efd416262",
+  "composition": "Transparent companion sprites only. CSS places each pet beside its owner over the byte-identical plain banner. No character or background pixels are modified.",
+  "owners": {
+    "Dikste": "cat",
+    "Big Dog Aura": "Airedale terrier",
+    "Lijpste": "boar",
+    "Poep Aura": "gemstone crab",
+    "Lompste": "ghost with EOC lettering"
+  },
+  "prompt": "Create only a transparent overlay of five conservative flat-shaded low-polygon Old School RuneScape pets. Reference banner is a style and position guide. Do not render or alter any humans or background. Cat, tan and black Airedale terrier, stout tusked boar, muted gemstone crab, angular ghost with clearly readable EOC. No modern rendering, realistic fur, glow or effects.",
+  "base_banner": "united-gimps-plain-banner.webp",
+  "base_banner_sha256": "e22de71504ee44b142db0332ae42580307e39690f88904b33b479acdc0cab875"
+}

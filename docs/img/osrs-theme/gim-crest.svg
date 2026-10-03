@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 36" role="img" aria-label="United Gimps Old School iron shield" shape-rendering="crispEdges">
+<path d="M3 2h26v19h-2v4h-3v3h-3v3h-3v3h-4v-3h-3v-3H8v-3H5v-4H3Z" fill="#211d18"/>
+<path d="M5 4h22v16h-2v4h-3v3h-3v3h-3v2h-1v-2h-3v-3H9v-3H7v-4H5Z" fill="#707775"/>
+<path d="M5 4h22v3H8v14H5Z" fill="#b9b9a3"/>
+<path d="M25 7h2v13h-2v4h-3v3h-3v3h-3v2h-1v-4h3v-3h3v-3h2V7Z" fill="#454b48"/>
+<path d="M9 8h14v12h-2v4h-3v3h-4v-3h-3v-4H9Z" fill="#433928"/>
+<path d="M11 10h3v10h4V10h3v11h-2v3h-6v-3h-2Z" fill="#d5b76e"/>
+<path d="M12 10h1v10h-1Zm3 11h3v1h-3Z" fill="#f0d498"/>
+<g fill="#d5b76e"><path d="M6 5h2v2H6Zm18 0h2v2h-2ZM6 17h2v2H6Zm18 0h2v2h-2ZM15 28h2v2h-2Z"/></g>
+</svg>

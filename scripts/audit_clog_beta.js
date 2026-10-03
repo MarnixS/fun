@@ -14,10 +14,10 @@ assert.equal(M.shares(synthetic,2,[{key:'a'},{key:'b'}]).total,0);
  assert.equal(d.querySelectorAll('#betaMembers input[type=checkbox]').length,5);
  // Regression guard: a luck-calculation problem must never stop a normal category from opening.
  d.querySelector('[data-beta-tab="bosses"]').click();
- const barrows=d.querySelector('[data-beta-category="barrows"]');
+ const barrows=d.querySelector('[data-beta-category="barrows_chests"]');
  assert(barrows,'Barrows category exists');
  barrows.click();
- assert.equal(d.querySelector('#betaCategoryTitle').textContent,'Barrows','Barrows remains openable');
+ assert.equal(d.querySelector('#betaCategoryTitle').textContent,'Barrows Chests','Barrows remains openable');
  assert(d.querySelectorAll('[data-beta-item]').length>20,'Barrows items rendered');
  const barrowsBadges=[...d.querySelectorAll('.beta-luck')];assert(barrowsBadges.length>0,'Barrows renders calculable luck badges');
  assert(barrowsBadges.every(n=>/%/.test(n.textContent)),'luck badges display percentages');
@@ -28,14 +28,14 @@ assert.equal(M.shares(synthetic,2,[{key:'a'},{key:'b'}]).total,0);
   const cats=model.categories.filter(c=>c.tab===tab);assert.equal(d.querySelectorAll('[data-beta-category]').length,cats.length);
   for(const c of cats){d.querySelector(`[data-beta-category="${c.key}"]`).click();const buttons=[...d.querySelectorAll('[data-beta-item]')];assert.equal(buttons.length,c.ids.length,c.key);assert.deepEqual(buttons.map(b=>+b.dataset.betaItem),c.ids);
    for(const b of buttons){const id=+b.dataset.betaItem,s=M.shares(model,id,players);assert.equal(!!b.querySelector('.beta-item-pie'),s.total>0);assert(b.getAttribute('aria-label').includes(model.names.get(id)));assert(!b.outerHTML.includes('NaN'));}
-   buttons[0].click();assert.equal(d.querySelectorAll('.beta-counts>div').length,5);assert(d.querySelector('#betaItemDetail a').href.includes('id='+c.ids[0]));checked++;
+   buttons[0].click();assert.equal(d.querySelectorAll('.beta-counts>div').length,5);assert(d.querySelector('#betaItemDetail a').href.includes('id='+c.ids[0]));assert(d.querySelector('#betaItemDetail').compareDocumentPosition(d.querySelector('.beta-luck-note'))&4,'general explanation follows item detail');const basis=d.querySelector('.beta-luck-basis,.beta-luck-unavailable');assert(d.querySelector('.beta-counts').compareDocumentPosition(basis)&4,'item basis follows specific counts');checked++;
   }
  }
  const search=d.querySelector('#betaSearch');search.value='Osmumten';search.dispatchEvent(new w.Event('input'));assert.equal(d.querySelectorAll('[data-beta-item]').length,0,'item names do not match category search');assert.equal(d.querySelectorAll('[data-beta-category]').length,0);
  search.value='TOMBS';search.dispatchEvent(new w.Event('input'));assert.equal(d.querySelectorAll('[data-beta-category]').length,1);assert.equal(d.querySelector('#betaCategoryTitle').textContent,'Tombs of Amascut');assert.equal(d.querySelector('[data-beta-tab="raids"]').getAttribute('aria-pressed'),'true');assert.equal(d.querySelectorAll('[data-beta-item]').length,model.categories.find(c=>c.key==='tombs_of_amascut').ids.length);d.querySelector('[data-beta-category]').click();assert.equal(search.value,'TOMBS','opening category keeps search');d.querySelector('[data-beta-item="26219"]').click();
  assert.equal(d.querySelector('.nav-link[href="clog-beta.html"]').getAttribute('aria-current'),'page');
  const expected=M.shares(model,26219,players);assert.deepEqual([...d.querySelectorAll('.beta-counts strong')].map(n=>Number(n.textContent.replace(/,/g,''))),expected.entries.map(p=>p.count));
- const picker=d.querySelector('#betaMembers');for(const k of keys.slice(1))picker.querySelector(`input[value="${k}"]`).click();assert.equal(d.querySelectorAll('.beta-counts>div').length,1);assert(d.querySelector('.beta-counts small').textContent==='100.0%'||expected.entries[0].count===0);
+ const picker=d.querySelector('#betaMembers');for(const k of keys.slice(1))picker.querySelector(`input[value="${k}"]`).click();assert.equal(d.querySelectorAll('.beta-counts>div').length,1);assert(d.querySelector('.beta-counts small').textContent==='100.0% of selected drops'||expected.entries[0].count===0);
  assert.equal(JSON.parse(w.localStorage.getItem('ug-v25-member-selection')).length,1);
  d.querySelector('#betaOverlay').click();assert(d.querySelector('#betaGame').classList.contains('beta-hide-pies'));d.querySelector('#betaOverlay').click();assert(!d.querySelector('#betaGame').classList.contains('beta-hide-pies'));
  search.value='not an existing category xyz';search.dispatchEvent(new w.Event('input'));assert.equal(d.querySelectorAll('[data-beta-item]').length,0);assert(d.querySelector('#betaGrid').textContent.includes('No matching'));
