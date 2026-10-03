@@ -2,7 +2,7 @@
 'use strict';
 const logs=[['clog-beta.html','Collection Log Classic','G'],['gim.html','Collection Log Advanced','G'],['hypothetical.html','Hypothetical Log','?'],['rng.html','RNG Index','R']];
 const levels=[['hiscores.html','Current Stats','H'],['progress.html','Stat Progress','XP'],['cumulative-xp.html','Cumulative XP','XP'],['time-machine.html','Time Machine','⧖']];
-const records=[['chronicle.html','Chronicle','✦'],['history.html','Timeline','T'],['goals.html','Goals','◎','beta'],['kc-comparison.html','KC comparison','KC','beta'],['nemesis-beta.html','Nemesis Comparison','VS','beta']];
+const records=[['chronicle.html','Chronicle','✦'],['history.html','Timeline','T'],['goals.html','Goals','◎','beta'],['kc-comparison.html','KC comparison','KC','beta'],['group-chemistry.html','Group Chemistry','✧','beta'],['nemesis-beta.html','Nemesis Comparison','VS','beta']];
 const other=[['faq.html','FAQ','?'],['news.html','News','N']];
 function loadV22(){if(document.querySelector('script[data-v22-ui]'))return;const s=document.createElement('script');s.src='assets/v22-ui.js?v=34';s.dataset.v22Ui='1';document.head.append(s)}
 function init(){
@@ -37,7 +37,7 @@ function init(){
  document.addEventListener('click',e=>{if(!nav.contains(e.target))closeAll()});
  const recordPages=records.filter(([href])=>href!=='nemesis-beta.html');
  const local=recordPages.some(([href])=>href.split('#')[0]===page)?recordPages:null;
- if(local){const main=document.querySelector('main.wrap');if(main&&!document.querySelector('#historyLocalNav')){const d=document.createElement('nav');d.id='historyLocalNav';d.className='v21-local-nav';const title='Records';d.setAttribute('aria-label',title+' sections');d.innerHTML=`<strong aria-hidden="true">${title}</strong>`+local.map(([h,l,,badge])=>`<a href="${h}" class="${isActive(h)?'active':''}" ${isActive(h)?'aria-current="page"':''}>${l}${badge==='beta'?'<span class="nav-badge">BETA</span>':''}</a>`).join('');const anchor=main.querySelector('#kcMemberPicker')||main.querySelector('.api-courtesy');anchor?.insertAdjacentElement('afterend',d)}}
+ if(local){const main=document.querySelector('main.wrap');if(main&&!document.querySelector('#historyLocalNav')){const d=document.createElement('nav');d.id='historyLocalNav';d.className='v21-local-nav';const title='Records';d.setAttribute('aria-label',title+' sections');d.innerHTML=`<strong aria-hidden="true">${title}</strong>`+local.map(([h,l,,badge])=>`<a href="${h}" class="${isActive(h)?'active':''}" ${isActive(h)?'aria-current="page"':''}>${l}${badge==='beta'?'<span class="nav-badge">BETA</span>':''}</a>`).join('');const anchor=main.querySelector('#chemMembers')||main.querySelector('#kcMemberPicker')||main.querySelector('.api-courtesy');anchor?.insertAdjacentElement('afterend',d)}}
  const localNav=document.querySelector('#historyLocalNav');
  if(localNav){const label=document.createElement('label');label.className='mobile-view-picker';label.textContent='Records view';const select=document.createElement('select');select.setAttribute('aria-label',label.textContent);local.forEach(([href,name,,badge])=>select.add(new Option(name+(badge==='beta'?' · Beta':''),href,false,isActive(href))));select.onchange=()=>location.assign(select.value);label.append(select);localNav.append(label)}
  const tabs=[...document.querySelectorAll('[data-gim-tab]')];

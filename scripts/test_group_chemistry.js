@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('node:assert/strict'),M=require('../docs/assets/group-chemistry-model'),XP=require('../docs/assets/cumulative-xp-model'),CL=require('../docs/assets/clog-beta-model');
+const players=[{key:'a',name:'Alpha'},{key:'b',name:'Beta'},{key:'c',name:'Charlie'}];
+const entry=items=>({data:{items:{bosses:items.map(([id,count])=>({id,count,name:'Item '+id}))}}});
+const doc={players:{a:entry([[1,1],[2,5]]),b:entry([[2,2],[3,1]]),c:entry([[2,1],[4,1]])}};
+const profile=(xp,kc)=>({latestSnapshot:{data:{skills:{attack:{experience:xp}},bosses:{boss:{kills:kc}}}}});
+const wom={profiles:{a:profile(100,1),b:profile(200,1),c:profile(400,0)}};
+let m=M.analyse(wom,doc,players,XP,CL);assert.equal(m.teams.length,7);assert.equal(m.full.uniques,4);assert.equal(m.full.copies,11);assert.equal(m.full.xp,700);assert.equal(m.full.breadth,1);assert.equal(M.best(m,2,'log').length,3);assert.equal(M.preserve(m,75,'log').length,3);assert.equal(M.preserve(m,76,'log')[0].size,3);assert.equal(M.preserve(m,50,'log')[0].size,1);
+let credit=M.credit(m,'log');for(const p of credit)assert(Math.abs(p.value-4/3)<1e-9);assert(Math.abs(credit.reduce((n,p)=>n+p.value,0)-4)<1e-9);M.credit(m,'xp').forEach((p,i)=>assert(Math.abs(p.value-[100,200,400][i])<1e-9));M.credit(m,'boss').forEach((p,i)=>assert(Math.abs(p.value-[.5,.5,0][i])<1e-9));assert.deepEqual(M.lost(m,m.teams.find(t=>t.mask===3)).map(x=>x.id),[4]);
+const five=[...players,{key:'d',name:'Delta'},{key:'e',name:'Echo'}];assert.equal(M.analyse(wom,doc,five,XP,CL).teams.length,31);let missing=M.analyse(wom,{players:{a:doc.players.a}},players,XP,CL);assert(!missing.full.logComplete);assert.deepEqual(M.preserve(missing,90,'log'),[]);assert(M.credit(missing,'log').every(p=>p.value===null));delete wom.profiles.c;missing=M.analyse(wom,doc,players,XP,CL);assert(!missing.full.xpComplete);assert(!missing.full.bossComplete);assert.deepEqual(M.preserve(missing,95,'xp'),[]);
+m=M.analyse({profiles:{a:profile(0,0)}},{players:{a:entry([])}},players.slice(0,1),XP,CL);assert.equal(m.teams.length,1);assert.equal(m.full.uniques,0);assert.deepEqual(M.preserve(m,95,'log'),[]);assert.equal(M.credit(m,'log')[0].value,0);assert.equal(M.credit(m,'boss')[0].value,0);
+console.log('Group Chemistry: every coalition, tied frontiers, minimal coverage targets, exact fair-credit conservation, XP/boss allocation, disappearing items, unknowns and zero/single-player cases passed.');
