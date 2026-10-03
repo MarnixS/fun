@@ -12,7 +12,7 @@ function swapImage(image,target,player='',banner=false){
  if(banner){image.alt='Original in-game appearances of Dikste, Big Dog Aura, Lijpste, Poep Aura and Lompste in an Old School courtyard';image.width=2048;image.height=690}
 }
 function refreshImages(){
- if(!enabled)return;
+ if(!enabled||typeof document==='undefined'||!document.body)return;
  document.querySelectorAll('.player-portrait,.mast-player-avatar,.side-card>img,.goal-head>img,.era-player-head>img').forEach(image=>{
   const key=(image.alt||image.closest('[data-goal-player]')?.dataset.goalPlayer||image.closest('.era-player-head')?.querySelector('h3')?.textContent||'').trim().toLowerCase();
   if(playerFiles[key])swapImage(image,'img/osrs-theme/players/'+playerFiles[key]+'.png',key);
