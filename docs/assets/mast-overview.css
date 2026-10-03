@@ -47,3 +47,12 @@
 
 .mast-status-six .mast-achievement-row>.mast-summary-icon{width:28px;height:28px;flex:0 0 28px;object-fit:contain}
 .mast-status-six .mast-achievement-row>.mast-award-icon{height:36px}
+
+@media(max-width:700px){
+ .mast-status-six .mast-stat-xp{order:1}
+ .mast-status-six .mast-stat-drop{order:2}
+ .mast-status-six .mast-stat-clog{order:3}
+ .mast-status-six .mast-stat-level{order:4}
+ .mast-status-six .mast-stat-value{order:5}
+ .mast-status-six .mast-stat-weekly{order:6}
+}
