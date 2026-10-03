@@ -140,7 +140,6 @@ html[data-theme="osrs"] main :is(input[type="checkbox"],input[type="radio"]):che
 html[data-theme="osrs"] main :is(.xp-skill-actions,.ownership-actions) button{background:#514738!important;color:#ffcf40!important;border:2px outset #8d7e61!important;font:19px OSRSGame,'Trebuchet MS',sans-serif;text-shadow:1px 1px #000}
 html[data-theme="osrs"] main .xp-skills label{color:#ffcf40;text-shadow:1px 1px #000}
 html[data-theme="osrs"] [data-osrs-player]{image-rendering:pixelated;filter:none;object-position:center}
-html[data-theme="osrs"] [data-osrs-player="dikste"]{object-position:-25% center;clip-path:inset(0 0 0 10%)}
 html[data-theme="osrs"] main :is(.v21-local-nav,.subnav){background:transparent;border-color:#826d40;box-shadow:none}
 html[data-theme="osrs"] main :is(.v21-local-nav a,.subnav button){background:#000;color:#90c040;border-color:#382418}
 html[data-theme="osrs"] main :is(.v21-local-nav a.active,.subnav button.active){background:#646464;color:#fff}
@@ -269,3 +268,18 @@ html[data-theme="osrs"] body[data-page="home"] #standingTable .rank-2{background
 html[data-theme="osrs"] body[data-page="home"] #standingTable .rank-3{background:#67452e!important;color:#ffddac!important}
 html[data-theme="osrs"] body[data-page="home"] #standingTable :is(.rank-1,.rank-2,.rank-3) .rank-chip{color:inherit!important}
 html[data-theme="osrs"] body[data-page="home"] #standingTable .rank-chip{background:transparent!important;color:inherit!important;border-color:currentColor!important}
+
+/* Frame all original models at 90% height, with matching head/foot margins. */
+html[data-theme="osrs"] .osrs-portrait-frame{position:relative;display:inline-block;margin:0;overflow:hidden;flex:0 0 auto;vertical-align:middle;line-height:0;background:#4b4334;image-rendering:pixelated}
+html[data-theme="osrs"] .osrs-portrait-frame:has(>.player-portrait){width:58px;height:78px;box-shadow:inset 1px 1px #211e16,inset -1px -1px #766c52}
+html[data-theme="osrs"] .player-card-wide .osrs-portrait-frame:has(>.player-portrait){width:46px;height:60px}
+html[data-theme="osrs"] .side-card>.osrs-portrait-frame{width:68px;height:88px}
+html[data-theme="osrs"] .goal-head>.osrs-portrait-frame{width:34px;height:44px}
+html[data-theme="osrs"] .era-player-head>.osrs-portrait-frame{width:36px;height:48px}
+html[data-theme="osrs"] .mast-status-six .mast-card-title .osrs-portrait-frame{width:22px;height:30px;flex-basis:22px}
+html[data-theme="osrs"] .mast-weekly-avatars .osrs-portrait-frame:not(:first-child){margin-left:-10px}
+html[data-theme="osrs"] .osrs-portrait-frame:has(>img[hidden]){display:none!important}
+html[data-theme="osrs"] .osrs-portrait-frame>img[data-osrs-player]{position:absolute!important;display:block!important;left:50%;top:50%;width:auto!important;height:calc(100% * var(--osrs-portrait-scale))!important;max-width:none!important;max-height:none!important;min-width:0;min-height:0;transform:translate(var(--osrs-portrait-x),var(--osrs-portrait-y));object-fit:fill!important;object-position:center!important;clip-path:var(--osrs-portrait-clip);margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+@media(max-width:700px){html[data-theme="osrs"] .mast-status-six .mast-card-title .osrs-portrait-frame{width:20px;height:28px;flex-basis:20px}}
+@media(max-width:620px){html[data-theme="osrs"] .side-card>.osrs-portrait-frame{width:54px;height:74px}}
+@media(max-width:360px){html[data-theme="osrs"] body[data-page="history"] .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}html[data-theme="osrs"] body[data-page="history"] .kpi{min-width:0;overflow-wrap:anywhere}}

@@ -4,6 +4,26 @@
 const key='ug:experimental:osrs-theme:v1',root=document.documentElement;
 let enabled=true,ready=false,storageAvailable=true;
 const playerFiles={'dikste':'dikste','big dog aura':'big-dog-aura','lijpste':'lijpste','poep aura':'poep-aura','lompste':'lompste'},originalImages=new Map();
+// Body bounds locate the original models without changing their pixels.
+const portraitBounds={
+ 'dikste':{size:[260,407],body:[108,64,223,392],clip:'inset(0 0 0 16%)'},
+ 'big dog aura':{size:[223,409],body:[74,64,190,401]},
+ 'lijpste':{size:[359,739],body:[90,21,331,729]},
+ 'poep aura':{size:[218,386],body:[58,39,171,368]},
+ 'lompste':{size:[233,380],body:[52,37,166,365]}
+},portraitFrames=new Map();
+function framePortrait(image,player){
+ const crop=portraitBounds[player];if(!crop||!image.parentNode)return;
+ let frame=portraitFrames.get(image);
+ if(!frame){frame=document.createElement('span');frame.className='osrs-portrait-frame';image.before(frame);frame.append(image);portraitFrames.set(image,frame)}
+ if(frame.dataset.osrsPortrait===player)return;
+ const [w,h]=crop.size,[left,top,right,bottom]=crop.body;
+ frame.dataset.osrsPortrait=player;
+ frame.style.setProperty('--osrs-portrait-scale',String(.9*h/(bottom-top)));
+ frame.style.setProperty('--osrs-portrait-x',String(-50*(left+right)/w)+'%');
+ frame.style.setProperty('--osrs-portrait-y',String(-50*(top+bottom)/h)+'%');
+ frame.style.setProperty('--osrs-portrait-clip',crop.clip||'none');
+}
 let imageObserver=null;
 function swapImage(image,target,player='',banner=false){
  const current=image.getAttribute('src');if(!current||current===target)return;
@@ -13,13 +33,13 @@ function swapImage(image,target,player='',banner=false){
 }
 function refreshImages(){
  if(!enabled||typeof document==='undefined'||!document.body)return;
- document.querySelectorAll('.player-portrait,.mast-player-avatar,.side-card>img,.goal-head>img,.era-player-head>img').forEach(image=>{
+ document.querySelectorAll('.player-portrait,.mast-player-avatar,.side-card>img,.goal-head>img,.era-player-head>img,.osrs-portrait-frame>img').forEach(image=>{
   const key=(image.alt||image.closest('[data-goal-player]')?.dataset.goalPlayer||image.closest('.era-player-head')?.querySelector('h3')?.textContent||'').trim().toLowerCase();
-  if(playerFiles[key])swapImage(image,'img/osrs-theme/players/'+playerFiles[key]+'.png',key);
+  if(playerFiles[key]){swapImage(image,'img/osrs-theme/players/'+playerFiles[key]+'.png',key);framePortrait(image,key)}
  });
  document.querySelectorAll('.group-banner').forEach(image=>{swapImage(image,'img/osrs-theme/united-gimps-plain-banner.webp','',true);mountPets(image)});
  document.querySelectorAll('.mast-crest').forEach(image=>swapImage(image,'img/osrs-theme/group-ironman-helm.png'));
- for(const image of originalImages.keys())if(!image.isConnected)originalImages.delete(image);
+ for(const image of originalImages.keys())if(!image.isConnected){originalImages.delete(image);const frame=portraitFrames.get(image);if(frame?.isConnected&&!frame.children.length)frame.remove();portraitFrames.delete(image)}
 }
 // Companion sprites sit above the untouched banner; original character pixels are never redrawn.
 function mountPets(banner){
@@ -41,6 +61,8 @@ function watchImages(){
 }
 function restoreImages(){
  imageObserver?.disconnect();imageObserver=null;
+ for(const [image,frame] of portraitFrames)if(image.parentNode===frame)frame.replaceWith(image);
+ portraitFrames.clear();
  for(const [image,original] of originalImages){for(const [name,value] of Object.entries(original))if(value===null)image.removeAttribute(name);else image.setAttribute(name,value);delete image.dataset.osrsPlayer}
  originalImages.clear();
 }
@@ -82,7 +104,7 @@ function syncControls(){
 function apply(){
  if(enabled){
   root.dataset.theme='osrs';
-  if(!document.querySelector('#osrsThemeStyles')){const link=document.createElement('link');link.id='osrsThemeStyles';link.rel='stylesheet';link.href='assets/osrs-theme.css?v=6';document.head.append(link)}
+  if(!document.querySelector('#osrsThemeStyles')){const link=document.createElement('link');link.id='osrsThemeStyles';link.rel='stylesheet';link.href='assets/osrs-theme.css?v=7';document.head.append(link)}
   mount();
  }else{restoreImages();delete root.dataset.theme;document.querySelector('#osrsThemeStyles')?.remove();document.querySelectorAll('[data-osrs-banner],[data-osrs-nav],[data-osrs-pets]').forEach(node=>node.remove())}
  syncControls();window.dispatchEvent(new CustomEvent('ug:theme-changed',{detail:{enabled}}));
