@@ -7,9 +7,6 @@
 .mast-status-six .mast-card-body small{display:block;font-size:10px;line-height:1.4;color:#b6a487;white-space:normal;overflow-wrap:anywhere}
 .mast-status-six .mast-card-body strong{font-size:13px;line-height:1.3;color:#e4c587}
 .mast-status-six .mast-summary-icon,.mast-status-six .mast-stat-drop img{width:24px;height:24px;flex:0 0 24px;object-fit:contain}
-.mast-status-six .mast-level-icons{gap:4px}
-.mast-status-six .mast-level-icons .mast-level-avatar{width:24px;height:30px;flex-basis:24px}
-.mast-status-six .mast-level-icons .mast-level-skill-icon{width:18px;height:18px;flex-basis:18px}
 .mast-status-six .mast-value-amount{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
 .mast-status-six .mast-value-amount>b{font-size:20px;margin:0;white-space:normal}
 .mast-status-six .mast-value-pie{width:38px;height:38px;flex:0 0 38px}
@@ -37,3 +34,9 @@
 
 .mast-status-six .mast-award-icon{height:34px;width:26px;flex-basis:26px}
 @media(max-width:700px){.mast-status-six .mast-card-body>[data-mast-xp]{font-size:clamp(14px,4.35vw,18px);font-variant-numeric:tabular-nums;white-space:nowrap}}
+
+.mast-status-six .mast-achievement-row{display:flex;align-items:center;gap:8px;min-width:0}
+.mast-status-six .mast-achievement-row>b{min-width:0;margin:0;font-size:20px;line-height:1.15;white-space:normal;overflow-wrap:anywhere;overflow:visible;text-overflow:clip}
+.mast-status-six .mast-achievement-row>.mast-player-avatar{display:block;width:28px;height:38px;flex:0 0 28px;object-fit:contain;border:1px solid #6b5232;border-radius:3px;background:#130e09}
+.mast-status-six .mast-achievement-row>.mast-player-avatar[hidden]{display:none}
+@media(max-width:700px){.mast-status-six .mast-achievement-row>b{font-size:18px}}
