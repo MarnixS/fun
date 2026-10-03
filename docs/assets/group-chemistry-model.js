@@ -8,7 +8,7 @@ function analyse(wom,doc,players,XP,CL){
  for(let mask=1;mask<(1<<n);mask++){
   const members=players.filter((p,i)=>mask&(1<<i)),keys=members.map(p=>p.key),ids=new Set(),bosses=new Set();let copies=0,bossComplete=true;
   for(const p of members){for(const [id,count]of log.counts.get(p.key)||[])if(count>0){ids.add(id);copies+=count}const data=wom?.profiles?.[p.key]?.latestSnapshot?.data||wom?.profiles?.[p.key]?.latest_snapshot?.data;if(!data?.bosses)bossComplete=false;for(const [key,v]of Object.entries(data?.bosses||{}))if(v.kills!=null&&Number.isFinite(+v.kills)&&+v.kills>0)bosses.add(key)}
-  const xp=XP.aggregate(wom,keys);teams.push({mask,members,keys,size:members.length,ids,uniques:ids.size,copies,breadth:bosses.size,xp:xp.xp??0,xpComplete:xp.complete,gameTotal:xp.gameTotal,equivalentTotal:xp.equivalentTotal,logComplete:keys.every(k=>log.known.has(k)),bossComplete});
+  const xp=XP.aggregate(wom,keys);teams.push({mask,members,keys,size:members.length,ids,uniques:ids.size,copies,breadth:bosses.size,xp:xp.xp??0,xpComplete:xp.complete,gameTotal:xp.gameTotal,equivalentTotal:xp.equivalentTotal,logKnown:keys.some(k=>log.known.has(k)),xpKnown:xp.xp!=null,bossKnown:keys.some(k=>(wom?.profiles?.[k]?.latestSnapshot?.data||wom?.profiles?.[k]?.latest_snapshot?.data)?.bosses),logComplete:keys.every(k=>log.known.has(k)),bossComplete});
  }
  return{players,log,teams,full:teams.find(t=>t.mask===(1<<n)-1)||null};
 }
