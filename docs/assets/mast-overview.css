@@ -37,6 +37,10 @@
 
 .mast-status-six .mast-achievement-row{display:flex;align-items:center;gap:8px;min-width:0}
 .mast-status-six .mast-achievement-row>b{min-width:0;margin:0;font-size:20px;line-height:1.15;white-space:normal;overflow-wrap:anywhere;overflow:visible;text-overflow:clip}
-.mast-status-six .mast-achievement-row>.mast-player-avatar{display:block;width:28px;height:38px;flex:0 0 28px;object-fit:contain;border:1px solid #6b5232;border-radius:3px;background:#130e09}
-.mast-status-six .mast-achievement-row>.mast-player-avatar[hidden]{display:none}
+.mast-status-six .mast-achievement-row .mast-player-avatar{display:block;width:28px;height:38px;flex:0 0 28px;object-fit:contain;border:1px solid #6b5232;border-radius:3px;background:#130e09}
+.mast-status-six .mast-achievement-row .mast-player-avatar[hidden]{display:none}
 @media(max-width:700px){.mast-status-six .mast-achievement-row>b{font-size:18px}}
+
+.mast-status-six .mast-weekly-avatars{display:flex;align-items:center;flex:0 0 auto}
+.mast-status-six .mast-weekly-avatars[hidden]{display:none}
+.mast-status-six .mast-weekly-avatars .mast-player-avatar:not(:first-child){margin-left:-14px}
