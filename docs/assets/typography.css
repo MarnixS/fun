@@ -140,3 +140,12 @@ html body main #chronicleMemberPicker .v21-member-fieldset{padding:6px 8px 8px}
 html body main .v21-member-compact .v21-member-head{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 html body main #chronicleMemberPicker .v21-member-list{gap:6px}
 html body main #chronicleMemberPicker .v21-member-list label{padding:6px 9px!important}
+
+/* Saved snapshot stamps double as the manual source update controls. */
+html body main .snapshot-refresh{display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:44px;padding:6px 9px;text-align:left;cursor:pointer}
+html body main .snapshot-label{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+html body main .snapshot-label>span:last-child{margin-left:4px;font-size:1rem}
+html body main .snapshot-refresh b{font-weight:400}
+html body main .snapshot-refresh:focus-visible{outline:2px solid #b89048;outline-offset:2px}
+html body main .snapshot-refresh:disabled{cursor:wait;opacity:.7}
+html[data-theme="osrs"] body main button.snapshot-refresh:hover{background:#b9a979!important;border-color:#51412b!important;text-decoration:none}

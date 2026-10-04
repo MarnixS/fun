@@ -211,11 +211,11 @@ async function testShells() {
     const button = document.querySelector('[data-refresh-temple]');
     assert(button, `${page} has Temple update button`);
     assert.equal(button.tagName, 'BUTTON', `${page} Temple control is a button`);
-    assert.equal(button.textContent.trim(), 'Update Collection Log via Temple');
+    assert(button.matches('[data-temple-status]'));assert(button.textContent.includes('Collection Log snapshot'));assert(button.querySelector('b').textContent.includes('checked'));assert(!document.querySelector('.data-strip .data-actions'));
     assert.equal(button.getAttribute('href'), null);
     const style = dom.window.getComputedStyle(button);
     assert.equal(style.display, 'inline-flex');
-    assert.equal(style.alignItems, 'center');
+    assert.equal(style.alignItems, 'flex-start');
     assert.equal(style.justifyContent, 'center');
     assert.equal(errors.length, 0, `${page} console errors: ${errors.join('; ')}`);
   }
