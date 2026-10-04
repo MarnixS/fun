@@ -1,22 +1,17 @@
-.theme-toolbar{display:flex;justify-content:center;padding:2px 0 10px}
-.theme-toggle{display:flex;align-items:center;justify-content:center;gap:10px;min-height:44px;max-width:100%;padding:5px 12px;border:1px solid #685439;border-radius:3px;background:#21170e;color:#ad9b7e;font:12px Arial,sans-serif;cursor:pointer}
+.theme-toolbar{display:flex;justify-content:center;align-items:center;padding:2px 0 6px}
+.theme-toggle{display:flex;align-items:center;justify-content:center;gap:10px;min-height:44px;max-width:100%;padding:5px 12px;border:1px solid #4d4231;border-radius:3px;background:#17120c;color:#ad9b7e;font:12px Arial,sans-serif;cursor:pointer}
 .theme-toggle [data-theme-choice]{min-width:62px;line-height:1.4;text-align:center}
-.theme-toggle [data-theme-choice][data-selected="true"]{color:#efd596;font-weight:700}
-.theme-toggle-track{display:block;position:relative;width:38px;height:20px;flex:0 0 auto;border:1px solid #806849;background:#100c08;box-shadow:inset 1px 1px 2px #0008}
-.theme-toggle-track i{position:absolute;left:2px;top:2px;width:14px;height:14px;border:1px solid #d2b076;background:#ac884d;box-sizing:border-box;transition:transform .12s ease}
-.theme-toggle[aria-checked="false"] .theme-toggle-track i{transform:translateX(18px)}
+.theme-toggle [data-theme-choice][data-selected="true"]{color:#d8c49b;font-weight:600}
+.theme-toggle-track{display:block;position:relative;width:34px;height:18px;flex:0 0 auto;border:1px solid #806849;background:#100c08;box-shadow:inset 1px 1px 2px #0008}
+.theme-toggle-track i{position:absolute;left:2px;top:2px;width:12px;height:12px;border:1px solid #d2b076;background:#ac884d;box-sizing:border-box;transition:transform .12s ease}
+.theme-toggle[aria-checked="false"] .theme-toggle-track i{transform:translateX(16px)}
 .theme-toggle:hover{border-color:#ab8a53}
 .theme-toggle:focus-visible{outline:2px solid #efd596;outline-offset:3px}
-html[data-theme="osrs"] .theme-toggle{border-radius:0;background:#2c271f;border-color:#70644f;border-top-color:#93836b;border-left-color:#93836b;color:#c5b797;text-shadow:1px 1px #000}
-html[data-theme="osrs"] .theme-toggle [data-theme-choice][data-selected="true"]{color:#ffcf40}
+html[data-theme="osrs"] .theme-toggle{border-radius:0;background:#211e18;border-color:#494333;border-top-color:#625943;border-left-color:#625943;color:#b3a487;text-shadow:1px 1px #000}
+html[data-theme="osrs"] .theme-toggle [data-theme-choice][data-selected="true"]{color:#d8c49b}
 html[data-theme="osrs"] .theme-toggle-track{border-color:#625744;background:#181610;box-shadow:inset 1px 1px #080704}
 html[data-theme="osrs"] .theme-toggle-track i{border-color:#b19c72;border-top-color:#e3ce9b;border-left-color:#e3ce9b;background:#7f7155}
 @media(prefers-reduced-motion:reduce){.theme-toggle-track i{transition:none}}
-.theme-toolbar{flex-direction:column;align-items:center;gap:2px}
-.jump-to-content{display:inline-flex;align-items:center;gap:5px;min-height:36px;padding:2px 12px;font:12px Arial,sans-serif;color:#d7c39e;text-decoration:underline;text-underline-offset:3px}
-.jump-to-content:hover{color:#f1d8a0}
-.jump-to-content:focus-visible{outline:2px solid #efd596;outline-offset:2px}
-html[data-theme="osrs"] .jump-to-content{font:16px OSRSGame,Georgia,serif;color:#ffcf40;text-shadow:1px 1px #000}
 .overview-snapshots{display:flex;flex-wrap:wrap;gap:6px;min-width:0;max-width:100%}.overview-snapshots .overview-ge-status{flex-basis:100%;font-size:10px;line-height:1.4;overflow-wrap:anywhere}
 
 body[data-page="home"] #standingTable .rank-1{background:#68521f;color:#fff1b1}body[data-page="home"] #standingTable .rank-2{background:#414b48;color:#e7eee9}body[data-page="home"] #standingTable .rank-3{background:#533723;color:#efc79c}body[data-page="home"] #standingTable :is(.rank-1,.rank-2,.rank-3) .rank-chip{color:inherit}

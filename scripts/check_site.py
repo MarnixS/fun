@@ -17,7 +17,7 @@ class Page(HTMLParser):
 for path in root.glob('*.html'):
     text=path.read_text(encoding='utf-8');p=Page();p.feed(text)
     assert 'main-content' in p.ids,f'{path}: missing jump target'
-    assert 'class="jump-to-content" href="#main-content"' in text,f'{path}: missing visible jump link'
+    assert 'class="jump-to-content"' not in text,f'{path}: unwanted jump link'
     assert len(p.ids)==len(set(p.ids)),f'{path}: duplicate IDs'
     for link in p.links:
         u=urlsplit(link)

@@ -9,7 +9,7 @@ async function run(){
  const first=d.querySelector('.chronicle-event').textContent;
  let select=d.querySelector('#chroniclePagerTop [data-chrono-select]');const last=select.options.length;
  select.value=String(last);select.dispatchEvent(new w.Event('change'));
- assert(d.querySelector('#chronicleMeta').textContent.includes(`page ${last} of ${last}`));
+ assert.equal(d.querySelector('#chroniclePagerTop [data-chrono-select]').value,String(last));assert(!d.querySelector('#chronicleMeta'));assert(!d.querySelector('[data-period-status]'));
  assert.equal(d.querySelector('#chroniclePagerBottom [data-chrono-select]').value,String(last));
  assert(d.querySelector('#chroniclePagerTop [aria-label="Next Chronicle page"]').disabled);
  d.querySelector('#chroniclePagerBottom [aria-label="Previous Chronicle page"]').click();
@@ -18,6 +18,7 @@ async function run(){
  assert.equal(d.querySelector('.chronicle-event').textContent,first);
  d.querySelector('[data-chrono-size="all"]').click();
  await waitFor(()=>d.querySelector('[data-chrono-size="all"]')?.classList.contains('active')&&d.querySelectorAll('.chronicle-event[data-level]').length>1000,'expanded Chronicle history',30000);
+ const kc=[...d.querySelectorAll('.chronicle-event')].filter(e=>/ KC$/.test(e.querySelector('h4').textContent));assert(kc.length>0);assert(kc.every(e=>/WOM accuracy ±\d+h/.test(e.querySelector('.chronicle-date').textContent)),'KC crossings show snapshot timing accuracy');
  assert(!d.querySelector('#playerGoals'));assert(!d.querySelector('[data-set-goal]'));assert(!d.body.textContent.includes('Private goals on this device'));
  const groups=new Map();
  for(const el of d.querySelectorAll('.chronicle-event[data-level]')){
@@ -32,6 +33,11 @@ async function run(){
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false};
  const goals=await openPage('goals.html');const suggestions=goals.dom.window.document.querySelector('.goal-card[data-goal-player="lijpste"]');assert.equal(suggestions.querySelectorAll('.goal-line').length,10);assert.equal(suggestions.querySelectorAll(':scope > .goal-line').length,4);assert(!suggestions.querySelector('details').open);
  assert.equal(errors.length+goals.errors.length,0,[...errors,...goals.errors].join('; '));
+ const fixture=structuredClone(require('../docs/data/wom-cache.json')),base=structuredClone(fixture.profiles.dikste.latestSnapshot),a=structuredClone(base),b=structuredClone(base);
+ a.id=-101;b.id=-102;a.createdAt='2026-02-01T00:00:00Z';b.createdAt='2026-02-03T00:00:00Z';a.data.bosses.zulrah.kills=20;b.data.bosses.zulrah.kills=60;
+ fixture.snapshots.dikste=[a,b];fixture.profiles.dikste.latestSnapshot=b;
+ const kcPage=await openPage('chronicle.html',{womDocument:fixture,sharedDocs:{wom:fixture,temple:require('../docs/data/temple-clog.json')}});const kd=kcPage.dom.window.document;kd.querySelector('[data-chrono-size="all"]').click();
+ const crossing=[...kd.querySelectorAll('.chronicle-event')].find(e=>e.querySelector('h4').textContent.includes('Dikste · 50 Zulrah KC'));assert(crossing);assert(crossing.querySelector('.chronicle-date').textContent.includes('WOM accuracy ±24h'),'48-hour snapshot gap gives +/-24-hour KC timing accuracy: '+crossing.querySelector('.chronicle-date').textContent);assert.equal(kcPage.errors.length,0);
  console.log('Chronicle level order, suggested goals and removal of private goals passed');
 }
 run().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)});

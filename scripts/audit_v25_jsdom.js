@@ -136,7 +136,7 @@ async function openPage(path, { selection, templeResponse, templeDocument, womRe
     await waitFor(
       () => dom.window.document.querySelectorAll('.chronicle-event').length > 0
         && dom.window.document.querySelector('#chroniclePagerTop [data-chrono-size="all"]')
-        && /of \d[\d,]* events/.test(dom.window.document.querySelector('#chronicleMeta')?.textContent || ''),
+        && /of \d[\d,]*/.test(dom.window.document.querySelector('#chroniclePagerTop .chronicle-page-summary')?.textContent || ''),
       'paginated Chronicle render',
       30_000,
     );
@@ -211,7 +211,7 @@ async function testShells() {
     const button = document.querySelector('[data-refresh-temple]');
     assert(button, `${page} has Temple update button`);
     assert.equal(button.tagName, 'BUTTON', `${page} Temple control is a button`);
-    assert(button.matches('[data-temple-status]'));assert(button.textContent.includes('Collection Log snapshot'));assert(button.querySelector('b').textContent.includes('checked'));assert(!document.querySelector('.data-strip .data-actions'));
+    assert(button.matches('[data-temple-status]'));assert(button.textContent.includes('Collection Log snapshot'));assert(/\d{2} .*20\d{2}/.test(button.querySelector('b').textContent));assert(!document.querySelector('.data-strip .data-actions'));
     assert.equal(button.getAttribute('href'), null);
     const style = dom.window.getComputedStyle(button);
     assert.equal(style.display, 'inline-flex');
@@ -297,7 +297,7 @@ async function testChronicleLevelsAndFilter() {
       .map((event) => `${event.dataset.playerKey}|${event.dataset.metric}|${event.dataset.level}`),
   );
   assert.deepEqual(actual, expected, 'Chronicle contains every inferred and official skill level exactly once');
-  assert.match(document.querySelector('#chronicleMeta').textContent, /events shown · all at once/);
+  assert.match(document.querySelector('#chroniclePagerTop .chronicle-page-summary').textContent, /events$/);assert(!document.querySelector('#chronicleMeta'));
   assert.deepEqual(checked(document, 'chronicleMemberPicker'), ALL);
 
   click(window, document.querySelector('#chronicleMemberPicker input[value="big dog aura"]'));
