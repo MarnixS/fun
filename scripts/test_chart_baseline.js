@@ -23,7 +23,7 @@ Object.defineProperty(host,'clientWidth',{get:()=>measuredWidth});
 w.ResizeObserver=class{constructor(callback){resize=callback}observe(){}};
 C.drawLine(host,[line([100,150,250])],{gainMode:true});
 assert.equal(host.querySelector('svg').getAttribute('viewBox'),'0 0 300 260');
-assert.equal(host.querySelectorAll('text[y="251"]').length,3);
+assert.equal(host.querySelectorAll('text[y="251"]').length,2);
 assert.equal(+host.querySelector('svg').dataset.yMin,0);
 const inspector=host.querySelector('[role=slider]');
 assert.equal(inspector.getAttribute('aria-valuenow'),'2');

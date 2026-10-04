@@ -1,0 +1,120 @@
+/* Role-based type scale. Browser text preferences remain the root size.
+   Body 16 / interface 14 / metadata 12; headings and numerical values are
+   separate roles. Bitmap fonts use optical equivalents, not the same px size.
+   44px controls include the clickable label around a smaller checkbox. */
+:root{
+ --type-body:1rem;--type-ui:.875rem;--type-meta:.75rem;--type-table:.8125rem;
+ --type-section:clamp(1.5rem,1.25rem + 1vw,2rem);--type-heading:1.25rem;--type-subheading:1.125rem;
+ --type-value:1.375rem;--type-value-large:1.75rem;
+ --type-game-label:1.125rem;--type-game-ui:1.25rem;--type-game-heading:1.5rem;
+ --control-target:44px;--control-mark:1.25rem;
+}
+html{font-size:100%}
+html body{font-size:var(--type-body);line-height:1.55}
+html body main :is(h2,.chem-hero h2){font-size:var(--type-section)!important;line-height:1.2}
+html body main :is(h3,h4,.chart-title,.table-caption strong){font-size:var(--type-heading)!important;line-height:1.25}
+html body main :is(p,li,dd){font-size:var(--type-body);line-height:1.55}
+/* Explanations and labels belong to the interface tier, not tiny footnotes. */
+html body main :is(.section-note,.notice,.api-courtesy,.panel-intro,.experimental-card p,.experimental-theme-card p,.chem-panel>p,.faq-answer,.faq-subtopic-body,.clog-deep-head p,.clog-subhead p,.beta-detail>p,.hypo-warning,.hypo-source-meta p,.nemesis-note,.nem-section-head p,.nem-time-head p,.chem-method,.rng-formula-detail>div,.clog-luck-method-body,.clog-luck-formula,.beta-luck-note){font-size:var(--type-ui)!important;line-height:1.5}
+html body main :is(label,legend,.v21-member-status,.v22-goal-dialog label,.hypo-field span,.clog-member-name b,.clog-pair-names,.kc-player-head,.chem-name,.clog-luck-player-name b,.clog-luck-item-copy b,.nem-roster-head strong,.nem-external-name strong){font-size:var(--type-ui);line-height:1.4}
+/* Supplementary text uses one readable size throughout the site. */
+html body main :is(small,.eyebrow,.chart-sub,.data-chip,.data-chip b,.overview-ge-status,.player-role,.player-mantra,.side-rule,.side-badge,.overview-goal-head,.stat-box span,.side-stats span,.v22-clog-quick span,.v21-member-help,.v21-member-list em,.v21-chart-note,.v21-chart-readout,.v21-chart-legend,.table-caption>span,.cell-sub,.rank-chip,.small-value,.v22-goal-meta,.chronicle-date,.chronicle-explain,.chronicle-guide p,.chronicle-page-summary,.timeline-axis,.timeline-player,.era-note,.era-method,.era-story-date,.era-confidence,.era-player-head>span,.beta-legend,.beta-coverage,.beta-search-status,.beta-counts span,.beta-detail-heading span,.beta-detail-heading a,.beta-footnote,.beta-member-luck,.beta-luck-detail span,.beta-luck-basis span,.beta-luck-unavailable,.beta-tag,.clog-luck-filter-note,.clog-luck-kpi>span,.clog-luck-player-metric span,.clog-luck-sample,.clog-luck-individual-note,.clog-luck-impossible-summary span,.rng-formula-summary>span,.rng-formula-equation small,.clog-luck-search-head>span,.clog-luck-list-head span,.hypo-kpi span,.hypo-source-meta span,.hypo-panel-head span,.hypo-disclaimer,.nem-source,.nem-coverage-note,.nem-select-label,.nem-table-divider td,.kc-card-note,.kc-participants,.kc-lead,.kc-unknown,.kc-pie-wrap figcaption,.chem-short,.chem-stats span,.chem-credit>div,.chem-lost-item>div,.chem-share p,.news-entry time,.news-date-note,.experimental-credits,.experimental-breadcrumb,.experimental-theme-status){font-size:var(--type-meta)!important;line-height:1.45}
+html body main :is(th,td,.nem-table th,.nem-table td){font-size:var(--type-table);line-height:1.45}
+html body main :is(.kpi b,.gain-card .big,.hypo-kpi b,.clog-luck-kpi b,.rng-formula-summary>strong,.nem-clog-kpis b,.chem-stats strong,.stat-box b,.side-stats b,.v22-clog-quick b,.beta-counts strong){font-size:var(--type-value)!important;line-height:1.15;font-variant-numeric:tabular-nums}
+html body main :is(.clog-value-total>b,.chem-discovery strong){font-size:var(--type-value-large)!important;line-height:1.2}
+/* Forms: text is 16px to avoid automatic input zoom on phones. */
+html body :is(main,.modal,.v22-goal-dialog) :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]){font-size:var(--type-body)!important;line-height:1.4;min-height:var(--control-target);min-width:0;max-width:100%;padding:9px 10px;box-sizing:border-box}
+html body :is(main,.modal,.v22-goal-dialog) :is(button,.btn,.link-button):not(.metric-link):not(.modal-close):not(.beta-item):not(.timeline-era):not(.beta-game button){font-size:var(--type-ui)!important;line-height:1.35;min-height:var(--control-target);min-width:var(--control-target);padding:9px 12px;white-space:normal;overflow-wrap:anywhere}
+html body :is(main,.modal,.v22-goal-dialog) .metric-link{font-size:inherit;line-height:inherit}
+html body :is(main,.v22-goal-dialog) label:has(input[type="checkbox"],input[type="radio"]){display:flex;align-items:center;gap:8px;min-height:var(--control-target);padding-block:8px;cursor:pointer}
+html body main :is(input[type="checkbox"],input[type="radio"]){width:var(--control-mark)!important;height:var(--control-mark)!important;min-height:0!important;flex:0 0 var(--control-mark);padding:0!important;margin:0;box-sizing:border-box;vertical-align:middle}
+html body main .v21-member-list label>span{font-size:var(--type-ui);line-height:1.3}
+html body .data-strip{align-items:center;gap:8px;flex-wrap:wrap;overflow:visible}
+html body .data-actions{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap}
+html body main .data-actions button{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600}
+html body main .data-chip{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;max-width:100%;white-space:normal}
+html body .dot{width:8px;height:8px;flex:0 0 8px;margin:0}
+html body :is(.theme-toggle,.jump-to-content){font-size:var(--type-ui);line-height:1.4;min-height:var(--control-target)}
+html body :is(.nav-link,.nav-trigger,.osrs-menu-link){font-size:var(--type-ui);line-height:1.4}
+html body .osrs-menu-box h2{font-size:var(--type-ui);line-height:24px}
+html body .nav-badge{font-size:.625rem;line-height:1.3}
+html body .footer{font-size:var(--type-meta);line-height:1.5}
+/* Dense header summaries retain their six-card layout and numerical precision. */
+html body .mast-status-six .mast-card-title>span{font-size:var(--type-meta)!important;line-height:1.4;letter-spacing:0}
+html body .mast-status-six .mast-card-body :is(small,strong){font-size:var(--type-meta)!important;line-height:1.45}
+html body .mast-status-six :is(.mast-card-body>b,.mast-achievement-row>b,.mast-value-amount>b){font-size:var(--type-value)!important;line-height:1.2;white-space:normal;overflow-wrap:anywhere!important}
+html body .mast-status-six .mast-value-legend>span{font-size:var(--type-meta)!important;line-height:1.4}
+html body .mast-status-six .mast-value-legend{grid-template-columns:minmax(0,1fr);gap:4px}
+html body .mast-status-six .mast-stat-xp [data-mast-xp]{font-size:1.125rem!important;white-space:normal!important;overflow-wrap:anywhere;letter-spacing:0}
+/* Classic log is an in-game surface: preserve its bitmap family and compact slots. */
+html body .beta-game :is(.beta-tabs button,.beta-categories button){font-size:var(--type-game-label)!important;line-height:1.2;padding:6px 4px;overflow-wrap:anywhere;min-width:0}
+html body .beta-game :is(.beta-game-title,.beta-log-content h3){font-size:var(--type-game-heading)!important;line-height:1.15}
+html body .beta-game :is(.beta-game-title>span,.beta-log-stats,.beta-quantity){font-size:var(--type-game-label)!important}
+html body .beta-game-title{padding-inline:4rem}
+html body .beta-game-title a{display:grid;place-items:center;min-width:44px;min-height:44px;font-size:var(--type-heading);line-height:1;top:3px;right:3px}
+html body .beta-grid{grid-template-columns:repeat(auto-fill,minmax(2.75rem,1fr));grid-auto-rows:3.25rem}
+html body .beta-game .beta-item{min-height:44px}
+html body .beta-item .beta-luck{font-size:.625rem;line-height:1.1}
+html body main :is(.section-head,.chart-head,.table-caption,.kc-card-head,.beta-detail-heading){flex-wrap:wrap;align-items:center;gap:8px 12px}
+html body main :is(.stat-box,.kpi,.hypo-kpi,.gain-card,.clog-luck-kpi,.player-card-head,.kc-player-detail){min-width:0;overflow-wrap:anywhere}
+@media(max-width:700px){
+ html body .data-actions{width:100%}
+ html body main .data-actions button{flex:1 1 12rem}
+ html body .mast-status-six :is(.mast-card-body>b,.mast-achievement-row>b,.mast-value-amount>b){font-size:1.125rem!important}
+ html body .mast-status-six .mast-stat-xp [data-mast-xp]{font-size:.875rem!important}
+ html body main .section-head>select{width:100%}
+}
+@media(max-width:480px){
+ html body .clog-member-filter{grid-template-columns:minmax(0,1fr)}
+ html body main .beta-toolbar{gap:8px}
+ html body main .beta-toolbar input[type="search"]{min-width:0;width:100%;flex-basis:100%}
+}
+
+/* Intrinsic layout keeps text enlargement from forcing wide off-screen columns. */
+html body .mast-status-six .mast-achievement-row>b{overflow-wrap:anywhere!important}
+html body main :is(.faq-list,.faq-category,.faq-subtopic,.faq-item,.faq-category-body,.faq-subtopic-body){min-width:0;max-width:100%;overflow-wrap:anywhere}
+html body main .faq-list{grid-template-columns:minmax(0,1fr)}
+html body main :is(.faq-category-summary,.faq-subtopic-summary){flex-wrap:wrap}
+html body main .chem-discovery{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+html body main .chem-discovery :is(strong,span,small,em){min-width:0;max-width:100%;overflow-wrap:anywhere}
+html body main .beta-game-title{display:grid;grid-template-columns:minmax(0,1fr) 44px;grid-template-areas:"title close" "count close";gap:2px 8px;padding:8px;text-align:left}
+html body main .beta-game-title .beta-title-label{grid-area:title;font:inherit;font-weight:400;min-width:0;overflow-wrap:anywhere}
+html body main .beta-game-title #betaTotal{grid-area:count;position:static;min-width:0;overflow-wrap:anywhere}
+html body main .beta-game-title>a{grid-area:close;position:static;align-self:center}
+html body main summary{font-size:var(--type-ui);line-height:1.4;min-height:var(--control-target);cursor:pointer}
+
+html body main .beta-intro{flex-wrap:wrap}
+html body main .beta-intro>div{flex:1 1 12rem;min-width:0}
+html body main .beta-intro>.btn{flex:0 1 auto;max-width:100%;overflow-wrap:anywhere}
+
+/* Compact reading surfaces keep names distinct from supporting numbers. */
+html body main :is(.period-copy span,.gain-card .top,.timeline-player span,.timeline-axis span,.timeline-era span,.timeline-legend span,.beta-luck-note>strong,.clog-luck-subtabs span,.clog-luck-search-head span,.clog-luck-list-head>small,.hypo-note,.hypo-pool-row strong,.hypo-last-roll-summary span,.kc-player-head em,.feature-beta){font-size:var(--type-meta)!important;line-height:1.45}
+html body main :is(.period-copy strong,.rng-formula-detail>summary,.clog-luck-empty,.hypo-empty,.hypo-pool-row b,.hypo-drop-row b,.hypo-item b,.hypo-last-roll-item b){font-size:var(--type-ui)!important;line-height:1.45}
+html body main :is(.clog-luck-individual-grid b,.clog-luck-player-metric b,.clog-luck-impossible-row b,.clog-luck-impossible-row strong,.hypo-drop-row strong,.hypo-last-roll-item strong){font-size:var(--type-table)!important;line-height:1.45}
+html body main .rng-assumption-info{font-size:var(--type-meta);width:24px;height:24px;line-height:24px}
+html body main :is(.kpi>span,.clog-member-metric span,.clog-pair-stat span,.clog-member-coverage span,.clog-pair-sim span,.clog-category-progress span,.clog-shared-summary span,.clog-subhead span,.clog-category-name span){font-size:var(--type-meta)!important;line-height:1.45}
+html body main .chronicle-page-list{min-width:0;max-width:100%;flex-wrap:wrap;justify-content:center;gap:6px}
+/* Reflow follows content width; large text is never compensated by shrinking. */
+html body main{overflow-wrap:anywhere}
+html body main :is(.section-head>*,.chart-head>*,.table-caption>*,.chronicle-main,.chronicle-main>*,.news-entry>*,.clog-luck-toolbar>*,.rng-formula-equation>* ){min-width:0;max-width:100%;overflow-wrap:anywhere}
+html body .theme-toggle{gap:8px;padding-inline:8px}
+html body .theme-toggle [data-theme-choice]{flex:1;min-width:0;overflow-wrap:anywhere}
+html body .nav-trigger{white-space:normal}
+html body .nav-trigger>span{min-width:0;max-width:100%;overflow-wrap:anywhere}
+html body main .clog-luck-toolbar{flex-wrap:wrap}
+html body main :is(.clog-luck-toggle,.clog-luck-subtabs){flex-wrap:wrap;min-width:0;max-width:100%}
+html body main .clog-luck-toggle button{flex:1 1 8rem;min-width:0;overflow-wrap:anywhere}
+html body main .clog-luck-subtabs button{flex:1 1 10rem;min-width:0;overflow-wrap:anywhere}
+html body main .clog-luck-player-row{grid-template-columns:repeat(auto-fit,minmax(min(100%,8rem),1fr))}
+html body main .clog-luck-player-row>*{min-width:0;overflow-wrap:anywhere}
+html body main .timeline-axis>div>span:last-child{transform:translateX(-100%)}
+html body main .timeline-player{min-width:0;overflow-wrap:anywhere}
+@media(max-width:700px){
+ html body main .data-strip>.data-actions{display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:1fr}
+}
+html body main .time-shell>*{min-width:0;max-width:100%}
+@media(max-width:700px){html body main .time-shell{grid-template-columns:minmax(0,1fr)}}
+/* Give the longest Classic tab enough room without shrinking its text. */
+html body .beta-tabs{grid-template-columns:1fr .75fr .75fr 1.6fr .8fr}
+
+html body main h4{font-size:var(--type-subheading)!important;line-height:1.3}
