@@ -56,15 +56,16 @@ function saveMemberSelection(selection){const next=cleanSelection(selection,ALL_
 function sameSelection(a,b){return ALL_KEYS.every(k=>a?.has?.(k)===b?.has?.(k))}
 function memberSummary(sel){const a=PLAYERS.filter(p=>sel.has(p.key));return a.length===PLAYERS.length?'All five selected':a.length===1?`${a[0].name} selected`:`${a.length} members selected`}
 let pickerSeq=0;
-function renderMemberPicker(host,selection,onChange,{title='Members',subtitle='Add or remove members',fallback=ALL_KEYS,availability=null}={}){
+function renderMemberPicker(host,selection,onChange,{title='Members',subtitle='Add or remove members',fallback=ALL_KEYS,availability=null,compact=false}={}){
  if(typeof host==='string')host=$(host);if(!host)return;
  const sel=cleanSelection(selection,fallback),base=(host.id||host.dataset.memberPickerId||(host.dataset.memberPickerId=`v21-members-${++pickerSeq}`)).replace(/[^a-z0-9_-]/gi,'-'),helpId=`${base}-help`,statusId=`${base}-status`;
- host.classList.add('v21-member-picker');
+ host.classList.add('v21-member-picker');host.classList.toggle('v21-member-compact',compact);
  if(!$('.v21-member-fieldset',host))host.innerHTML=`<fieldset class="v21-member-fieldset"><legend>${title}</legend><div class="v21-member-head"><span id="${statusId}" class="v21-member-status" aria-live="polite">${memberSummary(sel)}</span></div><div class="v21-member-list" role="group" aria-label="${title}">${PLAYERS.map(p=>{const known=availability?availability.has(p.key):true;return `<label style="--pc:${p.color}"><input type="checkbox" value="${p.key}" ${sel.has(p.key)?'checked':''} aria-describedby="${helpId}"><i aria-hidden="true"></i><span>${p.name}</span>${known?'':'<em>no Collection Log data yet</em>'}</label>`}).join('')}</div><div id="${helpId}" class="v21-member-help">${subtitle} Each username is an independent additive filter.</div></fieldset>`;
  const status=$(`#${statusId}`,host),checks=$$('input[type="checkbox"]',host);
  status.textContent=memberSummary(sel);
  $('legend',host).textContent=title;
- $('.v21-member-help',host).textContent=subtitle+' Each username is an independent additive filter.';
+ const help=$('.v21-member-help',host);help.hidden=compact;help.textContent=compact?'':subtitle+' Each username is an independent additive filter.';
+ checks.forEach(c=>{if(compact)c.removeAttribute('aria-describedby');else c.setAttribute('aria-describedby',helpId)});
  checks.forEach(c=>{c.checked=sel.has(c.value);const label=c.closest('label'),known=!availability||availability.has(c.value),note=$('em',label);if(known)note?.remove();else if(!note){const em=document.createElement('em');em.textContent='no Collection Log data yet';label.append(em)}});
  const commit=next=>{if(!next.size){if(status)status.textContent='Keep at least one member selected';return false}if(status)status.textContent=memberSummary(next);onChange(new Set(next));return true};
  checks.forEach(c=>c.onchange=()=>{const n=new Set(checks.filter(x=>x.checked).map(x=>x.value));if(!n.size){c.checked=true;const restored=new Set([c.value]);if(status)status.textContent='At least one member must stay selected';onChange(restored);return}commit(n)});

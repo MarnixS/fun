@@ -34,11 +34,6 @@ function init(){
   g.addEventListener('keydown',e=>{if(e.key==='Escape'){setOpen(g,false);button.focus();e.preventDefault()}else if(e.target===button&&e.key==='ArrowDown'){open();g.querySelector('a').focus();e.preventDefault()}});
  }
  document.addEventListener('click',e=>{if(!nav.contains(e.target))closeAll()});
- const recordPages=records;
- const local=recordPages.some(([href])=>href.split('#')[0]===page)?recordPages:null;
- if(local){const main=document.querySelector('main.wrap');if(main&&!document.querySelector('#historyLocalNav')){const d=document.createElement('nav');d.id='historyLocalNav';d.className='v21-local-nav';const title='Records';d.setAttribute('aria-label',title+' sections');d.innerHTML=`<strong aria-hidden="true">${title}</strong>`+local.map(([h,l,,badge])=>`<a href="${h}" class="${isActive(h)?'active':''}" ${isActive(h)?'aria-current="page"':''}>${l}${badge==='beta'?'<span class="nav-badge">BETA</span>':''}</a>`).join('');const anchor=main.querySelector('#chemMembers')||main.querySelector('#kcMemberPicker')||main.querySelector('.api-courtesy');anchor?.insertAdjacentElement('afterend',d)}}
- const localNav=document.querySelector('#historyLocalNav');
- if(localNav){const label=document.createElement('label');label.className='mobile-view-picker';label.textContent='Records view';const select=document.createElement('select');select.setAttribute('aria-label',label.textContent);local.forEach(([href,name,,badge])=>select.add(new Option(name+(badge==='beta'?' · Beta':''),href,false,isActive(href))));select.onchange=()=>location.assign(select.value);label.append(select);localNav.append(label)}
  const tabs=[...document.querySelectorAll('[data-gim-tab]')];
  if(tabs.length){const label=document.createElement('label');label.className='mobile-view-picker';label.textContent='Advanced Log view';const select=document.createElement('select');select.id='clogView';select.setAttribute('aria-label',label.textContent);tabs.forEach(b=>select.add(new Option(b.textContent,b.dataset.gimTab,false,b.classList.contains('active'))));select.onchange=()=>tabs.find(b=>b.dataset.gimTab===select.value)?.click();label.append(select);document.querySelector('#clogMemberPicker').before(label);document.addEventListener('ug:gim-view-changed',e=>select.value=e.detail.view)}
  loadV22();
