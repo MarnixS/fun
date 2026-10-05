@@ -79,11 +79,12 @@ function mount(){
  if(!document.querySelector('[data-osrs-banner]')){
   const mast=document.querySelector('.mast');
   if(mast){
-   const banner=document.createElement('a'),left=document.createElement('span'),title=document.createElement('h1'),image=document.createElement('img'),right=document.createElement('span');
+   const banner=document.createElement('a'),left=document.createElement('span'),title=document.createElement('h1'),mark=document.createElement('span'),right=document.createElement('span');
    banner.href='../';banner.className='osrs-banner';banner.dataset.osrsBanner='';banner.setAttribute('aria-label','United Gimps overview');
    for(const [side,name] of [[left,'left'],[right,'right']]){side.className='osrs-banner-characters osrs-banner-characters-'+name;side.setAttribute('aria-hidden','true')}
-   title.className='osrs-banner-logo';image.src='img/osrs-theme/united-gimps-logo-v3.png';image.alt='United Gimps';image.width=1774;image.height=887;
-   title.append(image);banner.append(left,title,right);mast.before(banner);
+   title.className='osrs-banner-logo';mark.className='osrs-banner-mark';
+   mark.innerHTML='<svg class="osrs-crossed-swords" viewBox="0 0 360 180" aria-hidden="true" focusable="false"><defs><linearGradient id="ugSwordBlade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7b7f82"/><stop offset=".48" stop-color="#eef2f3"/><stop offset="1" stop-color="#777b7e"/></linearGradient><linearGradient id="ugSwordGold" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#e0c26e"/><stop offset="1" stop-color="#7b5422"/></linearGradient></defs><g transform="rotate(45 180 90)"><path d="M180 10L189 32L185 112H175L171 32Z" fill="url(#ugSwordBlade)" stroke="#25221d" stroke-width="3" stroke-linejoin="round"/><rect x="157" y="108" width="46" height="10" rx="3" fill="url(#ugSwordGold)" stroke="#2a2115" stroke-width="3"/><rect x="175" y="117" width="10" height="29" rx="3" fill="#5c321b" stroke="#24150d" stroke-width="3"/><circle cx="180" cy="153" r="8" fill="url(#ugSwordGold)" stroke="#2a2115" stroke-width="3"/></g><g transform="rotate(-45 180 90)"><path d="M180 10L189 32L185 112H175L171 32Z" fill="url(#ugSwordBlade)" stroke="#25221d" stroke-width="3" stroke-linejoin="round"/><rect x="157" y="108" width="46" height="10" rx="3" fill="url(#ugSwordGold)" stroke="#2a2115" stroke-width="3"/><rect x="175" y="117" width="10" height="29" rx="3" fill="#5c321b" stroke="#24150d" stroke-width="3"/><circle cx="180" cy="153" r="8" fill="url(#ugSwordGold)" stroke="#2a2115" stroke-width="3"/></g></svg><span class="osrs-banner-title">UNITED GIMPS</span>';
+   title.append(mark);banner.append(left,title,right);mast.before(banner);
   }
  }
  if(!document.querySelector('[data-osrs-nav]')){
@@ -110,7 +111,7 @@ function syncControls(){
 function apply(){
  if(enabled){
   root.dataset.theme='osrs';
-  if(!document.querySelector('#osrsThemeStyles')){const link=document.createElement('link');link.id='osrsThemeStyles';link.rel='stylesheet';link.href='assets/osrs-theme.css?v=11';document.head.append(link)}
+  if(!document.querySelector('#osrsThemeStyles')){const link=document.createElement('link');link.id='osrsThemeStyles';link.rel='stylesheet';link.href='assets/osrs-theme.css?v=12';document.head.append(link)}
   mount();
  }else{restoreImages();delete root.dataset.theme;document.querySelector('#osrsThemeStyles')?.remove();document.querySelectorAll('[data-osrs-banner],[data-osrs-nav],[data-osrs-pets]').forEach(node=>node.remove())}
  syncControls();window.dispatchEvent(new CustomEvent('ug:theme-changed',{detail:{enabled}}));
