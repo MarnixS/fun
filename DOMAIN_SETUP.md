@@ -4,8 +4,17 @@ The domain setup preserves the existing GitHub Pages frontend and Vercel API hel
 The owner registered `ugimps.com` through Porkbun on 5 October 2026. Manage the
 domain and its DNS in Porkbun. GitHub Pages publishes `main` from the repository
 root. The frontend preparation and updated Vercel API are deployed. The root `CNAME`
-claims `ugimps.com` for this branch-based Pages site. Porkbun DNS configuration
-and custom-domain HTTPS verification are the remaining activation steps.
+claims `ugimps.com` for this branch-based Pages site. Porkbun now has the four
+GitHub Pages apex addresses and the `www` CNAME shown below, with a 600-second
+TTL. The previous parking apex and wildcard records were replaced; mail and
+verification TXT records were preserved. Public DNS and an HTTP response from
+United Gimps were verified on 5 October 2026. Custom-domain HTTPS certificate
+provisioning is still pending.
+
+The root `index.html` renders the Overview directly, keeping the homepage URL at
+`ugimps.com/`. The static generator creates it from the same Overview source as
+`docs/index.html`; its asset base is `docs/`, and Overview links return to the
+repository root. Other existing page URLs remain available.
 
 ## Registration and GitHub Pages
 

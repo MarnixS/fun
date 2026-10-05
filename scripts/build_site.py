@@ -15,7 +15,8 @@ def outputs():
     for source in sorted(PAGES.glob('*.html')):
         def include(match):
             return (PARTIALS / match[1].decode()).read_bytes()
-        result[source.name] = INCLUDE.sub(include, source.read_bytes())
+        result[source.name] = INCLUDE.sub(include, source.read_bytes()).replace(
+            b'href="index.html"', b'href="../"')
     for alias, original in ALIASES.items():
         result[alias] = result[original]
     return result
@@ -36,6 +37,17 @@ def main():
                 stale.append(name)
         else:
             target.write_bytes(content)
+    # Reuse the overview at the repository root without changing its URL.
+    # The base keeps its static assets, data reads and page links under docs/.
+    homepage = generated['index.html'].replace(
+        b'<meta charset="utf-8">',
+        b'<meta charset="utf-8"><base href="./docs/">', 1)
+    root_index = ROOT / 'index.html'
+    if args.check:
+        if root_index.read_bytes() != homepage:
+            stale.append('../index.html')
+    else:
+        root_index.write_bytes(homepage)
     if stale:
         raise SystemExit('Run python scripts/build_site.py: ' + ', '.join(stale))
     print(f'{len(generated)} static pages {"verified" if args.check else "generated"}; shared header, footer and core scripts; compatible Nemesis alias.')

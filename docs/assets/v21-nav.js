@@ -13,9 +13,9 @@ function init(){
  const hash=location.hash.toLowerCase();
  if(hash==='#nemesis-beta'){location.replace('nemesis-beta.html');return}
  const isActive=href=>{const [target,targetHash='']=href.toLowerCase().split('#');if(target==='experimental.html'&&experimentalPages.includes(page))return true;if(page!==target)return false;if(targetHash)return hash===('#'+targetHash);return true};
- const link=([href,label,rune,badge])=>`<a class="nav-link ${isActive(href)?'active':''}" href="${href}" ${isActive(href)?'aria-current="page"':''}><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span>${badge==='beta'?'<span class="nav-badge">BETA</span>':''}</a>`;
+ const link=([href,label,rune,badge])=>`<a class="nav-link ${isActive(href)?'active':''}" href="${href==='index.html'?'../':href}" ${isActive(href)?'aria-current="page"':''}><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span>${badge==='beta'?'<span class="nav-badge">BETA</span>':''}</a>`;
  const group=(id,label,rune,items)=>`<div class="nav-dropdown"><button type="button" class="nav-trigger ${items.some(([href])=>isActive(href))||id==='other'&&experimentalPages.includes(page)?'active':''}" aria-expanded="false" aria-controls="nav-${id}"><span class="nav-rune" aria-hidden="true">${rune}</span><span>${label}</span><span aria-hidden="true">▾</span></button><div class="nav-dropdown-panel" id="nav-${id}" hidden>${items.map(link).join('')}</div></div>`;
- const brand=nav.querySelector('.nav-brand')?.outerHTML||'<a class="nav-brand" href="index.html" aria-label="United Gimps overview"><img src="img/gim-crest.svg" alt=""></a>';
+ const brand=nav.querySelector('.nav-brand')?.outerHTML||'<a class="nav-brand" href="../" aria-label="United Gimps overview"><img src="img/gim-crest.svg" alt=""></a>';
  nav.innerHTML=brand+link(['index.html','Overview','O'])+group('logs','Collection Log','G',logs)+group('levels','Stats','XP',levels)+group('record','Records','✦',records)+`<span class="nav-spacer" aria-hidden="true"></span>`+group('other','Other','?',other);
  const mobile=window.matchMedia?.('(max-width:700px)')||{matches:false,addEventListener(){}};
  nav.id='primaryNavigation';

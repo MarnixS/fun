@@ -6,15 +6,18 @@ from urllib.parse import urlsplit, unquote
 root=Path('docs')
 class Page(HTMLParser):
     def __init__(self):
-        super().__init__();self.ids=[];self.links=[];self.scripts=[]
+        super().__init__();self.ids=[];self.links=[];self.scripts=[];self.base=''
     def handle_starttag(self,tag,attrs):
         a=dict(attrs)
+        if tag=='base':
+            self.base=a.get('href','')
+            return
         if a.get('id'):self.ids.append(a['id'])
         for key in ('src','href'):
             if a.get(key):self.links.append(a[key])
         if tag=='script' and a.get('src'):self.scripts.append(a['src'])
 
-for path in root.glob('*.html'):
+for path in [Path('index.html'), *root.glob('*.html')]:
     text=path.read_text(encoding='utf-8');p=Page();p.feed(text)
     assert 'main-content' in p.ids,f'{path}: missing jump target'
     assert 'class="jump-to-content"' not in text,f'{path}: unwanted jump link'
@@ -22,7 +25,8 @@ for path in root.glob('*.html'):
     for link in p.links:
         u=urlsplit(link)
         if not u.scheme and u.path:
-            assert (path.parent/unquote(u.path)).exists(),f'{path}: broken local resource {link}'
+            base=path.parent/unquote(urlsplit(p.base).path)
+            assert (base/unquote(u.path)).exists(),f'{path}: broken local resource {link}'
     assert not any('live-sync.js' in x for x in p.scripts),f'{path}: automatic sync must be disabled'
     script_paths=[urlsplit(s).path for s in p.scripts]
     if 'assets/app.js' in script_paths:
