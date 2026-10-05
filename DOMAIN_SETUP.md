@@ -8,8 +8,10 @@ claims `ugimps.com` for this branch-based Pages site. Porkbun now has the four
 GitHub Pages apex addresses and the `www` CNAME shown below, with a 600-second
 TTL. The previous parking apex and wildcard records were replaced; mail and
 verification TXT records were preserved. Public DNS and an HTTP response from
-United Gimps were verified on 5 October 2026. Custom-domain HTTPS certificate
-provisioning is still pending.
+United Gimps were verified on 5 October 2026. HTTPS is active and enforced. On 5 October 2026, HTTPS returned the
+Overview directly at `https://ugimps.com/`, and both HTTP and
+`https://www.ugimps.com/` redirected to that secure apex URL. GitHub's certificate
+provisioning was restarted through Pages settings after the successful DNS check.
 
 The root `index.html` renders the Overview directly, keeping the homepage URL at
 `ugimps.com/`. The static generator creates it from the same Overview source as
@@ -62,6 +64,17 @@ the API functions. The repository's Python frontend build belongs to GitHub
 Pages, and its scripts are excluded from the Vercel upload.
 
 ## Verification
+
+Completed on 5 October 2026: the root homepage and return-to-Overview navigation,
+all five members' saved WOM/Temple data, and shared goals with editing controls
+loaded on the new HTTPS origin. Collection Log, Current Stats, Chronicle, Goals,
+RNG and Nemesis pages, and the RuneScape font all returned HTTP 200. The goals API
+returned 200 with publishing enabled and allowed origin `https://ugimps.com`.
+No WOM/Temple refresh or goal write was used for verification. GitHub's full
+website validation and Pages deployment passed for source commit
+`308042936a6fac7f924f2e97f910ae6b2458c65b`.
+
+Repeat these checks after changes:
 
 - Check apex and www DNS, HTTPS and the www redirect.
 - Open the home page and Collection Log, Levels, Chronicle, Goals, RNG and Nemesis pages.
