@@ -82,7 +82,7 @@ function mount(){
    const banner=document.createElement('a'),left=document.createElement('span'),title=document.createElement('h1'),image=document.createElement('img'),right=document.createElement('span');
    banner.href='../';banner.className='osrs-banner';banner.dataset.osrsBanner='';banner.setAttribute('aria-label','United Gimps overview');
    for(const [side,name] of [[left,'left'],[right,'right']]){side.className='osrs-banner-characters osrs-banner-characters-'+name;side.setAttribute('aria-hidden','true')}
-   title.className='osrs-banner-logo';image.src='img/osrs-theme/united-gimps-logo-v2.png';image.alt='United Gimps';image.width=1774;image.height=887;
+   title.className='osrs-banner-logo';image.src='img/osrs-theme/united-gimps-logo-v3.png';image.alt='United Gimps';image.width=1774;image.height=887;
    title.append(image);banner.append(left,title,right);mast.before(banner);
   }
  }
