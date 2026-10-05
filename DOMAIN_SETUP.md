@@ -1,15 +1,15 @@
 # ugimps.com
 
 The domain setup preserves the existing GitHub Pages frontend and Vercel API helper.
-The registration and DNS steps remain pending until a Cloudflare account can be created.
+Use the owner's existing Vercel account for domain registration and DNS. Registration
+and DNS changes remain pending until checkout can be completed.
 
 ## Registration and GitHub Pages
 
-1. Create the owner's Cloudflare account and verify its email.
-2. Register `ugimps.com` for one year through Cloudflare Registrar. Confirm the checkout price, contact information, payment method and renewal setting before purchase.
-3. Verify domain ownership for the `MarnixS` GitHub account using GitHub's generated TXT record.
-4. Set the custom domain to `ugimps.com` in `MarnixS/fun` → Settings → Pages. Keep the existing publication source. Include the generated CNAME file in future checkouts.
-5. Create the records below in Cloudflare. Use **DNS only** and TTL **Auto**. Each IPv4 address is a separate record.
+1. Register `ugimps.com` for one year through the existing Vercel account. Confirm the checkout price, contact information, payment method and renewal setting before purchase.
+2. Verify domain ownership for the `MarnixS` GitHub account using GitHub's generated TXT record. Add that record in Vercel's domain DNS settings.
+3. Set the custom domain to `ugimps.com` in `MarnixS/fun` → Settings → Pages. Keep the existing publication source. Include the generated CNAME file in future checkouts.
+4. In the Vercel team's Domains settings, configure the records below. Replace conflicting frontend records for these names, and keep the default TTL. Each IPv4 address is a separate record. The frontend's domain routes to GitHub Pages; it should not be assigned to the API-only Vercel project.
 
 | Type | Name | Value |
 | --- | --- | --- |
@@ -19,7 +19,7 @@ The registration and DNS steps remain pending until a Cloudflare account can be 
 | A | @ | 185.199.111.153 |
 | CNAME | www | marnixs.github.io |
 
-6. Enable Enforce HTTPS in GitHub Pages when its certificate is ready. GitHub Pages redirects `www.ugimps.com` to the configured apex domain.
+5. Enable Enforce HTTPS in GitHub Pages when its certificate is ready. GitHub Pages redirects `www.ugimps.com` to the configured apex domain.
 
 ## Vercel backend
 
@@ -53,6 +53,6 @@ Validation: `node scripts/test_site_origins.js`, `node scripts/test_temple_proxy
 `node scripts/test_player_goals.js`, and `node scripts/test_shared_baseline.js`.
 
 References:
-- https://developers.cloudflare.com/registrar/get-started/register-domain/
+- https://vercel.com/docs/domains/working-with-domains
 - https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/verifying-your-custom-domain-for-github-pages
 - https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site
