@@ -83,7 +83,7 @@ function mount(){
    banner.href='../';banner.className='osrs-banner';banner.dataset.osrsBanner='';banner.setAttribute('aria-label','United Gimps overview');
    for(const [side,name] of [[left,'left'],[right,'right']]){side.className='osrs-banner-characters osrs-banner-characters-'+name;side.setAttribute('aria-hidden','true')}
    title.className='osrs-banner-logo';mark.className='osrs-banner-mark';
-   mark.innerHTML='<img src="img/osrs-theme/united-gimps-logo.png" alt="UNITED GIMPS" width="1774" height="887">';
+   mark.innerHTML='<img src="img/osrs-theme/united-gimps-logo.png?v=2" alt="UNITED GIMPS" width="2172" height="724">';
    title.append(mark);banner.append(left,title,right);mast.before(banner);
   }
  }
@@ -111,7 +111,7 @@ function syncControls(){
 function apply(){
  if(enabled){
   root.dataset.theme='osrs';
-  if(!document.querySelector('#osrsThemeStyles')){const link=document.createElement('link');link.id='osrsThemeStyles';link.rel='stylesheet';link.href='assets/osrs-theme.css?v=13';document.head.append(link)}
+  if(!document.querySelector('#osrsThemeStyles')){const link=document.createElement('link');link.id='osrsThemeStyles';link.rel='stylesheet';link.href='assets/osrs-theme.css?v=14';document.head.append(link)}
   mount();
  }else{restoreImages();delete root.dataset.theme;document.querySelector('#osrsThemeStyles')?.remove();document.querySelectorAll('[data-osrs-banner],[data-osrs-nav],[data-osrs-pets]').forEach(node=>node.remove())}
  syncControls();window.dispatchEvent(new CustomEvent('ug:theme-changed',{detail:{enabled}}));
