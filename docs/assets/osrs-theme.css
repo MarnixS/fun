@@ -7,14 +7,15 @@ html[data-theme="osrs"]{--bg:#000;--panel:#c7b17d;--panel2:#d1bd8c;--panel3:#baa
 html[data-theme="osrs"] body{background:#000 url('../img/osrs-theme/bg2.jpg') repeat-y center top;background-size:max(910px,100%) auto;color:#21190e;font-family:Arial,Helvetica,sans-serif;font-size:var(--type-body);line-height:1.55}
 html[data-theme="osrs"] .wrap{width:min(1190px,calc(100% - 72px))}
 html[data-theme="osrs"] .site-top{background:transparent;border:0;padding-top:12px}
-html[data-theme="osrs"] .osrs-banner{display:block;width:100%;margin:0 auto 8px;text-align:center;min-height:137px}
-html[data-theme="osrs"] .osrs-banner img{display:block;width:min(747px,100%);height:auto;margin:auto;object-fit:contain}
+html[data-theme="osrs"] .osrs-banner{display:grid;grid-template-columns:minmax(0,204fr) minmax(0,384fr) minmax(0,216fr);align-items:center;width:min(920px,100%);margin:0 auto 12px;text-align:center}
+html[data-theme="osrs"] .osrs-banner-logo{margin:0;min-width:0;line-height:0}
+html[data-theme="osrs"] .osrs-banner-logo img{display:block;width:100%;height:auto;mix-blend-mode:screen}
+/* Reuse only the original flanking characters; the old central logo is clipped out. */
+html[data-theme="osrs"] .osrs-banner-characters{display:block;width:100%;background:url('../img/osrs-theme/rslogo3.png') no-repeat}
+html[data-theme="osrs"] .osrs-banner-characters-left{aspect-ratio:204/137;background-size:366.176471% 100%;background-position:left center}
+html[data-theme="osrs"] .osrs-banner-characters-right{aspect-ratio:216/137;background-size:345.833333% 100%;background-position:right center}
 html[data-theme="osrs"] .mast{border:0;background:transparent;box-shadow:none}
-html[data-theme="osrs"] .mast-wordmark{background:#000;border:2px solid #382418;min-height:70px;margin:0 auto 16px;padding:8px 16px;width:fit-content;max-width:100%;gap:14px}
-html[data-theme="osrs"] .mast-wordmark h1{font:400 clamp(29px,4vw,44px)/1 RuneScape,'Trebuchet MS',sans-serif;color:#e6d5a4;text-shadow:2px 2px #000;letter-spacing:.015em}
-html[data-theme="osrs"] .mast-the{color:#d9c27e;letter-spacing:.15em;font:400 15px OSRSPetrockLight,Georgia,serif;margin-bottom:0}
-html[data-theme="osrs"] .mast-subtitle{color:#fff;border:0;padding:0;font:13px Arial,Helvetica,sans-serif;letter-spacing:0}
-html[data-theme="osrs"] .mast-crest{width:36px;height:32px;object-fit:contain;image-rendering:pixelated;filter:none}
+html[data-theme="osrs"] .mast-wordmark,html[data-theme="osrs"] .mast .banner-frame{display:none}
 html[data-theme="osrs"] .banner-frame{background:transparent;padding:0;margin:0 0 14px;border:0;overflow:hidden;border-image:url('../img/osrs-theme/border.webp') 62 / 14px / 0 stretch}
 html[data-theme="osrs"] .group-banner{border:0;box-shadow:none}
 html[data-theme="osrs"] .mast-status{background:transparent;border:0;gap:10px;padding:6px 0 18px}
@@ -210,11 +211,7 @@ html[data-theme="osrs"] .osrs-navigation :focus-visible{outline-color:#b5e06c}
 @media(max-width:700px){
  html[data-theme="osrs"] body{background-size:910px auto}
  html[data-theme="osrs"] .wrap{width:calc(100% - 24px)}
- html[data-theme="osrs"] .osrs-banner{min-height:0;margin:8px 0 12px}
- html[data-theme="osrs"] .mast-wordmark{min-height:62px;padding:8px 10px;gap:8px;margin-bottom:12px}
- html[data-theme="osrs"] .mast-wordmark h1{font-size:32px}
- html[data-theme="osrs"] .mast-crest{width:27px;height:24px}
- html[data-theme="osrs"] .mast-subtitle{font-size:11px}
+ html[data-theme="osrs"] .osrs-banner{margin:8px auto 12px}
  html[data-theme="osrs"] .mast-stat{min-height:174px;padding:15px 14px}
  html[data-theme="osrs"] .mast-card-title span{font-size:11px}
  html[data-theme="osrs"] .mast-stat b{font-size:18px}
