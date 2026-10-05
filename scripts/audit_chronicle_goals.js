@@ -38,6 +38,26 @@ async function run(){
  fixture.snapshots.dikste=[a,b];fixture.profiles.dikste.latestSnapshot=b;
  const kcPage=await openPage('chronicle.html',{womDocument:fixture,sharedDocs:{wom:fixture,temple:require('../docs/data/temple-clog.json')}});const kd=kcPage.dom.window.document;kd.querySelector('[data-chrono-size="all"]').click();
  const crossing=[...kd.querySelectorAll('.chronicle-event')].find(e=>e.querySelector('h4').textContent.includes('Dikste · 50 Zulrah KC'));assert(crossing);assert(crossing.querySelector('.chronicle-date').textContent.includes('WOM accuracy ±24h'),'48-hour snapshot gap gives +/-24-hour KC timing accuracy: '+crossing.querySelector('.chronicle-date').textContent);assert.equal(kcPage.errors.length,0);
- console.log('Chronicle level order, suggested goals and removal of private goals passed');
+ const temple=structuredClone(require('../docs/data/temple-clog.json')),now=Math.floor(Date.now()/1000),itemIds=[700301,700302,700303,700304,700305];
+ temple.fetchedAt=Date.now()+60000;
+ for(const [key,log] of Object.entries(temple.players)){
+  log.data.last_checked=now+60;
+  log.data.items.chronicle_test=itemIds.map(id=>({id,name:'Chronicle test '+id,count:key==='lijpste'?id===700303?401:id>=700303?2:1:key==='big dog aura'&&id===700302?1:0,date:key==='lijpste'?id>=700303?now-500:now-400:key==='big dog aura'&&id===700302?now-600:null}));
+ }
+ temple.recent=itemIds.map(id=>({id,name:'Chronicle test '+id,player:'Lijpste',date_unix:now-400,previous_count:id>=700303?1:0,current_count:id===700303?101:id>=700303?2:1,count_delta:id===700303?100:1,repeat_drop:id>=700303,detected_from_count:true}));
+ // More than 250 newer cheap repeats must not bury older qualifying events.
+ temple.recent.push(...Array.from({length:300},(_,index)=>({id:700303,name:'Chronicle test 700303',player:'Lijpste',date_unix:now-index,previous_count:400-index,current_count:401-index,count_delta:1,repeat_drop:true,detected_from_count:true})));
+ const itemPage=await openPage('chronicle.html',{selection:['lijpste'],templeDocument:temple,savedTemple:temple,sharedDocs:{wom:require('../docs/data/wom-cache.json'),temple},priceData:{700303:{high:400000,low:400000},700304:{high:500000,low:500000},700305:{high:500001,low:500001}}});
+ const id=itemPage.dom.window.document;id.querySelector('[data-chrono-filter="drops"]').click();
+ await waitFor(()=>id.querySelector('#chronicle .item-link[data-item-id="700305"]'),'priced duplicate');
+ const article=item=>id.querySelector('#chronicle .item-link[data-item-id="'+item+'"]')?.closest('.chronicle-event');
+ assert.equal(id.querySelectorAll('.chronicle-event[data-event-type="drop"]').length,3,'retroactive filtering removes 300 newer cheap repeats and retains the older personal unlocks and expensive duplicate');
+ assert.equal(article(700301).dataset.groupUnlock,'true');assert.match(article(700301).querySelector('.chronicle-group-unlock').textContent,/New group Collection Log unlock/);
+ assert.match(article(700302).textContent,/New Collection Log unlock for this player/);assert(!article(700302).querySelector('.chronicle-group-unlock'),'hidden earlier owner prevents a group-first label');
+ assert(!article(700303),'a 40-million-gp stack of cheap duplicates stays out');assert(!article(700304),'exactly 500k stays out');
+ assert(article(700305).classList.contains('broadcast'));assert.match(article(700305).querySelector('.chronicle-item-price').textContent,/500,001 gp each/);assert(!article(700305).dataset.groupUnlock,'expensive repeats do not become group unlocks');
+ assert.equal(itemPage.errors.length,0,itemPage.errors.join('; '));
+ for(const page of [dom,goals.dom,kcPage.dom,itemPage.dom])page.window.close();
+ console.log('Chronicle item filtering and group labels, level order, suggested goals and removal of private goals passed');
 }
 run().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)});
