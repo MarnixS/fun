@@ -37,11 +37,11 @@ disabled during preparation. It permits only the HTTPS apex and www origins;
 the GitHub Pages origin remains valid. Unrelated origins and originless writes
 remain rejected, and goal editing still requires the member's private code.
 
-When preparing the API deployment, include `lib/` and its existing dependency
-`docs/assets/wom-store.js`, which the snapshot APIs require. The current
-`.vercelignore` excludes `docs/`; use the existing deployment packaging process
-or explicitly include that module in the package. Keep existing environment
-variables and the production project unchanged.
+The deployment includes `lib/` and `docs/assets/wom-store.js`, which the snapshot
+APIs require. `.vercelignore` allows that shared module while excluding the rest
+of the frontend's generated assets. Deploy this source into the existing Vercel
+project, preserving its environment variables. Redeploying an older CLI upload
+does not include the changes in this branch.
 
 ## Verification
 

@@ -1,4 +1,7 @@
 .git
 .github
-docs
+docs/*
+!docs/assets/
+docs/assets/*
+!docs/assets/wom-store.js
 scripts
