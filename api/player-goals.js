@@ -1,6 +1,6 @@
 'use strict';
 const { createHash, timingSafeEqual } = require('node:crypto');
-const ORIGIN = 'https://marnixs.github.io';
+const { isAllowedOrigin, setOriginHeader } = require('../lib/site-origin');
 const URL = 'https://api.github.com/repos/MarnixS/fun/contents/docs/data/goals.json';
 const PLAYERS = ['dikste', 'big dog aura', 'lijpste', 'poep aura', 'lompste'];
 function validate(body) {
@@ -21,9 +21,8 @@ function validate(body) {
 }
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('Vary', 'Origin');
-  if (req.headers.origin === ORIGIN) {
-    res.setHeader('Access-Control-Allow-Origin', ORIGIN);
+  setOriginHeader(req, res);
+  if (isAllowedOrigin(req.headers?.origin)) {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   }
@@ -37,7 +36,7 @@ module.exports = async function handler(req, res) {
   if (!enabled) return reply(503, {error:'Shared goal publishing is not configured yet.', enabled:false});
   let body, goal;
   if (req.method === 'POST') {
-    if (req.headers.origin !== ORIGIN) return reply(403,{error:'Use the goal editor on the group website.'});
+    if (!isAllowedOrigin(req.headers?.origin)) return reply(403,{error:'Use the goal editor on the group website.'});
     if (!String(req.headers['content-type'] || '').startsWith('application/json')) return reply(415,{error:'Send JSON.'});
     if (Number(req.headers['content-length']) > 4096) return reply(413,{error:'Goal is too long.'});
     try {

@@ -24,6 +24,7 @@ jobs:
           python scripts/build_site.py --check
           node scripts/test_ge_prices.js
           node scripts/test_chronicle_prices.js
+          node scripts/test_site_origins.js
           node scripts/test_temple_proxy.js
           node scripts/test_history_model.js
           node scripts/test_player_goals.js

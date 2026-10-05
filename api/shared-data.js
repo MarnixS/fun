@@ -3,23 +3,22 @@ const {createStore}=require('../lib/shared-data-store');
 const {refreshWomPlayer,PLAYERS}=require('../lib/refresh-wom');
 const temple=require('./temple-collection-log');
 const {mergeTemple}=require('../docs/assets/wom-store');
-const ORIGIN='https://marnixs.github.io';
+const {isAllowedOrigin,setOriginHeader}=require('../lib/site-origin');
 
 function createHandler({store,refreshWom=refreshWomPlayer,refreshTemple=temple.buildDocument,enabled=true}={}) {
   return async function handler(req,res) {
-    res.setHeader('Cache-Control','no-store');res.setHeader('Vary','Origin');
-    res.setHeader('Access-Control-Allow-Origin',ORIGIN);
+    res.setHeader('Cache-Control','no-store');setOriginHeader(req,res);
     res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers','Content-Type, Accept');
     res.setHeader('Content-Type','application/json; charset=utf-8');
     const send=(status,doc)=>{res.statusCode=status;res.end(JSON.stringify(doc))};
-    if(req.headers?.origin&&req.headers.origin!==ORIGIN)return send(403,{error:'Origin not allowed'});
+    if(req.headers?.origin&&!isAllowedOrigin(req.headers.origin))return send(403,{error:'Origin not allowed'});
     if(req.method==='OPTIONS'){res.statusCode=204;return res.end()}
     if(!['GET','POST'].includes(req.method))return send(405,{error:'Method not allowed'});
     let source,player;
     if(req.method==='GET')source=new URL(req.url,'https://localhost').searchParams.get('source')||req.query?.source;
     else {
-      if(req.headers?.origin!==ORIGIN)return send(403,{error:'Use the update buttons on the group website'});
+      if(!isAllowedOrigin(req.headers?.origin))return send(403,{error:'Use the update buttons on the group website'});
       if(!String(req.headers['content-type']||'').startsWith('application/json'))return send(415,{error:'Send JSON'});
       try {
         const body=typeof req.body==='string'?JSON.parse(req.body):req.body;
