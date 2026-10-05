@@ -7,8 +7,10 @@ html[data-theme="osrs"]{--bg:#000;--panel:#c7b17d;--panel2:#d1bd8c;--panel3:#baa
 html[data-theme="osrs"] body{background:#000 url('../img/osrs-theme/bg2.jpg') repeat-y center top;background-size:max(910px,100%) auto;color:#21190e;font-family:Arial,Helvetica,sans-serif;font-size:var(--type-body);line-height:1.55}
 html[data-theme="osrs"] .wrap{width:min(1190px,calc(100% - 72px))}
 html[data-theme="osrs"] .site-top{background:transparent;border:0;padding-top:12px}
-html[data-theme="osrs"] .osrs-banner{display:grid;grid-template-columns:minmax(0,204fr) minmax(0,384fr) minmax(0,216fr);align-items:center;width:min(920px,100%);margin:0 auto 12px;text-align:center}
-html[data-theme="osrs"] .osrs-banner-logo{margin:0;min-width:0;line-height:1}
+/* Match the logo's visible artwork to the original characters' height;
+   its transparent padding remains intact at every viewport width. */
+html[data-theme="osrs"] .osrs-banner{display:grid;grid-template-columns:minmax(0,204fr) minmax(0,450fr) minmax(0,216fr);align-items:center;width:min(920px,100%);margin:0 auto 12px;text-align:center}
+html[data-theme="osrs"] .osrs-banner-logo{margin:0;min-width:0;line-height:1;transform:translateY(-2%)}
 html[data-theme="osrs"] .osrs-banner-mark{display:block;width:100%}
 html[data-theme="osrs"] .osrs-banner-mark>img{display:block;width:100%;height:auto}
 /* Reuse only the original flanking characters; the old central logo is clipped out. */
