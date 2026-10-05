@@ -25,54 +25,9 @@
       "bytes": 9122
     },
     {
-      "file": "grand-exchange/Scroll-Bottom.gif",
-      "source": "https://www.runescape.com/img/rsp777/grand_exchange/Scroll-Bottom.gif",
-      "bytes": 9771
-    },
-    {
-      "file": "grand-exchange/Scroll-Middle.gif",
-      "source": "https://www.runescape.com/img/rsp777/grand_exchange/Scroll-Middle.gif",
-      "bytes": 63701
-    },
-    {
-      "file": "grand-exchange/Scroll-Top.gif",
-      "source": "https://www.runescape.com/img/rsp777/grand_exchange/Scroll-Top.gif",
-      "bytes": 9804
-    },
-    {
-      "file": "grand-exchange/smallArrowLeft.png",
-      "source": "https://www.runescape.com/img/rsp777/grand_exchange/smallArrowLeft.png",
-      "bytes": 1473
-    },
-    {
-      "file": "grand-exchange/smallArrowRight.png",
-      "source": "https://www.runescape.com/img/rsp777/grand_exchange/smallArrowRight.png",
-      "bytes": 1478
-    },
-    {
-      "file": "hiscores/scroll_bottom.gif",
-      "source": "https://www.runescape.com/img/rsp777/hiscores/scroll_bottom.gif",
-      "bytes": 5865
-    },
-    {
       "file": "hiscores/scroll_middle.gif",
       "source": "https://www.runescape.com/img/rsp777/hiscores/scroll_middle.gif",
       "bytes": 38443
-    },
-    {
-      "file": "hiscores/scroll_top.gif",
-      "source": "https://www.runescape.com/img/rsp777/hiscores/scroll_top.gif",
-      "bytes": 5885
-    },
-    {
-      "file": "hiscores/search_box.gif",
-      "source": "https://www.runescape.com/img/rsp777/hiscores/search_box.gif",
-      "bytes": 10084
-    },
-    {
-      "file": "rss.png",
-      "source": "https://www.runescape.com/img/rsp777/rss.png",
-      "bytes": 2164
     },
     {
       "file": "backdrop_745.gif",
@@ -90,34 +45,14 @@
       "bytes": 11449
     },
     {
-      "file": "button_small.gif",
-      "source": "https://www.runescape.com/img/rsp777/splash/button_small.gif",
-      "bytes": 7811
-    },
-    {
       "file": "compare_users.gif",
       "source": "https://www.runescape.com/img/rsp777/splash/compare_users.gif",
       "bytes": 12629
     },
     {
-      "file": "authenticator.png",
-      "source": "https://www.runescape.com/img/rsp777/title2/authenticator.png",
-      "bytes": 1653
-    },
-    {
       "file": "beta.gif",
       "source": "https://www.runescape.com/img/rsp777/title2/beta.gif",
       "bytes": 1026
-    },
-    {
-      "file": "bonds.gif",
-      "source": "https://www.runescape.com/img/rsp777/title2/bonds.gif",
-      "bytes": 2143
-    },
-    {
-      "file": "coins.gif",
-      "source": "https://www.runescape.com/img/rsp777/title2/coins.gif",
-      "bytes": 937
     },
     {
       "file": "comment.gif",
@@ -130,21 +65,6 @@
       "bytes": 980
     },
     {
-      "file": "download.gif",
-      "source": "https://www.runescape.com/img/rsp777/title2/download.gif",
-      "bytes": 355
-    },
-    {
-      "file": "fsw-hiscore.png",
-      "source": "https://www.runescape.com/img/rsp777/title2/fsw-hiscore.png",
-      "bytes": 252
-    },
-    {
-      "file": "globe.gif",
-      "source": "https://www.runescape.com/img/rsp777/title2/globe.gif",
-      "bytes": 1055
-    },
-    {
       "file": "hiscore.gif",
       "source": "https://www.runescape.com/img/rsp777/title2/hiscore.gif?2",
       "bytes": 131
@@ -155,24 +75,9 @@
       "bytes": 973
     },
     {
-      "file": "membership_benefits.gif",
-      "source": "https://www.runescape.com/img/rsp777/title2/membership_benefits.gif",
-      "bytes": 963
-    },
-    {
-      "file": "mobile.png",
-      "source": "https://www.runescape.com/img/rsp777/title2/mobile.png",
-      "bytes": 524
-    },
-    {
       "file": "play.gif",
       "source": "https://www.runescape.com/img/rsp777/title2/play.gif",
       "bytes": 956
-    },
-    {
-      "file": "rslogo3-gap.png",
-      "source": "https://www.runescape.com/img/rsp777/title2/rslogo3-gap.png",
-      "bytes": 35082
     },
     {
       "file": "rslogo3.png",
@@ -180,19 +85,9 @@
       "bytes": 26659
     },
     {
-      "file": "runelite.png",
-      "source": "https://www.runescape.com/img/rsp777/title2/runelite.png",
-      "bytes": 1874
-    },
-    {
       "file": "settings.png",
       "source": "https://www.runescape.com/img/rsp777/title2/settings.png",
       "bytes": 1931
-    },
-    {
-      "file": "shop.gif",
-      "source": "https://www.runescape.com/img/rsp777/title2/shop.gif",
-      "bytes": 972
     },
     {
       "file": "status-icon.gif",
@@ -203,21 +98,6 @@
       "file": "support.png",
       "source": "https://www.runescape.com/img/rsp777/title2/support.png",
       "bytes": 1968
-    },
-    {
-      "file": "vote.gif",
-      "source": "https://www.runescape.com/img/rsp777/title2/vote.gif",
-      "bytes": 972
-    },
-    {
-      "file": "vote_grey.gif",
-      "source": "https://www.runescape.com/img/rsp777/title2/vote_grey.gif",
-      "bytes": 970
-    },
-    {
-      "file": "wiki.png",
-      "source": "https://www.runescape.com/img/rsp777/title2/wiki.png",
-      "bytes": 359
     },
     {
       "file": "worldmap.gif",
