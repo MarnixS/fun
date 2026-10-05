@@ -3,8 +3,9 @@
 The domain setup preserves the existing GitHub Pages frontend and Vercel API helper.
 The owner registered `ugimps.com` through Porkbun on 5 October 2026. Manage the
 domain and its DNS in Porkbun. GitHub Pages publishes `main` from the repository
-root. The frontend preparation is deployed; the updated Vercel API deployment,
-Pages domain claim and DNS configuration remain pending.
+root. The frontend preparation and updated Vercel API are deployed. The root `CNAME`
+claims `ugimps.com` for this branch-based Pages site. Porkbun DNS configuration
+and custom-domain HTTPS verification are the remaining activation steps.
 
 ## Registration and GitHub Pages
 
@@ -35,8 +36,9 @@ No Vercel custom domain is required. The Temple, shared snapshot and goal APIs
 must accept the new frontend's origin to preserve refresh and goal editing.
 
 `UGIMPS_DOMAIN_ENABLED=true` is configured in the Vercel project's **production**
-environment. Deploy the API helper from the updated repository source; the flag
-alone does not update the old running deployment. It permits only the HTTPS apex and www origins;
+environment. Production deployment `dpl_FehL7PPNaAVHZnYdRwVWKE4yvuxP` serves the
+updated API helper at the existing production URL. The flag alone does not
+update an older deployment. It permits only the HTTPS apex and www origins;
 the GitHub Pages origin remains valid. Unrelated origins and originless writes
 remain rejected, and goal editing still requires the member's private code.
 
@@ -58,6 +60,11 @@ Pages, and its scripts are excluded from the Vercel upload.
 - Check snapshot manifest reads and the goal editor's authorization from the new site.
 - A page load must read the saved baseline without refreshing WOM or Temple. Only an explicit refresh button should publish a new snapshot.
 - Browser storage belongs to each origin. Existing local settings and drafts at the GitHub Pages address do not automatically move to the new domain.
+
+Live backend checks passed on 5 October 2026: custom-origin preflights, goals
+with publishing enabled, and both saved snapshot manifests. GitHub validation
+and Pages deployment for source commit `65491ee6d63febdad0f9111915f6c29d760c5071`
+both passed.
 
 Validation: `node scripts/test_site_origins.js`, `node scripts/test_temple_proxy.js`,
 `node scripts/test_player_goals.js`, and `node scripts/test_shared_baseline.js`.
