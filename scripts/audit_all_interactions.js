@@ -11,7 +11,7 @@ function assertLinks(d,selector,label){const cells=[...d.querySelectorAll(select
  let graphClicks=0,itemLinks=0;
  for(const page of pages){
   const requests=[],{dom,errors}=await openPage(page,{priceData:prices,fetchLog:requests});const w=dom.window,d=w.document;
-  assert.deepEqual([...d.querySelectorAll('.nav-link')].map(a=>a.getAttribute('href')),['index.html','clog-beta.html','gim.html','hypothetical.html','rng.html','hiscores.html','progress.html','cumulative-xp.html','time-machine.html','chronicle.html','history.html','goals.html','kc-comparison.html','faq.html','news.html','experimental.html'],page+' navigation');
+  assert.deepEqual([...d.querySelectorAll('.nav-link')].map(a=>a.getAttribute('href')),['../','clog-beta.html','gim.html','hypothetical.html','rng.html','hiscores.html','progress.html','cumulative-xp.html','time-machine.html','chronicle.html','history.html','goals.html','kc-comparison.html','faq.html','news.html','experimental.html'],page+' navigation');
   assert.equal(d.querySelectorAll('.nav-link[aria-current="page"]').length,page==='developer.html'?0:1);
   const groups=[...d.querySelectorAll('.nav-dropdown')];assert.equal(groups.length,4);
   assert.deepEqual(groups.map(g=>g.querySelector('button span:nth-child(2)').textContent),['Collection Log','Stats','Records','Other']);
