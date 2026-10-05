@@ -15,7 +15,7 @@ html[data-theme="osrs"] .osrs-banner-characters{display:block;width:100%;backgro
 html[data-theme="osrs"] .osrs-banner-characters-left{aspect-ratio:204/137;background-size:366.176471% 100%;background-position:left center}
 html[data-theme="osrs"] .osrs-banner-characters-right{aspect-ratio:216/137;background-size:345.833333% 100%;background-position:right center}
 html[data-theme="osrs"] .mast{border:0;background:transparent;box-shadow:none}
-html[data-theme="osrs"] .mast-wordmark,html[data-theme="osrs"] .mast .banner-frame{display:none}
+html[data-theme="osrs"] .mast-wordmark{display:none}
 html[data-theme="osrs"] .banner-frame{background:transparent;padding:0;margin:0 0 14px;border:0;overflow:hidden;border-image:url('../img/osrs-theme/border.webp') 62 / 14px / 0 stretch}
 html[data-theme="osrs"] .group-banner{border:0;box-shadow:none}
 html[data-theme="osrs"] .mast-status{background:transparent;border:0;gap:10px;padding:6px 0 18px}
@@ -106,6 +106,8 @@ html[data-theme="osrs"] main tbody tr:nth-child(even){background:rgba(74,56,31,.
 html[data-theme="osrs"] main :is(.rank-1,.rank-2,.rank-3,.xp-total-row){background:rgba(68,101,25,.15)}
 html[data-theme="osrs"] main :is(.unknown-cell,.cell-sub,.rank-chip,.small-value){color:#51432d!important}
 html[data-theme="osrs"] main svg text{fill:#352613!important;font-family:Arial,sans-serif!important}
+html[data-theme="osrs"] main .v21-pie-caption{fill:#ead8b3!important}
+html[data-theme="osrs"] main .v21-pie-total{fill:#ffe3a1!important}
 html[data-theme="osrs"] main :is(.v21-pie,.skill-share-chart,.chart,.skill-modal-chart){color:#352613}
 html[data-theme="osrs"] main :is(.v21-chart-legend,.legend,.kc-player-row,.kc-counts){color:#352613!important}
 /* Native game-style filter panels; shared selection and ownership logic stay unchanged. */

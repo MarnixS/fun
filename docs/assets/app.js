@@ -119,7 +119,7 @@ function bindCommon(){$$('[data-reload-temple]').forEach(b=>{b.textContent='Rest
 let mastPrices=null;
 async function loadMastPrices(){mastPrices=await window.UGPrices.load();return mastPrices}
 function mastItemPrice(id){return window.UGPrices.price(id)}
-function renderPriceFreshness(){const s=window.UGPrices.status();$$('[data-ge-freshness]').forEach(x=>{x.textContent=!s.available?(s.stale?'GE prices · unavailable':'GE prices · loading…'):(s.stale?'Stale GE prices · ':'GE prices · ')+(s.sourceLatestAt?'latest quote '+dateTime(s.sourceLatestAt):'source date unavailable');x.title=s.available?`Latest source quote in the RuneScape Wiki price feed; individual item quote times vary. Retrieved ${dateTime(s.checkedAt)}.`:'RuneScape Wiki GE price feed';x.dataset.stale=String(s.stale)})}
+function renderPriceFreshness(){const s=window.UGPrices.status();$$('[data-ge-freshness]').forEach(x=>{x.textContent=!s.available?(s.stale?'GE prices · unavailable':'GE prices · loading…'):(s.stale?'Stale GE prices · ':'GE prices · ')+(s.sourceLatestAt?'latest quote '+dateTime(s.sourceLatestAt):'source date unavailable');x.title=s.available?`Shared Wiki price snapshot, refreshed at most once every 12 hours. Last refresh ${dateTime(s.checkedAt)}. Individual item quote times vary.`:'RuneScape Wiki GE price feed';x.dataset.stale=String(s.stale)})}
 window.addEventListener('ug:prices-updated',renderPriceFreshness);
 function mastMoney(n){if(!Number.isFinite(+n)||+n<=0)return'—';n=+n;return n>=1e9?(n/1e9).toFixed(2)+'b':n>=1e6?(n/1e6).toFixed(2)+'m':n>=1e3?(n/1e3).toFixed(2)+'k':fmt(n)}
 function ensureSixMast(){

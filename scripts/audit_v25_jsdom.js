@@ -84,6 +84,7 @@ async function openPage(path, { selection, templeResponse, templeDocument, womRe
           }
           return jsonResponse(receipt(source));
         }
+        if(new URL(url).pathname.endsWith('/data/ge-prices.json'))return priceResponse?priceResponse():jsonResponse({fetchedAt:Date.now(),data:priceData});
         if(url.startsWith('https://raw.githubusercontent.com/MarnixS/fun/')){
           const revision=new URL(url).pathname.split('/')[3];
           return backend.revisions.has(revision)?jsonResponse(backend.revisions.get(revision)):jsonResponse({error:'Unknown revision'},404);

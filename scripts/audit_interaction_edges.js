@@ -9,7 +9,7 @@ const settle=()=>new Promise(r=>setTimeout(r,80));
  let release;const pending=new Promise(r=>release=r),idb=new IDBFactory(),sharedDocs={wom:clone(wom),temple:clone(temple)},requests=[];
  const {dom,errors}=await openPage('gim.html',{sharedDocs,indexedDB:idb,fetchLog:requests,priceResponse:()=>pending});const w=dom.window,d=w.document;
  const sort=d.querySelector('#clogSort'),search=d.querySelector('#clogSearch');sort.value='value';sort.dispatchEvent(new w.Event('change'));sort.value='name';sort.dispatchEvent(new w.Event('change'));search.value='osmumten';search.dispatchEvent(new w.Event('input'));
- release(new Response(JSON.stringify({data:{26219:{high:10000000,low:10000000}}})));await settle();assert([...d.querySelectorAll('#clogItemTable tbody tr')].every(r=>r.textContent.toLowerCase().includes('osmumten')),'slow value sort must not overwrite a newer search');
+ release(new Response(JSON.stringify({fetchedAt:Date.now(),data:{26219:{high:10000000,low:10000000}}})));await settle();assert([...d.querySelectorAll('#clogItemTable tbody tr')].every(r=>r.textContent.toLowerCase().includes('osmumten')),'slow value sort must not overwrite a newer search');
  const row=d.querySelector('#clogItemTable tbody tr'),quantity=Number(row.children[7].textContent.replaceAll(',',''));assert.equal(row.lastElementChild.textContent,(quantity*10).toFixed(3)+'m gp','Osmumten fang uses the normal GE quote');
  const graph=await openPage('hiscores.html',{sharedDocs,indexedDB:idb}),gw=graph.dom.window,gd=gw.document;
  const button=gd.querySelector('[data-v21-skill]');button.focus();button.click();await waitFor(()=>gd.querySelector('#v21MetricModal:not([hidden])'),'summary graph');

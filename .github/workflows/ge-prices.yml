@@ -1,0 +1,45 @@
+name: Refresh shared Wiki price snapshot
+
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/ge-prices.yml
+      - scripts/refresh_ge_prices.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: united-gimps-ge-prices
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      # Early checks exit before contacting the Wiki. Hourly checks allow for
+      # delayed GitHub schedules without fetching more than once per 12 hours.
+      - name: Refresh only when the saved prices are at least 12 hours old
+        run: python scripts/refresh_ge_prices.py
+      - name: Commit the shared price snapshot when changed
+        if: always()
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- docs/data/ge-prices.json; then
+            echo 'The existing price snapshot is still current.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/data/ge-prices.json
+          git commit -m 'Save shared Wiki price refresh state'
+          git pull --rebase origin main
+          git push origin HEAD:main

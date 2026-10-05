@@ -1,8 +1,20 @@
 (()=>{
 'use strict';
-const TTL=300000;
+const TTL=12*60*60*1000,CACHE_KEY='ug-ge-price-snapshot-v1',SNAPSHOT_URL='https://raw.githubusercontent.com/MarnixS/fun/main/docs/data/ge-prices.json';
 let data=null,checkedAt=0,sourceLatestAt=0,request=null,failed=false,attemptedAt=0;
-function status(){return{checkedAt,sourceLatestAt,stale:failed||!!checkedAt&&Date.now()-checkedAt>=TTL,available:!!data}}
+function status(){return{checkedAt,sourceLatestAt,refreshIntervalHours:12,stale:failed||!!checkedAt&&Date.now()-checkedAt>=TTL,available:!!data}}
+function accept(snapshot){
+ const next=snapshot?.data,time=Number(snapshot?.fetchedAt);
+ if(!next||typeof next!=='object'||Array.isArray(next)||!Number.isFinite(time)||time<=0||time>Date.now())throw new Error('Invalid saved GE price snapshot');
+ if(time<checkedAt)return;
+ let latest=0;
+ for(const item of Object.values(next))for(const side of ['high','low']){
+  const quoteTime=Number(item?.[side+'Time']);
+  if(Number(item?.[side])>0&&Number.isFinite(quoteTime)&&quoteTime>0&&quoteTime<=time/1000)latest=Math.max(latest,quoteTime);
+ }
+ data=next;checkedAt=time;sourceLatestAt=latest*1000;
+}
+try{const saved=window.localStorage?.getItem(CACHE_KEY);if(saved)accept(JSON.parse(saved))}catch{}
 async function load(){
  if(data&&Date.now()-checkedAt<TTL&&!failed)return data;
  if(request)return request;
@@ -10,17 +22,18 @@ async function load(){
  attemptedAt=Date.now();
  request=(async()=>{
   try{
-   const r=await fetch('https://prices.runescape.wiki/api/v1/osrs/latest',{cache:'no-store',signal:AbortSignal.timeout(20000),headers:{Accept:'application/json'}});
-   if(!r.ok)throw new Error(`GE HTTP ${r.status}`);
-   const next=(await r.json()).data;
-   if(!next||typeof next!=='object'||Array.isArray(next))throw new Error('Invalid GE price response');
-   let latest=0;
-   for(const item of Object.values(next))for(const side of ['high','low']){
-    const time=Number(item?.[side+'Time']);
-    if(Number(item?.[side])>0&&Number.isFinite(time)&&time>0&&time<=Date.now()/1000)latest=Math.max(latest,time);
+   const sources=data?[SNAPSHOT_URL]:[SNAPSHOT_URL,'data/ge-prices.json'];let error;
+   for(const url of sources){
+    try{
+     const r=await fetch(url,{signal:AbortSignal.timeout(20000),headers:{Accept:'application/json'}});
+     if(!r.ok)throw new Error(`Saved GE snapshot HTTP ${r.status}`);
+     accept(await r.json());error=null;break;
+    }catch(e){error=e}
    }
-   data=next;checkedAt=Date.now();sourceLatestAt=latest*1000;failed=false;
-  }catch(e){failed=true;console.warn('GE prices unavailable; retaining last successful check',e)}
+   if(error)throw error;
+   failed=false;
+   try{window.localStorage?.setItem(CACHE_KEY,JSON.stringify({fetchedAt:checkedAt,data}))}catch{}
+  }catch(e){failed=true;console.warn('Saved GE prices unavailable; retaining the last price snapshot',e)}
   window.dispatchEvent?.(new CustomEvent('ug:prices-updated',{detail:status()}));
   return data;
  })();

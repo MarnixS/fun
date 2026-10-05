@@ -23,6 +23,7 @@ jobs:
           for file in docs/assets/*.js; do node --check "$file"; done
           python scripts/build_site.py --check
           node scripts/test_ge_prices.js
+          python scripts/test_refresh_ge_prices.py
           node scripts/test_chronicle_prices.js
           node scripts/test_site_origins.js
           node scripts/test_temple_proxy.js
