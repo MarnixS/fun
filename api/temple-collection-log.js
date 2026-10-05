@@ -1,6 +1,6 @@
 'use strict';
 
-const ALLOWED_ORIGIN = 'https://marnixs.github.io';
+const { LEGACY_ORIGIN: ALLOWED_ORIGIN, isAllowedOrigin, setOriginHeader } = require('../lib/site-origin');
 const SNAPSHOT_URL = 'https://marnixs.github.io/fun/docs/data/temple-clog.json';
 const TEMPLE_BASE = 'https://templeosrs.com/api/collection-log';
 const TEMPLE_STATS = 'https://templeosrs.com/api/player_stats.php';
@@ -364,10 +364,9 @@ async function getDocument(force = false) {
 }
 
 function setCommonHeaders(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+  setOriginHeader(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Accept');
-  res.setHeader('Vary', 'Origin');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 }
@@ -380,7 +379,7 @@ function send(res, status, value) {
 module.exports = async function handler(req, res) {
   setCommonHeaders(req, res);
   const origin = req.headers?.origin;
-  if (origin && origin !== ALLOWED_ORIGIN) return send(res, 403, { error: 'Origin not allowed' });
+  if (origin && !isAllowedOrigin(origin)) return send(res, 403, { error: 'Origin not allowed' });
   if (req.method === 'OPTIONS') {
     res.statusCode = 204;
     return res.end();
