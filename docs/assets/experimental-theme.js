@@ -67,7 +67,7 @@ function restoreImages(){
  originalImages.clear();
 }
 try{enabled=localStorage.getItem(key)!=='off'}catch{storageAvailable=false}
-const iconMap={'index.html':'play.gif','clog-beta.html':'manual.gif','gim.html':'menu-icons/advanced-log.svg','hypothetical.html':'menu-icons/hypothetical-log.svg','rng.html':'menu-icons/rng-index.svg','hiscores.html':'hiscore.gif','cumulative-xp.html':'menu-icons/cumulative-xp.svg','progress.html':'status-icon.gif','time-machine.html':'worldmap.gif','chronicle.html':'manual.gif','history.html':'menu-icons/timeline.svg','goals.html':'menu-icons/goals.svg','kc-comparison.html':'menu-icons/kc-comparison.svg','nemesis.html':'create.gif','nemesis-beta.html':'create.gif','faq.html':'support.png','news.html':'comment.gif','experimental.html':'beta.gif'};
+const iconMap={'../':'play.gif','index.html':'play.gif','clog-beta.html':'manual.gif','gim.html':'menu-icons/advanced-log.svg','hypothetical.html':'menu-icons/hypothetical-log.svg','rng.html':'menu-icons/rng-index.svg','hiscores.html':'hiscore.gif','cumulative-xp.html':'menu-icons/cumulative-xp.svg','progress.html':'status-icon.gif','time-machine.html':'worldmap.gif','chronicle.html':'manual.gif','history.html':'menu-icons/timeline.svg','goals.html':'menu-icons/goals.svg','kc-comparison.html':'menu-icons/kc-comparison.svg','nemesis.html':'create.gif','nemesis-beta.html':'create.gif','faq.html':'support.png','news.html':'comment.gif','experimental.html':'beta.gif'};
 function decoratedLink(link){
  const copy=link.cloneNode(true),icon=document.createElement('img');
  copy.className='osrs-menu-link'+(link.classList.contains('active')?' active':'');
@@ -78,13 +78,13 @@ function mount(){
  watchImages();
  if(!document.querySelector('[data-osrs-banner]')){
   const mast=document.querySelector('.mast');
-  if(mast){const banner=document.createElement('a');banner.href='index.html';banner.className='osrs-banner';banner.dataset.osrsBanner='';banner.setAttribute('aria-label','United Gimps overview');const image=document.createElement('img');image.src='img/osrs-theme/rslogo3.png';image.alt='Old School RuneScape';image.width=747;image.height=137;banner.append(image);mast.before(banner)}
+  if(mast){const banner=document.createElement('a');banner.href='../';banner.className='osrs-banner';banner.dataset.osrsBanner='';banner.setAttribute('aria-label','United Gimps overview');const image=document.createElement('img');image.src='img/osrs-theme/rslogo3.png';image.alt='Old School RuneScape';image.width=747;image.height=137;banner.append(image);mast.before(banner)}
  }
  if(!document.querySelector('[data-osrs-nav]')){
   const source=document.querySelector('.nav-inner'),host=document.querySelector('.main-nav');
   if(source&&host){
    const nav=document.createElement('div');nav.className='wrap osrs-navigation';nav.dataset.osrsNav='';
-   const overview=source.querySelector(':scope > .nav-link[href="index.html"]');if(overview){const home=decoratedLink(overview);home.classList.add('osrs-overview');nav.append(home)}
+   const overview=source.querySelector(':scope > .nav-link[href="../"], :scope > .nav-link[href="index.html"]');if(overview){const home=decoratedLink(overview);home.classList.add('osrs-overview');nav.append(home)}
    const groups=document.createElement('div');groups.className='osrs-navigation-groups';
    source.querySelectorAll('.nav-dropdown').forEach(group=>{
     const box=document.createElement('section'),heading=document.createElement('h2'),list=document.createElement('div');
