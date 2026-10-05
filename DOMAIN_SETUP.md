@@ -2,13 +2,15 @@
 
 The domain setup preserves the existing GitHub Pages frontend and Vercel API helper.
 The owner registered `ugimps.com` through Porkbun on 5 October 2026. Manage the
-domain and its DNS in Porkbun. GitHub Pages and DNS configuration remain pending.
+domain and its DNS in Porkbun. GitHub Pages publishes `main` from the repository
+root. The frontend preparation is deployed; the updated Vercel API deployment,
+Pages domain claim and DNS configuration remain pending.
 
 ## Registration and GitHub Pages
 
 1. Confirm `ugimps.com` appears in Porkbun's Domain Management screen. Complete any registrant email verification requested by Porkbun.
-2. Verify domain ownership for the `MarnixS` GitHub account using GitHub's generated TXT record. Add that record in Porkbun's DNS settings, preserving it during subsequent DNS changes.
-3. Set the custom domain to `ugimps.com` in `MarnixS/fun` → Settings → Pages. Keep the existing publication source. Include the generated CNAME file in future checkouts.
+2. Deploy the updated Vercel backend and verify its new-origin responses before activating the frontend domain. Changing Pages first can redirect the existing site to a domain whose refresh and goal APIs do not work yet.
+3. Add a root-level file named `CNAME` containing exactly `ugimps.com` followed by a newline, then commit it to `main`. For this branch-based Pages source, GitHub supports configuring the domain through this file; a GitHub website login is not required. Wait for the Pages deployment to succeed before changing DNS. Keep this file in subsequent commits. GitHub account-level domain verification with a generated TXT record is also recommended when account settings are available; do not invent that verification value.
 4. In Porkbun, open Domain Management, expand the domain's Details, and select the edit icon beside DNS Records. Configure the records below. Porkbun uses a blank Host field for the apex domain (`@` below). Replace conflicting frontend records for these names, and keep the default TTL. Each IPv4 address is a separate record. Preserve verification TXT and unrelated mail records. The frontend's domain routes to GitHub Pages; it should not be assigned to the API-only Vercel project.
 
 | Type | Name | Value |
@@ -21,8 +23,10 @@ domain and its DNS in Porkbun. GitHub Pages and DNS configuration remain pending
 
 5. Enable Enforce HTTPS in GitHub Pages when its certificate is ready. GitHub Pages redirects `www.ugimps.com` to the configured apex domain.
 
-Porkbun accepts PayPal for registration and renewal, but PayPal cannot fund automatic
-payments. Pay the renewal manually before expiry when using PayPal.
+Normal frontend changes continue through GitHub and do not require Porkbun.
+Porkbun is needed for domain administration, DNS changes and renewals. Automatic
+backend deployments require a verified Vercel Git integration; the existing
+production deployment was uploaded through the CLI.
 
 ## Vercel backend
 
@@ -30,10 +34,9 @@ The existing browser API URLs continue to use `united-gimps-temple-proxy.vercel.
 No Vercel custom domain is required. The Temple, shared snapshot and goal APIs
 must accept the new frontend's origin to preserve refresh and goal editing.
 
-After the owner has registered and verified the domain, set
-`UGIMPS_DOMAIN_ENABLED=true` in the Vercel project's **production** environment
-and redeploy the API helper from this source. The flag keeps the unowned domain
-disabled during preparation. It permits only the HTTPS apex and www origins;
+`UGIMPS_DOMAIN_ENABLED=true` is configured in the Vercel project's **production**
+environment. Deploy the API helper from the updated repository source; the flag
+alone does not update the old running deployment. It permits only the HTTPS apex and www origins;
 the GitHub Pages origin remains valid. Unrelated origins and originless writes
 remain rejected, and goal editing still requires the member's private code.
 
@@ -42,6 +45,10 @@ APIs require. `.vercelignore` allows that shared module while excluding the rest
 of the frontend's generated assets. Deploy this source into the existing Vercel
 project, preserving its environment variables. Redeploying an older CLI upload
 does not include the changes in this branch.
+
+`vercel.json` sets an empty build command because this Vercel project hosts only
+the API functions. The repository's Python frontend build belongs to GitHub
+Pages, and its scripts are excluded from the Vercel upload.
 
 ## Verification
 
@@ -61,3 +68,5 @@ References:
 - https://porkbun.com/support/payment_options
 - https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/verifying-your-custom-domain-for-github-pages
 - https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site
+- https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/troubleshooting-custom-domains-and-github-pages
+- https://vercel.com/docs/project-configuration/vercel-json#buildcommand
