@@ -8,8 +8,10 @@ html[data-theme="osrs"] body{background:#000 url('../img/osrs-theme/bg2.jpg') re
 html[data-theme="osrs"] .wrap{width:min(1190px,calc(100% - 72px))}
 html[data-theme="osrs"] .site-top{background:transparent;border:0;padding-top:12px}
 html[data-theme="osrs"] .osrs-banner{display:grid;grid-template-columns:minmax(0,204fr) minmax(0,384fr) minmax(0,216fr);align-items:center;width:min(920px,100%);margin:0 auto 12px;text-align:center}
-html[data-theme="osrs"] .osrs-banner-logo{margin:0;min-width:0;line-height:0}
-html[data-theme="osrs"] .osrs-banner-logo img{display:block;width:100%;height:auto;mix-blend-mode:screen}
+html[data-theme="osrs"] .osrs-banner-logo{margin:0;min-width:0;line-height:1}
+html[data-theme="osrs"] .osrs-banner-mark{position:relative;display:grid;place-items:center;width:100%;aspect-ratio:2/1;isolation:isolate}
+html[data-theme="osrs"] .osrs-crossed-swords{position:absolute;inset:-9% -10%;width:120%;height:118%;z-index:0;overflow:visible;filter:drop-shadow(0 4px 2px #000a)}
+html[data-theme="osrs"] .osrs-banner-title{position:relative;z-index:1;display:block;white-space:nowrap;color:#d5b767;font:400 clamp(34px,5vw,58px)/.92 OSRSPetrock,Georgia,serif;letter-spacing:.015em;text-shadow:-2px -2px 0 #1b1208,2px -2px 0 #1b1208,-2px 2px 0 #1b1208,2px 2px 0 #1b1208,0 4px 2px #000}
 /* Reuse only the original flanking characters; the old central logo is clipped out. */
 html[data-theme="osrs"] .osrs-banner-characters{display:block;width:100%;background:url('../img/osrs-theme/rslogo3.png') no-repeat}
 html[data-theme="osrs"] .osrs-banner-characters-left{aspect-ratio:204/137;background-size:366.176471% 100%;background-position:left center}
