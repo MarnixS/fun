@@ -46,6 +46,8 @@ html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .osrs-header-titl
    the complete central artwork instead of retaining empty masked margins. */
 @media(max-width:910px){html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .group-banner{width:min(116.25%,941.85px);left:50%;transform:translateX(-50%)}}
 html[data-theme="osrs"] .mast-status{background:transparent;border:0;gap:10px;padding:6px 0 18px}
+/* Six cards need enough room inside the narrower, pillar-safe page column. */
+@media(min-width:1180px) and (max-width:1279px){html[data-theme="osrs"] .mast-status.mast-status-six{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 html[data-theme="osrs"] .mast-stat{background:transparent url('../img/osrs-theme/compare_users.gif') no-repeat center/100% 100%;border:0;box-shadow:none;border-radius:0;padding:17px 20px;color:#fff;min-height:165px}
 html[data-theme="osrs"] .mast-card-title span{color:#d9c27e;font:700 12px Arial,sans-serif;letter-spacing:0;text-transform:none}
 html[data-theme="osrs"] .mast-stat b,html[data-theme="osrs"] .mast-stat strong{color:#fff;font-family:Arial,Helvetica,sans-serif;text-shadow:1px 1px #000}
