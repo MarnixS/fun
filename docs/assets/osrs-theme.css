@@ -89,6 +89,9 @@ html[data-theme="osrs"] main :is(.card,.table-card,.player-card,.side-card,.gain
 html[data-theme="osrs"] main :is(.table-caption,.chart-head,.player-card-head,.goal-head,.faq-subtopic-summary,.faq-category-kicker,.clog-deep-head,.clog-subhead,.v22-player-goal-head,.v22-rules-head){background:rgba(74,56,31,.13)!important;color:#352613!important;border-color:#826d40!important}
 html[data-theme="osrs"] main :is(.stat-box,.side-kpi,.chem-name,.chem-credit,.chronicle-toolbar,.chronicle-main,.chronicle-event,.clog-category-row,.clog-member-row,.clog-pair-row,.clog-member-coverage,.clog-pair-sim,.news-archive-links a,.experimental-breadcrumb,.timeline-legend,.chem-share,.chem-coverage,.chem-band,.clog-thin-bar,.overlap-strip){color:#352613!important;border-color:#826d40!important;background-color:transparent}
 html[data-theme="osrs"] main :is(.stat-box,.side-kpi,.chem-name){background:rgba(74,56,31,.1)!important}
+/* Keep expanded FAQ topics and question headings on the Old School parchment. */
+html[data-theme="osrs"] main :is(.faq-category-body,.faq-subtopic){background:rgba(89,64,28,.07)!important}
+html[data-theme="osrs"] main .faq-item>summary{background:rgba(74,56,31,.13)!important;border-color:#826d40!important}
 html[data-theme="osrs"] main :is(.section::before,.section::after){background:transparent;color:#5c471c}
 html[data-theme="osrs"] main .section::before{background:#6b7b17;height:1px}
 html[data-theme="osrs"] main .section::after{display:none}
