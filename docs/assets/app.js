@@ -52,7 +52,8 @@ function templeItemsFromLog(log){if(!validTemple(log))return[];const d=log.data?
 function templeItemsFor(key){return templeItemsFromLog(templePlayers()[key])}
 function cleanTempleRecent(row,fallbackPlayer=''){if(!row||typeof row!=='object'||row.Code||row.code||row.error||row.errors)return null;const id=+(row.id??row.item_id),name=String(row.name??row.item_name??'').trim(),player=String(row.player_name_with_capitalization||row.player||row.username||fallbackPlayer).trim(),date=templeDateMs(row.date_unix??row.date);if(!Number.isInteger(id)||id<=0||!name||!player||!date)return null;return{...row,id,name,player,player_name_with_capitalization:player,date_unix:Math.floor(date/1000),date:new Date(date).toISOString().slice(0,19).replace('T',' '),notable_item:!!(row.notable_item??row.notable)}}
 
-function templeRecent(){let rows=state.temple?.recent||state.temple?.recent_items||[];if(!Array.isArray(rows)){if(rows?.data)rows=Array.isArray(rows.data)?rows.data:Object.values(rows.data);else rows=Object.values(rows||{})}return rows.map(x=>cleanTempleRecent(x)).filter(Boolean).map(x=>({id:x.id,name:x.name,player:x.player,date:x.date_unix*1000,notable:!!x.notable_item,countDelta:Math.max(0,+x.count_delta||0),previousCount:Number.isFinite(+x.previous_count)?+x.previous_count:null,currentCount:Number.isFinite(+x.current_count)?+x.current_count:null,repeatDrop:!!x.repeat_drop,detectedFromCount:!!x.detected_from_count,source:String(x.source||'')})).sort((a,b)=>b.date-a.date)}
+function templeCount(value){if(value==null||String(value).trim()==='')return null;const count=Number(value);return Number.isSafeInteger(count)&&count>=0?count:null}
+function templeRecent(){let rows=state.temple?.recent||state.temple?.recent_items||[];if(!Array.isArray(rows)){if(rows?.data)rows=Array.isArray(rows.data)?rows.data:Object.values(rows.data);else rows=Object.values(rows||{})}return rows.map(x=>cleanTempleRecent(x)).filter(Boolean).map(x=>({id:x.id,name:x.name,player:x.player,date:x.date_unix*1000,notable:!!x.notable_item,countDelta:templeCount(x.count_delta)||0,previousCount:templeCount(x.previous_count),currentCount:templeCount(x.current_count),groupPreviousCount:templeCount(x.group_previous_count),groupCurrentCount:templeCount(x.group_current_count),groupCountScope:String(x.group_count_scope||''),detectedAt:templeDateMs(x.detected_at),repeatDrop:!!x.repeat_drop,detectedFromCount:!!x.detected_from_count,source:String(x.source||'')})).sort((a,b)=>b.date-a.date)}
 function normalizeCatalog(){const map=new Map(),raw=state.temple?.catalog||state.temple?.items_catalog||state.temple?.all_items;const add=(id,name,cat='')=>{id=+id;if(!id)return;const old=map.get(id)||{id,name:`Item ${id}`,categories:new Set()};if(name&&String(name)!=='[object Object]')old.name=String(name);if(cat)old.categories.add(nice(cat));map.set(id,old)};if(Array.isArray(raw)){raw.forEach(x=>{if(typeof x==='number')add(x);else if(x&&typeof x==='object')add(x.id??x.item_id,x.name??x.item_name,x.category??x.tab)})}else if(raw&&typeof raw==='object'){for(const [k,v] of Object.entries(raw)){if(typeof v==='string')add(k,v);else if(v&&typeof v==='object')add(v.id??k,v.name??v.item_name,v.category??v.tab)}}for(const k of syncedKeys())for(const it of templeItemsFor(k))add(it.id,it.name,it._category);const cats=state.temple?.categories?.data??state.temple?.categories;if(cats&&typeof cats==='object'){const scan=(n,label='')=>{if(Array.isArray(n)){for(const v of n){if(Number.isFinite(+v))add(v,null,label);else if(v&&typeof v==='object'&&Number.isFinite(+(v.id??v.item_id)))add(v.id??v.item_id,v.name,label)}return}if(!n||typeof n!=='object')return;for(const [k,v] of Object.entries(n)){if(/^\d+$/.test(k)&&typeof v==='string')add(k,v,label);else scan(v,label||k)}};scan(cats)}return map}
 function templeCoverage(){const keys=syncedKeys();return{synced:keys.length,total:5,keys,unsynced:PLAYERS.filter(p=>!keys.includes(p.key)).map(p=>p.name)}}
 function collectionModel(all=false){const catalog=normalizeCatalog(),keys=syncedKeys().filter(k=>all||selectedMemberKeys().has(k)),byPlayer={};for(const p of PLAYERS)byPlayer[p.key]=new Map();for(const k of keys)for(const it of templeItemsFor(k)){const old=byPlayer[k].get(it.id)||{count:0,date:null};old.count=Math.max(old.count,+it.count||0);old.date=it.date||old.date;byPlayer[k].set(it.id,old)}const rows=[];const ids=new Set(catalog.keys());keys.forEach(k=>byPlayer[k].forEach((v,id)=>ids.add(id)));for(const id of ids){const cat=catalog.get(id)||{id,name:`Item ${id}`,categories:new Set()};const counts={},owners={};for(const p of PLAYERS){const rec=byPlayer[p.key].get(id);counts[p.key]=rec?.count||0;owners[p.key]=keys.includes(p.key)?counts[p.key]>0:null}const ownerKeys=keys.filter(k=>owners[k]);rows.push({id,name:cat.name,categories:[...(cat.categories||[])],counts,owners,ownerKeys,ownerCount:ownerKeys.length})}const union=rows.filter(r=>r.ownerCount>0),known=Math.max(catalog.size,...keys.map(k=>+(templePlayers()[k]?.data?.total_collections_available||0)),0);return{rows,keys,byPlayer,union,got:union.length,known:known||rows.length}}
@@ -198,8 +199,47 @@ function derivedLevelEvents(p){const arr=snapshotsFor(p.key),out=[];if(arr.lengt
 function derivedMilestones(p){const arr=snapshotsFor(p.key),out=[];if(arr.length<2)return out;const bossMarks=[25,50,100,250,500,1000,2000],totalMarks=[1000,1250,1500,1750,2000,2100,2200,2300,2350,2376],xpMarks=[10e6,20e6,30e6,50e6,75e6,100e6,150e6,200e6,300e6,500e6,750e6,1e9];for(let i=1;i<arr.length;i++){const a=arr[i-1],b=arr[i],ad=a.data||{},bd=b.data||{},date=b.createdAt;const al=+ad.skills?.overall?.level||0,bl=+bd.skills?.overall?.level||0;const tm=totalMarks.filter(x=>al<x&&bl>=x).at(-1);if(tm)out.push(milestoneEvent(p,date,`${fmt(tm)} total level`,'overall',tm>=2300?7:tm>=2000?5:3));const ax=+ad.skills?.overall?.experience||0,bx=+bd.skills?.overall?.experience||0,xm=xpMarks.filter(x=>ax<x&&bx>=x).at(-1);if(xm)out.push(milestoneEvent(p,date,`${compact(xm)} total XP`,'overall',xm>=200e6?7:xm>=100e6?5:3));for(const [k,v] of Object.entries(bd.bosses||{})){const av=Math.max(0,+ad.bosses?.[k]?.kills||0),bv=Math.max(0,+v.kills||0),bm=bossMarks.filter(x=>av<x&&bv>=x).at(-1);if(bm)out.push(milestoneEvent(p,date,`${fmt(bm)} ${nice(k)} KC`,k,bm>=1000?8:bm>=500?7:bm>=250?6:bm>=100?5:bm>=50?4:3,a.createdAt))}}return out}
 function officialAchievements(){const out=[];for(const p of PLAYERS){const a=state.achievements?.[p.key]||[];for(const x of Array.isArray(a)?a:[]){if(x.measure==='kills'||x.metric in (snapData(p.key)?.bosses||{}))continue;const rawDate=x.createdAt||x.date,d=rawDate&&Number.isFinite(+new Date(rawDate))&&+new Date(rawDate)>0?+new Date(rawDate):0;const name=x.name||x.title||`${nice(x.metric)} milestone`,match=String(name).match(/^(\d{1,3})\s+/),level=match?+match[1]:null,isLevel=x.measure==='experience'&&x.metric&&x.metric!=='overall'&&Number.isInteger(level)&&level>=2&&level<=126;out.push({type:isLevel?'level':'achievement',player:p.name,key:p.key,core:p.core,date:+new Date(d),name,metric:x.metric,measure:x.measure,level:isLevel?level:null,accuracy:+x.accuracy||0,score:achievementScore(x),source:'WOM achievement'})}}return out}
 function achievementScore(x){const s=String(x.name||'').toLowerCase(),n=+(s.match(/\d[\d,]*/)?.[0]||'0').replace(/,/g,'');if(/99\b/.test(s))return 9;if(/200m|100m/.test(s))return 9;if(n>=1000)return 8;if(n>=500)return 7;if(n>=250)return 6;if(n>=100)return 5;if(n>=50)return 4;if(n>=25)return 3;return 2}
+function chronicleGroupCounts(recent,keys){
+ const result=new Map(),byItem=new Map();
+ for(const d of recent){
+  if(d.groupPreviousCount!=null&&d.groupCurrentCount!=null&&d.previousCount!=null&&d.currentCount!=null&&d.groupPreviousCount>=d.previousCount&&d.groupCurrentCount>=d.currentCount)result.set(d,{groupPreviousCount:d.groupPreviousCount,groupCurrentCount:d.groupCurrentCount,groupCountScope:d.groupCountScope||'refresh'});
+  if(!playerByKey(playerKey(d.player)))continue;
+  if(!byItem.has(d.id))byItem.set(d.id,[]);
+  byItem.get(d.id).push(d);
+ }
+ if(keys.length!==PLAYERS.length)return result;
+ const logs=new Map(keys.map(key=>{
+  const counts=new Map();
+  for(const item of templeItemsFor(key))counts.set(item.id,Math.max(counts.get(item.id)||0,item.count||0));
+  return[key,counts];
+ }));
+ for(const [id,items] of byItem){
+  const counts=new Map(keys.map(key=>[key,logs.get(key).get(id)||0])),batches=new Map();
+  for(const d of items){
+   const time=d.detectedAt||d.date;
+   if(!batches.has(time))batches.set(time,[]);
+   batches.get(time).push(d);
+  }
+  // Rewind every saved count change, including events below the broadcast
+  // threshold. A gap or correction stops reconstruction rather than guessing.
+  for(const [time,batch] of [...batches].sort((a,b)=>b[0]-a[0])){
+   const changes=new Map();let complete=true;
+   for(const d of batch){
+    const key=playerKey(d.player),old=changes.get(key);
+    if(d.previousCount==null||d.currentCount==null||d.currentCount<=d.previousCount||counts.get(key)!==d.currentCount||old&&(old.previousCount!==d.previousCount||old.currentCount!==d.currentCount)){complete=false;break}
+    changes.set(key,d);
+   }
+   if(!complete)break;
+   const after=[...counts.values()].reduce((total,count)=>total+count,0);
+   for(const [key,d] of changes)counts.set(key,d.previousCount);
+   const before=[...counts.values()].reduce((total,count)=>total+count,0);
+   for(const d of batch)if(!result.has(d))result.set(d,{groupPreviousCount:before,groupCurrentCount:after,groupCountScope:'refresh'});
+  }
+ }
+ return result;
+}
 function chronicleDropEvents(){
- const recent=templeRecent(),ownersByItem=new Map(),keys=syncedKeys();
+ const recent=templeRecent(),ownersByItem=new Map(),keys=syncedKeys(),groupCounts=chronicleGroupCounts(recent,keys);
  const record=(id,key,date)=>{if(!key)return;let owners=ownersByItem.get(id);if(!owners){owners=new Map();ownersByItem.set(id,owners)}const old=owners.get(key);if(old===undefined||date>0&&(!old||date<old))owners.set(key,date)};
  // Group novelty always uses all five logs, including earlier owners outside
  // the selected members or the recent feed. Unknown dates cannot prove a first.
@@ -209,7 +249,7 @@ function chronicleDropEvents(){
   const key=playerKey(d.player),p=playerByKey(key),value=mastItemPrice(d.id),newPlayerUnlock=!d.repeatDrop&&!(d.previousCount>0),broadcast=value>500000;
   if(!p||!newPlayerUnlock&&!broadcast)return[];
   const owners=ownersByItem.get(d.id),newGroupUnlock=newPlayerUnlock&&keys.length===PLAYERS.length&&[...owners].every(([owner,date])=>owner===key||date>d.date);
-  return[{type:'drop',player:p.name,key,core:p.core,date:d.date,name:d.name,itemId:d.id,value,broadcast,newPlayerUnlock,newGroupUnlock,notable:d.notable||broadcast,score:d.notable||broadcast?9:3,countDelta:d.countDelta,previousCount:d.previousCount,currentCount:d.currentCount,repeatDrop:!newPlayerUnlock,detectedFromCount:d.detectedFromCount,source:d.source||'Collection Log recent unlock via Temple'}];
+  return[{type:'drop',player:p.name,key,core:p.core,date:d.date,name:d.name,itemId:d.id,value,broadcast,newPlayerUnlock,newGroupUnlock,notable:d.notable||broadcast,score:d.notable||broadcast?9:3,countDelta:d.countDelta,previousCount:d.previousCount,currentCount:d.currentCount,...groupCounts.get(d),repeatDrop:!newPlayerUnlock,detectedFromCount:d.detectedFromCount,source:d.source||'Collection Log recent unlock via Temple'}];
  });
 }
 function chronicleEvents(){const all=[...officialAchievements(),...PLAYERS.flatMap(derivedLevelEvents),...PLAYERS.flatMap(derivedMilestones),...chronicleDropEvents()];const seen=new Set(),out=[];for(const e of all.sort((a,b)=>(a.date>0?0:1)-(b.date>0?0:1))){const bucket=Math.round(e.date/864e5),sig=e.type==='level'&&e.metric&&e.level?`${e.key}|level|${e.metric}|${e.level}`:e.type==='drop'?`${e.key}|drop|${e.itemId}|${e.date}|${e.currentCount??''}`:`${e.key}|${e.type}|${String(e.name).toLowerCase()}|${bucket}`;if(seen.has(sig))continue;seen.add(sig);out.push(e)}return out.sort(window.UGHistory.compareEvents)}
@@ -227,7 +267,7 @@ function trackerGoals(p){
  return goals.slice(0,10);
 }
 function renderGoals(){const h=$('#chronicleGoals');if(!h)return;const expanded=new Set([...h.querySelectorAll('details[open]')].map(d=>d.dataset.goalPlayer));const line=g=>`<div class="goal-line"><span class="${g.skill?'skill-heading':''}">${g.skill?window.UGV21.skillIcon(g.skill):''}<span>${esc(g.label)}</span></span><b>${fmt(g.left)} away</b><small>${esc(g.source)} · suggested goal</small></div>`;h.innerHTML=selectedPlayers().map(p=>{const goals=trackerGoals(p);return `<article class="goal-card ${p.core?'':'side'}" data-goal-player="${p.key}" style="--pc:${p.color}"><div class="goal-head"><img src="${portraitFor(p)}" data-modern-src="${p.portrait}" alt=""><h3>${p.name}</h3></div>${goals.slice(0,4).map(line).join('')}${goals.length>4?`<details data-goal-player="${p.key}"${expanded.has(p.key)?' open':''}><summary>Show ${goals.length-4} more goals</summary>${goals.slice(4).map(line).join('')}</details>`:''}${goals.length?'':'<div class="muted">Not enough data for suggested goals.</div>'}</article>`}).join('')}
-function chronicleEventLink(e){if(e.type==='drop')return window.UGV21.itemLink(e.itemId,e.repeatDrop&&e.currentCount>1?`${e.name} · copy #${fmt(e.currentCount)}`:e.name);const data=snapData(e.key)||{},kind=e.metric in (data.skills||{})?(e.metric==='overall'&&/total level/i.test(e.name)?'level':'skill'):e.metric in (data.bosses||{})?'boss':e.metric in (data.activities||{})?'activity':e.metric in (data.computed||{})?'computed':null;return kind?window.UGV21.metricLink(kind,e.metric,e.name,e.type!=='level'):esc(e.name)}
+function chronicleEventLink(e){if(e.type==='drop')return window.UGV21.itemLink(e.itemId,e.repeatDrop&&e.currentCount>1?`${e.name} · #${fmt(e.currentCount)}`:e.name);const data=snapData(e.key)||{},kind=e.metric in (data.skills||{})?(e.metric==='overall'&&/total level/i.test(e.name)?'level':'skill'):e.metric in (data.bosses||{})?'boss':e.metric in (data.activities||{})?'activity':e.metric in (data.computed||{})?'computed':null;return kind?window.UGV21.metricLink(kind,e.metric,e.name,e.type!=='level'):esc(e.name)}
 let chronoFilter='all',chronoPage=1,chronoPageSize=100;
 function chroniclePagerHtml(total,totalPages,start,end){
  if(!total)return'';
@@ -241,7 +281,40 @@ function bindChroniclePager(){
  $$('[data-chrono-select]').forEach(select=>select.onchange=()=>go(select.value));
  $$('[data-chrono-size]').forEach(b=>b.onclick=()=>{chronoPageSize=b.dataset.chronoSize==='all'?'all':100;chronoPage=1;renderChronicle()});
 }
-async function renderChronicle(){const host=$('#chronicle');if(!host)return;if(!mastPrices)loadMastPrices().then(()=>{if(mastPrices&&document.body.dataset.page==='chronicle')renderChronicle()});const keys=selectedMemberKeys();let ev=chronicleEvents().filter(e=>keys.has(e.key));if(chronoFilter==='milestones')ev=ev.filter(e=>e.type==='achievement'||e.type==='level');else if(chronoFilter==='drops')ev=ev.filter(e=>e.type==='drop');else if(chronoFilter==='core')ev=ev.filter(e=>e.core);else if(chronoFilter==='side')ev=ev.filter(e=>!e.core);const total=ev.length,all=chronoPageSize==='all',totalPages=all?1:Math.max(1,Math.ceil(total/100));chronoPage=Math.min(Math.max(1,chronoPage),totalPages);const start=all?0:(chronoPage-1)*100,end=all?total:Math.min(total,start+100),pageEvents=ev.slice(start,end);let year=null,h='';for(const e of pageEvents){const y=e.date>0?new Date(e.date).getFullYear():'Date unknown';if(y!==year){h+=`<div class="chronicle-year">${y}</div>`;year=y}const side=e.core===false?'side':'',notable=e.notable||e.score>=8?'notable':'',broadcast=e.broadcast?'broadcast':'',kind=e.type==='drop'?(e.repeatDrop?'Repeat drop detected from Collection Log count change':'New Collection Log unlock for this player'):e.type==='level'?'Skill level gained via WOM snapshot comparison':'Stats milestone via WOM',countDetail=e.repeatDrop&&e.currentCount!=null?` · Collection Log count ${fmt(e.previousCount||0)} → ${fmt(e.currentCount)}${e.countDelta>1?` (+${fmt(e.countDelta)} copies)`:''}`:'',detectionDetail=e.detectedFromCount?' · exact drop time unavailable; detected on Collection Log refresh':'';h+=`<article class="chronicle-event ${side} ${notable} ${broadcast}" data-event-type="${e.type}" data-player-key="${esc(e.key)}"${e.newGroupUnlock?' data-group-unlock="true"':''}${e.level?` data-level="${e.level}" data-metric="${esc(e.metric)}"`:''}><div class="chronicle-date">${e.date>0?dateTime(e.date):'Date unknown · recorded by WOM'}${e.accuracy>0?` · WOM accuracy ±${Math.round(e.accuracy/36e5)}h`:''}</div><div class="chronicle-main">${e.type==='drop'?`<img src="https://static.runelite.net/cache/item/icon/${e.itemId}.png" alt="">`:e.type==='level'&&window.UGV21.skillIconUrl?.(e.metric)?`<img class="chronicle-skill-icon" src="${window.UGV21.skillIconUrl(e.metric)}" alt="${esc(nice(e.metric))}">`:''}<div><h4>${esc(e.player)} · ${chronicleEventLink(e)}</h4><p>${kind}${e.newGroupUnlock?' · <strong class="chronicle-group-unlock">New group Collection Log unlock</strong>':''}${e.type==='drop'?` · <span class="chronicle-item-price">${mastPrices?(e.value>0?`GE value: ${fmt(Math.round(e.value))} gp each`:'GE value unavailable'):'GE prices loading / unavailable'}</span>`:''}${e.broadcast?` · <span class="chronicle-broadcast">Loot broadcast · ${e.countDelta>1?`${fmt(e.countDelta)} × `:''}${mastMoney(e.value)} gp each</span>`:''}${countDetail}${detectionDetail}${e.source==='WOM snapshot'?' · derived from saved snapshot crossing':''}${e.type==='level'&&e.source==='WOM snapshot comparison'?' · every crossed level is listed':''}</p></div></div></article>`}host.innerHTML=h||'<div class="notice">No Chronicle events matched this filter.</div>';const pager=chroniclePagerHtml(total,totalPages,start,end);for(const id of ['#chroniclePagerTop','#chroniclePagerBottom']){const el=$(id);if(el)el.innerHTML=pager}bindChroniclePager();renderGoals();$$('[data-chrono-filter]').forEach(b=>b.classList.toggle('active',b.dataset.chronoFilter===chronoFilter))}
+function chronicleCountDetail(e){
+ if(e.type!=='drop'||e.previousCount==null||e.currentCount==null)return '';
+ const group=e.groupPreviousCount!=null&&e.groupCurrentCount!=null?`${fmt(e.groupPreviousCount)} → ${fmt(e.groupCurrentCount)}`:'not recorded';
+ return `<p class="chronicle-counts">Individual Collection Log count ${fmt(e.previousCount)} → ${fmt(e.currentCount)}, <span${e.groupCountScope==='refresh'?' title="Group totals across all five saved logs before and after the same Collection Log refresh"':''}>Group Collection Log count ${group}</span></p>`;
+}
+async function renderChronicle(){
+ const host=$('#chronicle');if(!host)return;
+ if(!mastPrices)loadMastPrices().then(()=>{if(mastPrices&&document.body.dataset.page==='chronicle')renderChronicle()});
+ const keys=selectedMemberKeys();let ev=chronicleEvents().filter(e=>keys.has(e.key));
+ if(chronoFilter==='milestones')ev=ev.filter(e=>e.type==='achievement'||e.type==='level');
+ else if(chronoFilter==='drops')ev=ev.filter(e=>e.type==='drop');
+ else if(chronoFilter==='core')ev=ev.filter(e=>e.core);
+ else if(chronoFilter==='side')ev=ev.filter(e=>!e.core);
+ const total=ev.length,all=chronoPageSize==='all',totalPages=all?1:Math.max(1,Math.ceil(total/100));
+ chronoPage=Math.min(Math.max(1,chronoPage),totalPages);
+ const start=all?0:(chronoPage-1)*100,end=all?total:Math.min(total,start+100),pageEvents=ev.slice(start,end);
+ let year=null,h='';
+ for(const e of pageEvents){
+  const y=e.date>0?new Date(e.date).getFullYear():'Date unknown';
+  if(y!==year){h+=`<div class="chronicle-year">${y}</div>`;year=y}
+  const side=e.core===false?'side':'',notable=e.notable||e.score>=8?'notable':'',broadcast=e.broadcast?'broadcast':'';
+  const kind=e.type==='drop'?(e.repeatDrop?'Repeat drop detected from Collection Log count change':'New Collection Log unlock for this player'):e.type==='level'?'Skill level gained via WOM snapshot comparison':'Stats milestone via WOM';
+  const dateLabel=`${e.date>0?dateTime(e.date):'Date unknown · recorded by WOM'}${e.accuracy>0?` · WOM accuracy ±${Math.round(e.accuracy/36e5)}h`:''}`;
+  const detection=e.detectedFromCount?` title="Exact drop time unavailable; detected on Collection Log refresh" aria-label="${esc(dateLabel)}. Exact drop time unavailable; detected on Collection Log refresh"`:'';
+  const image=e.type==='drop'?`<img src="https://static.runelite.net/cache/item/icon/${e.itemId}.png" alt="">`:e.type==='level'&&window.UGV21.skillIconUrl?.(e.metric)?`<img class="chronicle-skill-icon" src="${window.UGV21.skillIconUrl(e.metric)}" alt="${esc(nice(e.metric))}">`:'';
+  const price=e.type==='drop'?` · <span class="chronicle-item-price">${mastPrices?(e.value>0?`GE value: ${fmt(Math.round(e.value))} gp each`:'GE value unavailable'):'GE prices loading / unavailable'}</span>`:'';
+  h+=`<article class="chronicle-event ${side} ${notable} ${broadcast}" data-event-type="${e.type}" data-player-key="${esc(e.key)}"${e.newGroupUnlock?' data-group-unlock="true"':''}${e.level?` data-level="${e.level}" data-metric="${esc(e.metric)}"`:''}><div class="chronicle-date"${detection}>${dateLabel}</div><div class="chronicle-main">${image}<div><h4>${esc(e.player)} · ${chronicleEventLink(e)}</h4><p>${kind}${e.newGroupUnlock?' · <strong class="chronicle-group-unlock">New group Collection Log unlock</strong>':''}${price}${e.source==='WOM snapshot'?' · derived from saved snapshot crossing':''}${e.type==='level'&&e.source==='WOM snapshot comparison'?' · every crossed level is listed':''}</p>${chronicleCountDetail(e)}</div></div></article>`;
+ }
+ host.innerHTML=h||'<div class="notice">No Chronicle events matched this filter.</div>';
+ const pager=chroniclePagerHtml(total,totalPages,start,end);
+ for(const id of ['#chroniclePagerTop','#chroniclePagerBottom']){const el=$(id);if(el)el.innerHTML=pager}
+ bindChroniclePager();renderGoals();
+ $$('[data-chrono-filter]').forEach(b=>b.classList.toggle('active',b.dataset.chronoFilter===chronoFilter));
+}
 function bindChronicle(){$$('[data-chrono-filter]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{chronoFilter=b.dataset.chronoFilter;chronoPage=1;renderChronicle()}})}
 let eraWindowDays=7,timelineRange='365';
 const timelineRanges=[['365','1 year'],['max','Max'],['90','3 months'],['30','1 month'],['7','1 week']];

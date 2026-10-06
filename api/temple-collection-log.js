@@ -160,6 +160,11 @@ function logItems(log) {
 function derivedRecentRows(players, previous, freshRecent = [], detectedAt = Date.now()) {
   const rows = [];
   const cutoff = Number(previous?.fetchedAt) || 0;
+  const keys = Object.keys(PLAYERS);
+  const currentLogs = new Map(keys.filter((key) => validLog(players[key])).map((key) => [key, logItems(players[key])]));
+  const previousLogs = new Map(keys.filter((key) => validLog(previous?.players?.[key])).map((key) => [key, logItems(previous.players[key])]));
+  const completeGroup = currentLogs.size === keys.length && previousLogs.size === keys.length;
+  const groupCount = (logs, id) => keys.reduce((total, key) => total + (logs.get(key)?.get(id)?.count || 0), 0);
   const freshByItem = new Map();
   for (const raw of freshRecent) {
     const row = normalizeRecent(raw);
@@ -172,8 +177,8 @@ function derivedRecentRows(players, previous, freshRecent = [], detectedAt = Dat
     const currentLog = players[key];
     const previousLog = previous?.players?.[key];
     if (!validLog(currentLog) || !validLog(previousLog)) continue;
-    const current = logItems(currentLog);
-    const before = logItems(previousLog);
+    const current = currentLogs.get(key);
+    const before = previousLogs.get(key);
     for (const item of current.values()) {
       const old = before.get(item.id);
       const previousCount = Math.max(0, Number(old?.count) || 0);
@@ -197,6 +202,13 @@ function derivedRecentRows(players, previous, freshRecent = [], detectedAt = Dat
         previous_count: previousCount,
         current_count: currentCount,
         count_delta: countDelta,
+        // These are the all-member totals at the same saved refresh, not an
+        // invented ordering when several members obtain the item together.
+        ...(completeGroup ? {
+          group_previous_count: groupCount(previousLogs, item.id),
+          group_current_count: groupCount(currentLogs, item.id),
+          group_count_scope: 'refresh',
+        } : {}),
         repeat_drop: previousCount > 0,
         detected_from_count: !exactRecent && !newerItemTime,
         detected_at: detectedAt,
@@ -312,7 +324,10 @@ async function buildDocument(previous) {
   });
   const recentPlayers = recentResults.filter((result) => result.ok).map((result) => result.key);
   const freshRecent = recentResults.flatMap((result) => result.rows);
-  recentResults.forEach((result) => result.rows.forEach((row) => mergedRecent.set(recentKey(row), row)));
+  recentResults.forEach((result) => result.rows.forEach((row) => {
+    const key = recentKey(row);
+    mergedRecent.set(key, { ...mergedRecent.get(key), ...row });
+  }));
   const detectedAt = Date.now();
   const derivedRecent = derivedRecentRows(players, previous, freshRecent, detectedAt);
   derivedRecent.forEach((row) => mergedRecent.set(recentKey(row), row));

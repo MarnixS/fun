@@ -83,6 +83,9 @@ async function run() {
     assert.equal(repeat.previous_count, 1);
     assert.equal(repeat.current_count, 2);
     assert.equal(repeat.count_delta, 1);
+    assert.equal(repeat.group_previous_count, 5);
+    assert.equal(repeat.group_current_count, 6);
+    assert.equal(repeat.group_count_scope, 'refresh');
     assert.equal(repeat.detected_from_count, true);
     assert(!first.json.recent.some((row) => row.Code || !row.id || !row.name), 'error objects are never published as recent items');
     assert.equal(calls.filter((url) => url.includes('player_collection_log.php')).length, 5);
@@ -104,6 +107,11 @@ async function run() {
     assert.equal(forced.statusCode, 200);
     assert(calls.length > callCount, 'an explicit button refresh must bypass the in-memory cache');
     assert.equal(forced.headers.get('cache-control'), 'no-store');
+
+    const retained = await handler.buildDocument(first.json);
+    const retainedRepeat = retained.recent.find((row) => row.player === 'Big Dog Aura' && row.repeat_drop);
+    assert.equal(retainedRepeat.group_previous_count, 5, 'a repeated raw Temple item cannot erase saved group totals');
+    assert.equal(retainedRepeat.group_current_count, 6);
 
     const forbidden = await call({ origin: 'https://example.com' });
     assert.equal(forbidden.statusCode, 403);

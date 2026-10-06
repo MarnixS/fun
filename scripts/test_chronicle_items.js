@@ -2,7 +2,7 @@
 
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const source=fs.readFileSync('docs/assets/app.js','utf8');
-const start=source.indexOf('function chronicleDropEvents('),end=source.indexOf('\nfunction chronicleEvents(',start);
+const start=source.indexOf('function chronicleGroupCounts('),end=source.indexOf('\nfunction chronicleEvents(',start);
 assert(start>=0&&end>start);
 const PLAYERS=['dikste','big dog aura','lijpste','poep aura','lompste'].map(key=>({key,name:key,core:true}));
 let coverage=PLAYERS.map(p=>p.key),recent=[],prices={},logs=Object.fromEntries(coverage.map(key=>[key,[]]));
