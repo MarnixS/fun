@@ -38,6 +38,8 @@ jobs:
           node scripts/audit_hypothetical_header.js
           node scripts/test_mobile_navigation.js
           node scripts/audit_mast_overview.js
+          node scripts/test_chronicle_mast.js
+          node scripts/test_overview_clog_links.js
           node scripts/test_cumulative_filters.js
           node scripts/audit_cumulative_filters.js
           node scripts/test_kc_comparison.js
