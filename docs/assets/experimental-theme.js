@@ -95,7 +95,7 @@ function restoreImages(){
  document.querySelectorAll('img[data-modern-src]').forEach(image=>{const key=playerKeyFor(image);for(const name of ['src','srcset','alt','width','height']){const value=image.getAttribute('data-modern-'+name);if(value!==null)image.setAttribute(name,name==='src'?modernPlayerImage(key,value):value)}});
 }
 try{requested=localStorage.getItem(key)!=='off'}catch{storageAvailable=false}
-const iconMap={'../':'play.gif','index.html':'play.gif','clog-beta.html':'manual.gif','gim.html':'menu-icons/advanced-log.svg','hypothetical.html':'menu-icons/hypothetical-log.svg','rng.html':'menu-icons/rng-index.svg','hiscores.html':'hiscore.gif','cumulative-xp.html':'menu-icons/cumulative-xp.svg','progress.html':'status-icon.gif','time-machine.html':'worldmap.gif','chronicle.html':'manual.gif','history.html':'menu-icons/timeline.svg','goals.html':'menu-icons/goals.svg','kc-comparison.html':'menu-icons/kc-comparison.svg','nemesis.html':'create.gif','nemesis-beta.html':'create.gif','faq.html':'support.png','news.html':'comment.gif','experimental.html':'beta.gif'};
+const iconMap={'../':'play.gif','index.html':'play.gif','clog-beta.html':'manual.gif','gim.html':'menu-icons/advanced-log.svg','hypothetical.html':'menu-icons/hypothetical-log.svg','rng.html':'menu-icons/rng-index.svg','hiscores.html':'hiscore.gif','cumulative-xp.html':'menu-icons/cumulative-xp.svg','progress.html':'menu-icons/stat-progress.svg','time-machine.html':'worldmap.gif','chronicle.html':'manual.gif','history.html':'menu-icons/timeline.svg','goals.html':'menu-icons/goals.svg','kc-comparison.html':'menu-icons/kc-comparison.svg','nemesis.html':'create.gif','nemesis-beta.html':'create.gif','faq.html':'support.png','news.html':'comment.gif','experimental.html':'beta.gif'};
 function decoratedLink(link){
  const copy=link.cloneNode(true),icon=document.createElement('img');
  copy.className='osrs-menu-link'+(link.classList.contains('active')?' active':'');
@@ -139,7 +139,7 @@ function syncControls(){
 function apply(){
  if(enabled){
   root.dataset.theme='osrs';
-  if(!document.querySelector('#osrsThemeStyles')){const link=document.createElement('link');link.id='osrsThemeStyles';link.rel='stylesheet';link.href='assets/osrs-theme.css?v=16';link.setAttribute('blocking','render');document.head.append(link)}
+  if(!document.querySelector('#osrsThemeStyles')){const link=document.createElement('link');link.id='osrsThemeStyles';link.rel='stylesheet';link.href='assets/osrs-theme.css?v=17';link.setAttribute('blocking','render');document.head.append(link)}
   mount();
  }else{restoreImages();delete root.dataset.theme;document.querySelectorAll('[data-osrs-banner],[data-osrs-nav],[data-osrs-pets]').forEach(node=>node.remove())}
  syncControls();window.dispatchEvent(new CustomEvent('ug:theme-changed',{detail:{enabled}}));

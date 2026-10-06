@@ -32,7 +32,7 @@ html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .mast-status{posi
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .mast-status{width:min(1190px,calc(100% - 72px));margin-inline:auto}
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .banner-home-link{display:block}
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .banner-frame{border-image:none}
-html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .group-banner{width:100%;max-width:100%;height:auto;left:auto;transform:none;margin:0;mask-image:linear-gradient(to right,transparent 0 7.35%,#000 8.2% 92.6%,transparent 93.5% 100%)}
+html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .group-banner{width:103.5%;max-width:none;height:auto;position:relative;left:-1.75%;transform:none;margin:0;mask-image:linear-gradient(to right,transparent 0 6.7%,#000 6.98% 93.02%,transparent 93.3% 100%)}
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .osrs-header-title{display:block;position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @media(max-width:950px){html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .mast-status{width:calc(100% - 42px)}}
 @media(max-width:700px){html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .mast-status{width:calc(100% - 24px)}}
@@ -180,7 +180,7 @@ html[data-theme="osrs"] main .experimental-card h3{font-family:OSRSPetrock,Georg
 html[data-theme="osrs"] main .experimental-credits{color:#51432d}
 html[data-theme="osrs"] main .experimental-credits summary{color:#352613}
 html[data-theme="osrs"] main .feature-beta{background:#000;color:#d9c27e;border-color:#382418}
-html[data-theme="osrs"] main :is(.v22-clog-quick>div,.xp-skill-filter,.kc-card){background:rgba(89,64,28,.07)!important;background-image:none!important;color:#352613!important;border-color:#826d40!important;box-shadow:none!important}
+html[data-theme="osrs"] main :is(.v22-clog-quick>:is(div,a),.xp-skill-filter,.kc-card){background:rgba(89,64,28,.07)!important;background-image:none!important;color:#352613!important;border-color:#826d40!important;box-shadow:none!important}
 html[data-theme="osrs"] main :is(.v22-clog-quick span,.v22-clog-quick b,.v22-clog-quick small,.sidecast-title,.kc-lead,.kc-player-head,.kc-player-head>span,.kc-player-head b,.kc-player-detail small,.kc-unknown,.kc-card-note,.kc-card-head small,.kc-pie-wrap figcaption,.kc-participants){color:#51432d!important}
 html[data-theme="osrs"] main .xp-skill-filter summary{color:#352613}
 html[data-theme="osrs"] main #cumulativeTable .xp-total-row{background:rgba(68,101,25,.15)!important;border-color:#556931}
@@ -264,11 +264,11 @@ html[data-theme="osrs"] .osrs-banner-pet img{position:absolute;max-width:none;he
 /* Overview panels match the stone frame and bitmap text of the game interfaces. */
 html[data-theme="osrs"] body[data-page="home"] .player-card{background:#494438 url('../img/osrs-theme/panels/stone-texture.svg') repeat!important;color:#e7d7b3!important;border:4px solid #19170f!important;border-image:url('../img/osrs-theme/panels/stone-frame.svg') 4 / 4px / 0 stretch!important;box-shadow:none!important}
 html[data-theme="osrs"] body[data-page="home"] .player-card-head{background:#39352b!important;border:2px inset #766c52!important;padding:6px;min-width:0}
-html[data-theme="osrs"] body[data-page="home"] .player-card h3{color:#ff981f!important;font:var(--type-game-heading)/1.15 OSRSGame,'Trebuchet MS',sans-serif;text-shadow:1px 1px #000}
+html[data-theme="osrs"] body[data-page="home"] .player-card h3{color:var(--pc)!important;font:var(--type-game-heading)/1.15 OSRSGame,'Trebuchet MS',sans-serif;text-shadow:1px 1px #000}
 html[data-theme="osrs"] body[data-page="home"] .player-portrait{background:#302d24;box-shadow:inset 1px 1px #211e16,inset -1px -1px #766c52}
 html[data-theme="osrs"] body[data-page="home"] .player-card :is(.player-role,.player-mantra,.overview-goal small){color:#d6c5a3!important}
 html[data-theme="osrs"] body[data-page="home"] .player-mantra{font:var(--type-game-label)/1.3 OSRSGame,'Trebuchet MS',sans-serif;text-shadow:1px 1px #000}
-html[data-theme="osrs"] body[data-page="home"] .player-card :is(.stat-box,.overview-goal,.v22-clog-quick>div){background:#39352b!important;color:#e7d7b3!important;border:2px solid #211f17!important;border-bottom-color:#73684e!important;border-right-color:#73684e!important;box-shadow:inset 1px 1px #2b271e!important}
+html[data-theme="osrs"] body[data-page="home"] .player-card :is(.stat-box,.overview-goal,.v22-clog-quick>:is(div,a)){background:#39352b!important;color:#e7d7b3!important;border:2px solid #211f17!important;border-bottom-color:#73684e!important;border-right-color:#73684e!important;box-shadow:inset 1px 1px #2b271e!important}
 html[data-theme="osrs"] body[data-page="home"] .player-card .stat-box{display:flex;flex-direction:column;justify-content:space-between;gap:5px}
 html[data-theme="osrs"] body[data-page="home"] .player-card :is(.stat-box span,.v22-clog-quick span,.overview-goal-head){color:#ff981f!important;font:var(--type-game-label)/1.3 OSRSGame,'Trebuchet MS',sans-serif;text-shadow:1px 1px #000}
 html[data-theme="osrs"] body[data-page="home"] .player-card :is(.stat-box b,.v22-clog-quick b){color:#ffff00!important;font:var(--type-value)/1.15 OSRSGame,'Trebuchet MS',sans-serif;text-shadow:1px 1px #000}
@@ -323,3 +323,15 @@ html[data-theme="osrs"] body main .player-card .player-mantra{font-size:var(--ty
 html[data-theme="osrs"] body main .v21-member-list input[type="checkbox"]:checked{background-size:calc(var(--control-mark) - .25rem) calc(var(--control-mark) - .25rem)}
 html[data-theme="osrs"] body main :is(input[type="checkbox"],input[type="radio"]):checked::after{width:.5rem;height:.25rem;left:.125rem;top:.1875rem;border-width:0 0 .1875rem .1875rem}
 html[data-theme="osrs"] body main .beta-stage .beta-legend{color:#e7d7b3!important;background:transparent!important}
+
+html[data-theme="osrs"] main .clog-column-sort{background:transparent!important;border:0!important;color:inherit!important;padding:4px 0!important;box-shadow:none}
+html[data-theme="osrs"] main .clog-column-sort:hover{text-decoration:underline}
+html[data-theme="osrs"] body[data-page="home"] .player-card .v22-clog-quick>a:hover{background:#484031!important}
+html[data-theme="osrs"] body[data-page="home"] .player-card .v22-clog-quick>a:focus-visible{outline:2px solid #ffff00;outline-offset:2px}
+@media(min-width:1180px){
+ html[data-theme="osrs"] body .mast-status-six .mast-stat:not(.mast-stat-value) .mast-card-body{justify-content:space-evenly}
+ html[data-theme="osrs"] body .mast-status-six .mast-stat-clog .mast-card-body>b{font-size:28px!important}
+ html[data-theme="osrs"] body .mast-status-six .mast-stat-xp [data-mast-xp]{font-size:20px!important;white-space:nowrap!important;overflow-wrap:normal!important}
+ html[data-theme="osrs"] body .mast-status-six .mast-stat-level .mast-achievement-row>b{font-size:22px!important}
+ html[data-theme="osrs"] body .mast-status-six .mast-stat-weekly [data-mast-weekly-xp]{font-size:17px!important}
+}
