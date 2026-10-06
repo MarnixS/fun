@@ -55,7 +55,7 @@ function swapImage(image,target,player='',banner=false){
  if(image.dataset.modernSrc){const original=originalImages.get(image);original.src=image.dataset.modernSrc;original.alt=image.getAttribute('data-modern-alt')??image.getAttribute('alt')}
  if(current===target){if(player)image.dataset.osrsPlayer=player;return}
  image.setAttribute('src',target);image.removeAttribute('srcset');if(player)image.dataset.osrsPlayer=player;
- if(banner){image.alt='Original in-game appearances of Dikste, Big Dog Aura, Lijpste, Poep Aura and Lompste in an Old School courtyard';image.width=2048;image.height=690}
+ if(banner){const cohesive=image.dataset.osrsHeader==='cohesive';image.alt=cohesive?'United Gimps: Dikste, Big Dog Aura, Lijpste, Poep Aura and Lompste with their pets in an Old School courtyard':'Original in-game appearances of Dikste, Big Dog Aura, Lijpste, Poep Aura and Lompste in an Old School courtyard';image.width=cohesive?1536:2048;image.height=cohesive?512:690}
 }
 function refreshImages(){
  if(!enabled||typeof document==='undefined'||!document.body)return;
@@ -63,7 +63,7 @@ function refreshImages(){
   const key=playerKeyFor(image);
   if(playerFiles[key]){swapImage(image,'img/osrs-theme/players/'+playerFiles[key]+'.png',key);framePortrait(image,key)}
  });
- document.querySelectorAll('.group-banner').forEach(image=>{swapImage(image,'img/osrs-theme/united-gimps-plain-banner.webp','',true);mountPets(image)});
+ document.querySelectorAll('.group-banner').forEach(image=>{if(image.dataset.osrsHeader==='cohesive')swapImage(image,'img/osrs-theme/united-gimps-cohesive-banner.jpg','',true);else{swapImage(image,'img/osrs-theme/united-gimps-plain-banner.webp','',true);mountPets(image)}});
  document.querySelectorAll('.mast-crest').forEach(image=>swapImage(image,'img/osrs-theme/group-ironman-helm.png'));
  for(const image of originalImages.keys())if(!image.isConnected){originalImages.delete(image);const frame=portraitFrames.get(image);if(frame?.isConnected&&!frame.children.length)frame.remove();portraitFrames.delete(image)}
 }
@@ -104,7 +104,7 @@ function decoratedLink(link){
 function mount(){
  if(!ready||!enabled)return;
  watchImages();
- if(!document.querySelector('[data-osrs-banner]')){
+ if(!document.querySelector('[data-osrs-banner],.group-banner[data-osrs-header="cohesive"]')){
   const mast=document.querySelector('.mast');
   if(mast){
    const banner=document.createElement('a'),left=document.createElement('span'),title=document.createElement('h1'),mark=document.createElement('span'),right=document.createElement('span');
@@ -139,7 +139,7 @@ function syncControls(){
 function apply(){
  if(enabled){
   root.dataset.theme='osrs';
-  if(!document.querySelector('#osrsThemeStyles')){const link=document.createElement('link');link.id='osrsThemeStyles';link.rel='stylesheet';link.href='assets/osrs-theme.css?v=14';link.setAttribute('blocking','render');document.head.append(link)}
+  if(!document.querySelector('#osrsThemeStyles')){const link=document.createElement('link');link.id='osrsThemeStyles';link.rel='stylesheet';link.href='assets/osrs-theme.css?v=16';link.setAttribute('blocking','render');document.head.append(link)}
   mount();
  }else{restoreImages();delete root.dataset.theme;document.querySelectorAll('[data-osrs-banner],[data-osrs-nav],[data-osrs-pets]').forEach(node=>node.remove())}
  syncControls();window.dispatchEvent(new CustomEvent('ug:theme-changed',{detail:{enabled}}));

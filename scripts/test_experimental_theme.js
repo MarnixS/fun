@@ -14,9 +14,9 @@ async function finishModern(page){page.d.querySelector('#modernThemeStyles').dis
  const fresh=open(),{w,d}=fresh;
  assert(w.UGExperimentalTheme.enabled);assert.equal(d.documentElement.dataset.theme,'osrs');
  assert(d.querySelector('#osrsThemeStyles'));assert(!d.querySelector('#modernThemeStyles'));assert.equal(fresh.requests.length,0,'Old School never requests the Modern portrait source');
- assert.equal(d.querySelector('.group-banner').getAttribute('src'),'img/osrs-theme/united-gimps-plain-banner.webp');
+ assert.equal(d.querySelector('.group-banner').getAttribute('src'),'img/osrs-theme/united-gimps-cohesive-banner.jpg');
  assert.equal(d.querySelector('[data-theme-choice][data-selected="true"]').textContent,'Old School');
- assert.equal(d.querySelectorAll('.osrs-menu-box').length,4);assert.equal(d.querySelectorAll('[data-osrs-banner]').length,1);assert.equal(d.querySelectorAll('[data-osrs-nav]').length,1);
+ assert.equal(d.querySelectorAll('.osrs-menu-box').length,4);assert.equal(d.querySelectorAll('[data-osrs-banner]').length,0);assert.equal(d.querySelectorAll('.group-banner[data-osrs-header="cohesive"]').length,1);assert.equal(d.querySelectorAll('[data-osrs-pets]').length,0);assert.equal(d.querySelectorAll('[data-osrs-nav]').length,1);
  assert.equal(d.querySelectorAll('.osrs-menu-link').length,d.querySelectorAll('.nav-inner .nav-link').length);
  assert(d.querySelector('[data-osrs-nav] a[href="cumulative-xp.html"]'));assert(!d.querySelector('[data-osrs-nav] a[href="nemesis.html"]'));assert(d.querySelector('.experimental-card a[href="nemesis.html"]'));
  const featurePages=['gim.html','hypothetical.html','rng.html','goals.html','history.html','cumulative-xp.html','kc-comparison.html'],featureSources=[];
@@ -33,7 +33,7 @@ async function finishModern(page){page.d.querySelector('#modernThemeStyles').dis
  assert.equal(d.querySelector('.group-banner').getAttribute('src'),'img/united-gimps-banner.webp');assert.equal(d.querySelector('.group-banner').width,1200);assert.equal(d.querySelector('.group-banner').height,265);
  assert.equal(w.UGExperimentalTheme.playerImage('dikste','fallback.png'),'data:image/png;base64,AA==','the deferred original Modern portrait remains available');
  toggle.click();assert(w.UGExperimentalTheme.enabled);assert.equal(w.localStorage.getItem(key),'on');assert.equal(d.querySelector('#osrsThemeStyles'),oldStyles);
- await w.UGExperimentalTheme.setEnabled(true);assert.equal(d.querySelectorAll('[data-osrs-nav]').length,1);assert.equal(d.querySelectorAll('[data-osrs-banner]').length,1);assert.equal(d.querySelector('.nav-inner'),originalNav);assert.equal(d.querySelector('main'),originalMain);assert.equal(w.localStorage.getItem('ug:members'),'keep');assert.equal(fresh.requests.length,1,'toggling reuses downloaded Modern portraits');
+ await w.UGExperimentalTheme.setEnabled(true);assert.equal(d.querySelectorAll('[data-osrs-nav]').length,1);assert.equal(d.querySelectorAll('[data-osrs-banner]').length,0);assert.equal(d.querySelectorAll('.group-banner[data-osrs-header="cohesive"]').length,1);assert.equal(d.querySelectorAll('[data-osrs-pets]').length,0);assert.equal(d.querySelector('.nav-inner'),originalNav);assert.equal(d.querySelector('main'),originalMain);assert.equal(w.localStorage.getItem('ug:members'),'keep');assert.equal(fresh.requests.length,1,'toggling reuses downloaded Modern portraits');
  w.localStorage.setItem(key,'off');w.dispatchEvent(new w.StorageEvent('storage',{key,newValue:'off'}));await finishModern(fresh);assert(!w.UGExperimentalTheme.enabled);
  w.localStorage.clear();w.dispatchEvent(new w.StorageEvent('storage',{key:null}));assert(w.UGExperimentalTheme.enabled);fresh.dom.window.close();
  const saved=open(false);assert(saved.w.UGExperimentalTheme.enabled,'the initial HTML is Old School even while a saved Modern choice loads');assert(saved.d.querySelector('#modernThemeStyles'));await finishModern(saved);assert(!saved.w.UGExperimentalTheme.enabled);assert.equal(saved.d.querySelector('.group-banner').getAttribute('src'),'img/united-gimps-banner.webp');saved.dom.window.close();
@@ -45,7 +45,7 @@ async function finishModern(page){page.d.querySelector('#modernThemeStyles').dis
   const page=new JSDOM(text).window.document;assert.equal(page.documentElement.dataset.theme,'osrs',file+': Old School before scripts');
   const style=page.querySelector('head #osrsThemeStyles');assert(style&&style.rel==='stylesheet'&&!style.media&&!style.disabled,file+': parser-discovered render-blocking theme CSS');
   assert(text.indexOf('id="osrsThemeStyles"')<text.indexOf('src="assets/experimental-theme.js'),file+': CSS precedes theme bootstrap');assert(!page.querySelector('[href*="modern-theme.css"]'),file+': Modern palette stays deferred');
-  assert.equal(page.querySelectorAll('#osrsThemeSwitch').length,1);assert.equal(page.querySelector('.group-banner').getAttribute('src'),'img/osrs-theme/united-gimps-plain-banner.webp');assert.equal(page.querySelector('.group-banner').dataset.modernSrc,'img/united-gimps-banner.webp');page.defaultView.close();
+  assert.equal(page.querySelectorAll('#osrsThemeSwitch').length,1);assert.equal(page.querySelector('.group-banner').getAttribute('src'),'img/osrs-theme/united-gimps-cohesive-banner.jpg');assert.equal(page.querySelector('.group-banner').dataset.modernSrc,'img/united-gimps-banner.webp');page.defaultView.close();
  }
  const css=fs.readFileSync('docs/assets/osrs-theme.css','utf8'),assets=JSON.parse(fs.readFileSync('docs/img/osrs-theme/sources.json'));
  for(const asset of assets.assets)assert(fs.existsSync('docs/img/osrs-theme/'+asset.file),asset.file);

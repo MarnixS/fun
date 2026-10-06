@@ -21,6 +21,21 @@ html[data-theme="osrs"] .mast{border:0;background:transparent;box-shadow:none}
 html[data-theme="osrs"] .mast-wordmark{display:none}
 html[data-theme="osrs"] .banner-frame{background:transparent;padding:0;margin:0 0 14px;border:0;overflow:hidden;border-image:url('../img/osrs-theme/border.webp') 62 / 14px / 0 stretch}
 html[data-theme="osrs"] .group-banner{border:0;box-shadow:none}
+/* The approved artwork is a single header. Its edge mask reveals the original
+   page pillars above the supplied pillar strips. One continuous background
+   keeps the stones and branches aligned without repainting or a separate join. */
+.osrs-header-title{display:none}
+html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"]{position:relative}
+html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"]>.wrap{width:100%}
+html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .theme-toolbar,
+html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .mast-status{position:relative;z-index:2}
+html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .mast-status{width:min(1190px,calc(100% - 72px));margin-inline:auto}
+html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .banner-home-link{display:block}
+html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .banner-frame{border-image:none}
+html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .group-banner{width:100%;max-width:100%;height:auto;left:auto;transform:none;margin:0;mask-image:linear-gradient(to right,transparent 0 7.35%,#000 8.2% 92.6%,transparent 93.5% 100%)}
+html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .osrs-header-title{display:block;position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@media(max-width:950px){html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .mast-status{width:calc(100% - 42px)}}
+@media(max-width:700px){html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .mast-status{width:calc(100% - 24px)}}
 html[data-theme="osrs"] .mast-status{background:transparent;border:0;gap:10px;padding:6px 0 18px}
 html[data-theme="osrs"] .mast-stat{background:transparent url('../img/osrs-theme/compare_users.gif') no-repeat center/100% 100%;border:0;box-shadow:none;border-radius:0;padding:17px 20px;color:#fff;min-height:165px}
 html[data-theme="osrs"] .mast-card-title span{color:#d9c27e;font:700 12px Arial,sans-serif;letter-spacing:0;text-transform:none}
