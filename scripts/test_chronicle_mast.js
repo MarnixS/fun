@@ -6,10 +6,11 @@ const row=(id,name,offset,extra={})=>({id,name,player:'Lijpste',date_unix:stamp-
 temple.recent=[
  row(9001,'Cheap duplicate stack',0,{current_count:101,count_delta:100,notable_item:true}),
  row(9002,'Exactly 500k duplicate',1),
- row(9003,'Valuable duplicate',2),
+ row(9003,'Valuable duplicate',2,{detected_from_count:true}),
  row(9004,'Unpriced personal unlock',3,{previous_count:0,current_count:1,repeat_drop:false}),
  row(9005,'Unknown player item',4,{player:'Unknown member',previous_count:0,repeat_drop:false})
 ];
+for(const [key,log] of Object.entries(temple.players))log.data.items.chronicle_mast_test=temple.recent.slice(0,4).map(row=>({id:row.id,name:row.name,count:key==='lijpste'?row.current_count:key==='big dog aura'&&row.id===9003?4:0}));
 const prices={9001:{high:400000,low:400000},9002:{high:500000,low:500000},9003:{high:500001,low:500001}};
 const server=http.createServer((req,res)=>{const file=path.join(process.cwd(),'docs',new URL(req.url,'http://localhost').pathname);try{res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.json')?'application/json':file.endsWith('.css')?'text/css':'text/html');res.end(fs.readFileSync(file))}catch{res.statusCode=404;res.end()}});
 server.listen(0,'127.0.0.1',async()=>{
@@ -23,7 +24,14 @@ server.listen(0,'127.0.0.1',async()=>{
   await waitFor(()=>d.querySelector('[data-mast-drop]')?.textContent.includes('Valuable duplicate'),'eligible latest item after prices load');
   await waitFor(()=>dropIds().length===2,'same eligible Chronicle events');
   assert.equal(latestId(),9003);assert.equal(latestId(),dropIds()[0]);
-  assert(d.querySelector('[data-mast-drop]').textContent.includes('copy #3'),'repeat copies use the Chronicle label');
+  assert(d.querySelector('[data-mast-drop]').textContent.includes('Valuable duplicate · #3'),'repeat copies use the Chronicle label');
+  const valuable=d.querySelector('#chronicle .item-link[data-item-id="9003"]').closest('article');
+  assert.equal(valuable.querySelector('h4').textContent,'Lijpste · Valuable duplicate · #3');
+  assert.equal(valuable.querySelector('.chronicle-counts').textContent,'Individual Collection Log count 1 → 3, Group Collection Log count 5 → 7');
+  assert.equal(valuable.querySelectorAll('.chronicle-item-price').length,1);
+  assert.equal((valuable.textContent.match(/gp each/g)||[]).length,1,'the GE value is displayed once');
+  assert(!valuable.textContent.includes('Loot broadcast')&&!valuable.textContent.includes('exact drop time unavailable'),'supporting prose stays concise');
+  assert.match(valuable.querySelector('.chronicle-date').title,/Exact drop time unavailable/,'detection timing remains available on the date');
   assert.equal(d.querySelector('[data-mast-drop-avatar]').alt,'Lijpste');
   assert.deepEqual(dropIds(),[9003,9004],'cheap stacks, exactly 500k and unknown players are excluded');
   // Changing a quote must immediately re-evaluate the same eligibility in both places.
@@ -38,7 +46,7 @@ server.listen(0,'127.0.0.1',async()=>{
   assert.equal(d.querySelector('[data-mast-drop]').textContent,'No recent item activity');
   assert.equal(d.querySelector('[data-mast-drop-icon]').hidden,true);assert.equal(d.querySelector('[data-mast-drop-avatar]').hidden,true);
   assert.equal(result.errors.length,0,result.errors.join('; '));
-  console.log('Latest item matches Chronicle eligibility and copy labels: personal unlocks, strict 500k unit threshold, cheap stacks, price updates, unknown players, all-member scope and empty states passed.');
+  console.log('Latest item matches Chronicle eligibility and repeat labels: personal unlocks, strict 500k unit threshold, cheap stacks, price updates, unknown players, all-member scope and empty states passed.');
   dom.window.close();server.close();process.exit(0);
  }catch(e){console.error(e);dom?.window.close();server.close();process.exit(1)}
 });

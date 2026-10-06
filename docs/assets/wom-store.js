@@ -71,7 +71,7 @@ function mergeTemple(a,b){
  for(const key of new Set([...Object.keys(a.bossKc||{}),...Object.keys(b.bossKc||{})])){
   bossKc[key]={...(a.bossKc?.[key]||{}),...(b.bossKc?.[key]||{})};
  }
- const recent=new Map();for(const row of [...(older.recent||[]),...(newer.recent||[])]){const who=String(row.player_name_with_capitalization||row.player||'').toLowerCase(),when=millis(row.date_unix||row.date);recent.set([who,row.id||row.item_id,when].join('|'),row)}
+ const recent=new Map();for(const row of [...(older.recent||[]),...(newer.recent||[])]){const who=String(row.player_name_with_capitalization||row.player||'').toLowerCase(),when=millis(row.date_unix||row.date),key=[who,row.id||row.item_id,when].join('|');recent.set(key,{...recent.get(key),...row})}
  return {...older,...newer,players,bossKc,membersWithClog:Object.keys(players).length,recent:[...recent.values()].sort((x,y)=>millis(y.date_unix||y.date)-millis(x.date_unix||x.date))};
 }
 async function templeLatest(local){const saved=await access(false,null,TKEY);return mergeTemple(saved,local)}
