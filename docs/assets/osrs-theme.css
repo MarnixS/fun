@@ -5,7 +5,14 @@
 @font-face{font-family:OSRSPetrockLight;src:url('../img/osrs-theme/fonts/Kingthings_Petrock_light-webfont.woff') format('woff');font-weight:400;font-style:normal;font-display:swap}
 html[data-theme="osrs"]{--bg:#000;--panel:#c7b17d;--panel2:#d1bd8c;--panel3:#baa16d;--edge:#70552e;--edge2:#382418;--gold:#544019;--gold2:#3f321a;--text:#21190e;--muted:#51432d;--green:#336312;--red:#8d251a;--shadow:#0007;background:#000;scrollbar-color:#85754c #21190f}
 html[data-theme="osrs"] body{background:#000 url('../img/osrs-theme/bg2.jpg') repeat-y center top;background-size:max(910px,100%) auto;color:#21190e;font-family:Arial,Helvetica,sans-serif;font-size:var(--type-body);line-height:1.55}
-html[data-theme="osrs"] .wrap{width:min(1190px,calc(100% - 72px))}
+/* Reserve the pillars, foliage and parchment's overhanging end caps. Below
+   the background's native width, reduce the gutter as its sides crop away. */
+html[data-theme="osrs"]{
+ --osrs-pillar-crop:max(0px,calc((910px - 100vw)/2));
+ --osrs-page-gutter:max(12px,calc(max(72.8px,8vw) - var(--osrs-pillar-crop)));
+ --osrs-page-width:min(1190px,calc(100% - var(--osrs-page-gutter) - var(--osrs-page-gutter)));
+}
+html[data-theme="osrs"] .wrap{width:var(--osrs-page-width)}
 html[data-theme="osrs"] .site-top{background:transparent;border:0;padding-top:12px}
 /* Match the logo's visible artwork to the original characters' height;
    its transparent padding remains intact at every viewport width. */
@@ -29,14 +36,18 @@ html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"]{position:relative
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"]>.wrap{width:100%}
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .theme-toolbar,
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .mast-status{position:relative;z-index:2}
-html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .mast-status{width:min(1190px,calc(100% - 72px));margin-inline:auto}
+html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .mast-status{width:var(--osrs-page-width);margin-inline:auto}
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .banner-home-link{display:block}
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .banner-frame{border-image:none}
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .group-banner{width:103.5%;max-width:none;height:auto;position:relative;left:-1.75%;transform:none;margin:0;mask-image:linear-gradient(to right,transparent 0 6.7%,#000 6.98% 93.02%,transparent 93.3% 100%)}
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .osrs-header-title{display:block;position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-@media(max-width:950px){html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .mast-status{width:calc(100% - 42px)}}
-@media(max-width:700px){html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .mast-status{width:calc(100% - 24px)}}
+/* Keep the artwork aligned with the 910px background in narrow desktop and
+   portrait layouts. Once the pillars are off-screen, fill the viewport with
+   the complete central artwork instead of retaining empty masked margins. */
+@media(max-width:910px){html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .group-banner{width:min(116.25%,941.85px);left:50%;transform:translateX(-50%)}}
 html[data-theme="osrs"] .mast-status{background:transparent;border:0;gap:10px;padding:6px 0 18px}
+/* Six cards need enough room inside the narrower, pillar-safe page column. */
+@media(min-width:1180px) and (max-width:1279px){html[data-theme="osrs"] .mast-status.mast-status-six{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 html[data-theme="osrs"] .mast-stat{background:transparent url('../img/osrs-theme/compare_users.gif') no-repeat center/100% 100%;border:0;box-shadow:none;border-radius:0;padding:17px 20px;color:#fff;min-height:165px}
 html[data-theme="osrs"] .mast-card-title span{color:#d9c27e;font:700 12px Arial,sans-serif;letter-spacing:0;text-transform:none}
 html[data-theme="osrs"] .mast-stat b,html[data-theme="osrs"] .mast-stat strong{color:#fff;font-family:Arial,Helvetica,sans-serif;text-shadow:1px 1px #000}
@@ -230,10 +241,9 @@ html[data-theme="osrs"] .footer{color:#fff;background:transparent;text-align:cen
 html[data-theme="osrs"] .fan-disclaimer{color:#c9c9c9}
 html[data-theme="osrs"] :focus-visible{outline:2px solid #426a15;outline-offset:3px}
 html[data-theme="osrs"] .osrs-navigation :focus-visible{outline-color:#b5e06c}
-@media(max-width:950px){html[data-theme="osrs"] .osrs-navigation-groups{grid-template-columns:repeat(2,minmax(0,1fr))}html[data-theme="osrs"] .osrs-menu-link{min-height:44px}html[data-theme="osrs"] .wrap{width:calc(100% - 42px)}html[data-theme="osrs"] main.wrap{padding:26px 23px}}
+@media(max-width:950px){html[data-theme="osrs"] .osrs-navigation-groups{grid-template-columns:repeat(2,minmax(0,1fr))}html[data-theme="osrs"] .osrs-menu-link{min-height:44px}html[data-theme="osrs"] main.wrap{padding:26px 23px}}
 @media(max-width:700px){
  html[data-theme="osrs"] body{background-size:910px auto}
- html[data-theme="osrs"] .wrap{width:calc(100% - 24px)}
  html[data-theme="osrs"] .osrs-banner{margin:8px auto 12px}
  html[data-theme="osrs"] .mast-stat{min-height:174px;padding:15px 14px}
  html[data-theme="osrs"] .mast-card-title span{font-size:11px}

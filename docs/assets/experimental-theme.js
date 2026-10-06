@@ -139,7 +139,7 @@ function syncControls(){
 function apply(){
  if(enabled){
   root.dataset.theme='osrs';
-  if(!document.querySelector('#osrsThemeStyles')){const link=document.createElement('link');link.id='osrsThemeStyles';link.rel='stylesheet';link.href='assets/osrs-theme.css?v=17';link.setAttribute('blocking','render');document.head.append(link)}
+  if(!document.querySelector('#osrsThemeStyles')){const link=document.createElement('link');link.id='osrsThemeStyles';link.rel='stylesheet';link.href='assets/osrs-theme.css?v=18';link.setAttribute('blocking','render');document.head.append(link)}
   mount();
  }else{restoreImages();delete root.dataset.theme;document.querySelectorAll('[data-osrs-banner],[data-osrs-nav],[data-osrs-pets]').forEach(node=>node.remove())}
  syncControls();window.dispatchEvent(new CustomEvent('ug:theme-changed',{detail:{enabled}}));
