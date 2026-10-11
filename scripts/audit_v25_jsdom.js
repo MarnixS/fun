@@ -320,7 +320,7 @@ async function testWomRefreshUpdatesChronicleAndPersists() {
   const { document } = window;
   click(window, document.querySelector('[data-refresh-wom]'));
   await waitFor(
-    () => document.querySelector('#pageNotice')?.textContent.includes('2 new level events added to Chronicle'),
+    () => document.querySelector('[data-sync-source="wom"] [role="progressbar"]')?.getAttribute('aria-valuetext')?.includes('2 new level events added to Chronicle'),
     'WOM refresh and Chronicle derivation',
     30_000,
   );
@@ -373,7 +373,7 @@ async function testTempleButtonAction() {
   const { document } = window;
   const before = window.location.href;
   click(window, document.querySelector('[data-refresh-temple]'));
-  await waitFor(() => document.querySelector('#pageNotice')?.textContent.includes('updated from Temple for 5/5'), 'Temple button completion');
+  await waitFor(() => document.querySelector('[data-sync-source="temple"] [role="progressbar"]')?.getAttribute('aria-valuetext')?.includes('updated from Temple for 5/5'), 'Temple button completion');
   assert.equal(window.location.href, before, 'Temple update stays on the site');
   const saved = JSON.parse(window.localStorage.getItem('ug-v20-temple-cache'));
   assert.equal(saved.source, 'TempleOSRS manual site update');
@@ -393,7 +393,7 @@ async function testTempleButtonAction() {
   const partial = await openPage('gim.html', { templeResponse: partialResponse });
   click(partial.dom.window, partial.dom.window.document.querySelector('[data-refresh-temple]'));
   await waitFor(
-    () => partial.dom.window.document.querySelector('#pageNotice')?.textContent.includes('saved data retained for Lompste'),
+    () => partial.dom.window.document.querySelector('[data-sync-source="temple"] [role="progressbar"]')?.getAttribute('aria-valuetext')?.includes('saved data retained for Lompste'),
     'accurate partial Temple result',
   );
   assert.equal(partial.errors.length, 0, partial.errors.join('; '));
