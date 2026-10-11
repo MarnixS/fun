@@ -73,36 +73,64 @@ function topGainSkill(p){const s=gainNode(p.key)?.data?.skills||{};let best=null
 function templeFinished(log){const d=log?.data??log;return Math.max(0,+(d?.total_collections_finished||0))}
 
 async function refreshSharedWom(){
- const beforeLevels=PLAYERS.reduce((n,p)=>n+derivedLevelEvents(p).length,0),results=[],failed=[];
- let receipt=null;
- for(const p of PLAYERS){
-  setNotice(`Refreshing WOM: ${p.name}. Saving this member’s stats, history, gains and achievements for everyone. Keep this page open until all five finish.`,'warn');
-  try{receipt=await window.UGSharedData.refresh('wom',p.key);results.push(receipt.diagnostics||{})}catch(e){failed.push(p.name);console.warn('Shared WOM update',p.name,e)}
- }
- if(!receipt)throw new Error('No shared WOM update could be confirmed. The previous baseline is still saved.');
- const doc=await window.UGSharedData.read(receipt);applyWomDoc(doc);const cached=await persistWomDoc(doc);
- const newLevels=Math.max(0,PLAYERS.reduce((n,p)=>n+derivedLevelEvents(p).length,0)-beforeLevels),newer=results.reduce((n,r)=>n+(r.newerSnapshots||0),0);
- const parts=[`WOM data received for ${results.length}/5 members`,`${newer} newer snapshot${newer===1?'':'s'}`,`${newLevels} new level event${newLevels===1?'':'s'} added to Chronicle`,'saved for everyone'];
- if(failed.length)parts.push(`saved data retained for ${failed.join(', ')}`);
- if(results.some(r=>r.detailFailures?.length))parts.push('some gains or achievements could not refresh; last successful values retained');
- if(results.some(r=>r.historyFailures?.length))parts.push('some history requests failed; latest stats and saved history were kept');
- if(results.some(r=>r.trackedOnly?.length))parts.push('some accounts returned their latest tracked WOM snapshot; a new hiscores update was unavailable');
- if(!cached)parts.push('browser storage failed; the shared baseline is safely saved');
- setNotice(parts.join(' · ')+'.',failed.length||results.some(r=>r.detailFailures?.length||r.historyFailures?.length)?'warn':'');await renderPage();return doc;
+ const progress=window.UGSyncProgress.start('wom',[...PLAYERS.map(p=>({id:p.key,label:p.name})),{id:'snapshot',label:'Load shared snapshot',weight:.5},{id:'apply',label:'Update website',weight:.5}]);
+ const controls=$$('[data-refresh-wom]');controls.forEach(b=>{b.disabled=true;b.setAttribute('aria-busy','true');$('b',b).textContent='Refreshing stats…'});
+ try{
+  const beforeLevels=PLAYERS.reduce((n,p)=>n+derivedLevelEvents(p).length,0),results=[],failed=[];
+  let receipt=null;
+  for(const p of PLAYERS){
+   progress.step(p.key,'running',`${p.name}: requesting stats, history, gains and achievements, then saving them for everyone. Progress advances when this member finishes.`);
+   try{
+    receipt=await window.UGSharedData.refresh('wom',p.key);const diagnostics=receipt.diagnostics||{};results.push(diagnostics);
+    const issues=[];
+    if(diagnostics.detailFailures?.length)issues.push('some gains or achievements kept from the previous update');
+    if(diagnostics.historyFailures?.length)issues.push('some history kept from the previous update');
+    if(diagnostics.trackedOnly?.length)issues.push('latest tracked snapshot used; new hiscores update unavailable');
+    progress.step(p.key,issues.length?'warning':'done',issues.length?'Saved with warnings: '+issues.join('; ')+'.':'Stats, history, gains and achievements saved for everyone.');
+   }catch(e){failed.push(p.name);progress.step(p.key,'failed','Refresh failed; saved data retained. '+(e.message||e));console.warn('Shared WOM update',p.name,e)}
+  }
+  if(!receipt)throw new Error('No shared WOM update could be confirmed. The previous baseline is still saved.');
+  progress.step('snapshot','running','Loading the saved group stats and history.');
+  const doc=await window.UGSharedData.read(receipt);progress.step('snapshot','done','Shared group snapshot loaded.');
+  progress.step('apply','running','Applying stats, charts and Chronicle updates to the website.');
+  applyWomDoc(doc);const cached=await persistWomDoc(doc);
+  const newLevels=Math.max(0,PLAYERS.reduce((n,p)=>n+derivedLevelEvents(p).length,0)-beforeLevels),newer=results.reduce((n,r)=>n+(r.newerSnapshots||0),0);
+  const parts=[`WOM data received for ${results.length}/5 members`,`${newer} newer snapshot${newer===1?'':'s'}`,`${newLevels} new level event${newLevels===1?'':'s'} added to Chronicle`,'saved for everyone'];
+  if(failed.length)parts.push(`saved data retained for ${failed.join(', ')}`);
+  if(results.some(r=>r.detailFailures?.length))parts.push('some gains or achievements could not refresh; last successful values retained');
+  if(results.some(r=>r.historyFailures?.length))parts.push('some history requests failed; latest stats and saved history were kept');
+  if(results.some(r=>r.trackedOnly?.length))parts.push('some accounts returned their latest tracked WOM snapshot; a new hiscores update was unavailable');
+  if(!cached)parts.push('browser storage failed; the shared baseline is safely saved');
+  const warned=failed.length||!cached||results.some(r=>r.detailFailures?.length||r.historyFailures?.length||r.trackedOnly?.length);
+  await renderPage();progress.step('apply',cached?'done':'warning',cached?'Website updated.':'Website updated; browser storage failed, but the shared baseline is saved.');
+  progress.finish(warned?'warning':'done',parts.join(' · ')+'.');setNotice(parts.join(' · ')+'.',warned?'warn':'');return doc;
+ }catch(e){progress.finish('failed',e.message||String(e));throw e}
+ finally{controls.forEach(b=>{b.disabled=false;b.removeAttribute('aria-busy')});updateDataStatus()}
 }
 async function refreshSharedTemple(){
+ const progress=window.UGSyncProgress.start('temple',[{id:'logs',label:'Refresh five Collection Logs',weight:8},{id:'snapshot',label:'Load shared snapshot'},{id:'apply',label:'Update website'}]);
  const controls=$$('[data-refresh-temple]');controls.forEach(b=>{b.disabled=true;b.setAttribute('aria-busy','true');$('b',b).textContent='Updating Collection Log…'});
- setNotice('Requesting fresh Collection Logs from Temple and saving the update for everyone.','warn');
  try{
-  const receipt=await window.UGSharedData.refresh('temple'),doc=await window.UGSharedData.read(receipt),old=state.temple||{},diagnostics=receipt.diagnostics||doc.refreshDiagnostics||{};
+  progress.step('logs','running','Requesting all five Collection Logs and saving them for everyone. Temple returns the group together; progress advances when the response arrives.');
+  const receipt=await window.UGSharedData.refresh('temple');
+  const confirmedFresh=receipt.diagnostics?.freshPlayers;
+  progress.step('logs',Array.isArray(confirmedFresh)&&confirmedFresh.length<PLAYERS.length?'warning':'done','Temple response received and shared snapshot saved.');
+  progress.step('snapshot','running','Loading the saved Collection Logs and recent drops.');
+  const doc=await window.UGSharedData.read(receipt),old=state.temple||{},diagnostics=receipt.diagnostics||doc.refreshDiagnostics||{};
   const fresh=diagnostics.freshPlayers||PLAYERS.map(p=>p.key).filter(k=>validTemple(doc.players?.[k]));
   const failed=PLAYERS.filter(p=>!fresh.includes(p.key)),delta=fresh.reduce((n,k)=>n+Math.max(0,templeFinished(doc.players[k])-templeFinished(old.players?.[k])),0);
+  progress.step('logs',failed.length?'warning':'done',`${fresh.length}/5 refreshed${fresh.length?': '+PLAYERS.filter(p=>fresh.includes(p.key)).map(p=>p.name).join(', '):''}${failed.length?'; refresh failed for '+failed.map(p=>p.name).join(', ')+', saved data retained where available':''}.`);
+  progress.step('snapshot','done','Shared Collection Log snapshot loaded.');
+  progress.step('apply','running','Applying Collection Log totals, recent drops and Chronicle updates to the website.');
   state.temple=doc;state.templeShared=doc;const cached=await persistTempleDoc(doc,{replace:true});await renderPage();
-  const issues=[];if(failed.length)issues.push(`saved data retained for ${failed.filter(p=>validTemple(doc.players?.[p.key])).map(p=>p.name).join(', ')}`);
+  const retained=failed.filter(p=>validTemple(doc.players?.[p.key]));
+  const issues=[];if(retained.length)issues.push(`saved data retained for ${retained.map(p=>p.name).join(', ')}`);
   const missing=failed.filter(p=>!validTemple(doc.players?.[p.key]));if(missing.length)issues.push(`no valid saved Collection Log for ${missing.map(p=>p.name).join(', ')}`);
   if(!cached)issues.push('browser storage failed; the shared baseline is safely saved');
-  setNotice(`Collection Log updated from Temple for ${fresh.length}/5 members · ${delta} new unique${delta===1?'':'s'} · ${diagnostics.derivedRecentItems||0} recent drops recovered from the full logs · saved for everyone${issues.length?'; '+issues.join('; '):''}.`,failed.length?'warn':'');return doc;
- }catch(e){console.warn('Shared Temple update',e);setNotice(`Temple update failed: ${esc(e.message||e)}. The last known good Collection Log is still loaded.`,'warn')}
+  const message=`Collection Log updated from Temple for ${fresh.length}/5 members · ${delta} new unique${delta===1?'':'s'} · ${diagnostics.derivedRecentItems||0} recent drops recovered from the full logs · saved for everyone${issues.length?'; '+issues.join('; '):''}.`;
+  progress.step('apply',cached?'done':'warning',cached?'Website updated.':'Website updated; browser storage failed, but the shared baseline is saved.');
+  progress.finish(failed.length||!cached?'warning':'done',message);setNotice(message,failed.length||!cached?'warn':'');return doc;
+ }catch(e){progress.finish('failed',e.message||String(e));console.warn('Shared Temple update',e);setNotice(`Temple update failed: ${esc(e.message||e)}. The last known good Collection Log is still loaded.`,'warn')}
  finally{controls.forEach(b=>{b.disabled=false;b.removeAttribute('aria-busy')});updateDataStatus()}
 }
 let womRefreshInFlight=null,templeRefreshInFlight=null;
