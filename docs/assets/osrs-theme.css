@@ -338,7 +338,7 @@ html[data-theme="osrs"] body[data-page="home"] .player-card .v22-clog-quick>a:fo
 
 /* Nine-slice the original stone artwork so corners and rivets keep their shape. */
 html[data-theme="osrs"] body .mast-status.mast-status-six{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px;padding-block:4px 22px;align-items:stretch}
-html[data-theme="osrs"] body .mast-status-six .mast-stat{position:relative;min-width:0;min-height:218px;padding:12px 16px 16px;gap:12px;border:10px solid transparent!important;border-image:url('../img/osrs-theme/compare_users.gif') 10 fill / 10px / 0 stretch;background:#302b20;filter:none;box-shadow:0 3px 8px #0005;isolation:isolate}
+html[data-theme="osrs"] body .mast-status-six .mast-stat{position:relative;min-width:0;min-height:218px;padding:12px 16px 16px;gap:12px;border:10px solid transparent!important;border-image:url('../img/osrs-theme/compare_users.gif') 10 fill / 10px / 0 stretch!important;background:#302b20;filter:none;box-shadow:0 3px 8px #0005;isolation:isolate}
 html[data-theme="osrs"] body .mast-status-six .mast-card-title{justify-content:center;min-height:38px;gap:8px;padding:0 0 10px;text-align:center;border-bottom:1px solid #b5a78055}
 html[data-theme="osrs"] body .mast-status-six .mast-card-title>span{min-width:0;color:#ead6a0;font-size:.875rem!important;line-height:1.35;font-weight:600;text-shadow:1px 1px 2px #000}
 html[data-theme="osrs"] body .mast-status-six .mast-card-body{min-height:0;align-items:center;justify-content:center!important;text-align:center;gap:8px;padding:4px 0}
