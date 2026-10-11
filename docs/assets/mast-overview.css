@@ -46,6 +46,7 @@
 .mast-status-six .mast-weekly-avatars .mast-player-avatar:not(:first-child){margin-left:-10px}
 
 .mast-status-six .mast-achievement-row>.mast-summary-icon{width:28px;height:28px;flex:0 0 28px;object-fit:contain}
+.mast-status-six [data-mast-level-skill-icon]{box-sizing:border-box;padding:2px;border:1px solid #675435;border-radius:3px;background:linear-gradient(145deg,#c4b48b,#9a875b);box-shadow:inset 1px 1px 0 #eadba577,0 1px 2px #0009;filter:none}
 .mast-status-six .mast-achievement-row>.mast-award-icon{height:36px}
 
 @media(max-width:700px){

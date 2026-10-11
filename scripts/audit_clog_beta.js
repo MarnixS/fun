@@ -23,14 +23,16 @@ assert.equal(M.shares(synthetic,2,[{key:'a'},{key:'b'}]).total,0);
  assert(barrowsBadges.every(n=>/%/.test(n.textContent)),'luck badges display percentages');
 
 
- let checked=0;
+ let checked=0,greenCollections=0,totalCollections=0;
  for(const tab of M.TABS){d.querySelector(`[data-beta-tab="${tab}"]`).click();
+  greenCollections+=d.querySelectorAll('[data-beta-category].complete').length;totalCollections+=d.querySelectorAll('[data-beta-category]').length;
   const cats=model.categories.filter(c=>c.tab===tab);assert.equal(d.querySelectorAll('[data-beta-category]').length,cats.length);
   for(const c of cats){d.querySelector(`[data-beta-category="${c.key}"]`).click();const buttons=[...d.querySelectorAll('[data-beta-item]')];assert.equal(buttons.length,c.ids.length,c.key);assert.deepEqual(buttons.map(b=>+b.dataset.betaItem),c.ids);
    for(const b of buttons){const id=+b.dataset.betaItem,s=M.shares(model,id,players);assert.equal(!!b.querySelector('.beta-item-pie'),s.total>0);assert(b.getAttribute('aria-label').includes(model.names.get(id)));assert(!b.outerHTML.includes('NaN'));}
    buttons[0].click();assert.equal(d.querySelectorAll('.beta-counts>div').length,5);assert(d.querySelector('#betaItemDetail a').href.includes('id='+c.ids[0]));assert(d.querySelector('#betaItemDetail').compareDocumentPosition(d.querySelector('.beta-luck-note'))&4,'general explanation follows item detail');const basis=d.querySelector('.beta-luck-basis,.beta-luck-unavailable');assert(d.querySelector('.beta-counts').compareDocumentPosition(basis)&4,'item basis follows specific counts');checked++;
   }
  }
+ assert.equal(d.querySelector('[data-mast-log-sub]').textContent,`${greenCollections} / ${totalCollections} collections green logged`,'the header agrees with all green categories in the log');
  const search=d.querySelector('#betaSearch');search.value='Osmumten';search.dispatchEvent(new w.Event('input'));assert.equal(d.querySelectorAll('[data-beta-item]').length,0,'item names do not match category search');assert.equal(d.querySelectorAll('[data-beta-category]').length,0);
  search.value='TOMBS';search.dispatchEvent(new w.Event('input'));assert.equal(d.querySelectorAll('[data-beta-category]').length,1);assert.equal(d.querySelector('#betaCategoryTitle').textContent,'Tombs of Amascut');assert.equal(d.querySelector('[data-beta-tab="raids"]').getAttribute('aria-pressed'),'true');assert.equal(d.querySelectorAll('[data-beta-item]').length,model.categories.find(c=>c.key==='tombs_of_amascut').ids.length);d.querySelector('[data-beta-category]').click();assert.equal(search.value,'TOMBS','opening category keeps search');d.querySelector('[data-beta-item="26219"]').click();
  assert.equal(d.querySelector('.nav-link[href="clog-beta.html"]').getAttribute('aria-current'),'page');

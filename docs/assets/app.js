@@ -183,15 +183,25 @@ function renderLatestItem(){
 function renderMast(){
  ensureSixMast();
  const gs=collectionModel(true),cov=templeCoverage(),totalXp=PLAYERS.reduce((n,p)=>n+(+overall(p.key).experience||0),0),totalLevel=PLAYERS.reduce((n,p)=>n+(+overall(p.key).level||0),0);
+ const categories=window.UGClogBetaModel?.build?.(state.temple,PLAYERS)?.categories||[],obtained=new Set(gs.union.map(row=>row.id));
+ const completed=categories.filter(category=>category.ids.length&&category.ids.every(id=>obtained.has(id))).length;
  $$('[data-mast-log]').forEach(x=>x.textContent=gs.known?`${fmt(gs.got)} / ${fmt(gs.known)}`:'—');
- $$('[data-mast-log-sub]').forEach(x=>x.textContent=`${cov.synced}/5 Collection Logs available${cov.unsynced.length?' · '+cov.unsynced.join(', ')+' unavailable':''}`);
+ $$('[data-mast-log-sub]').forEach(x=>{x.textContent=categories.length?`${cov.synced?fmt(completed):'—'} / ${fmt(categories.length)} collections green logged`:'Collection completion unavailable';x.title='A collection is green logged when the group has obtained every item in that category.'+(cov.unsynced.length?' No saved log for '+cov.unsynced.join(', ')+'.':'')});
  $$('[data-mast-xp]').forEach(x=>{x.textContent=totalXp?`${fmt(totalXp)} XP`:'—';x.title=`${fmt(totalXp)} XP across all five accounts`});
  $$('[data-mast-xp-exact]').forEach(x=>x.textContent=`${fmt(totalLevel)} total levels across all five accounts`);
  renderLatestItem();
  const lv=latestRecordedLevel(),lp=lv?playerByKey(lv.key):null;
  $$('[data-mast-level]').forEach(x=>x.textContent=lv?`${fmt(lv.level)} ${nice(lv.metric)}`:'No recorded level yet');
  $$('[data-mast-level-sub]').forEach(x=>x.textContent=lv?`${dateOnly(lv.date)} · ${lv.player}`:'No saved level history');
- $$('[data-mast-level-icon]').forEach(x=>{if(lv&&lp?.portrait){x.dataset.modernSrc=lp.portrait;x.src=portraitFor(lp);x.alt=lp.name;x.hidden=false;x.onerror=()=>{x.hidden=true}}else{x.hidden=true;x.removeAttribute('src');x.alt=''}});$$('[data-mast-level-skill-icon]').forEach(x=>{const src=lv?window.UGV21.skillIconUrl?.(lv.metric):'';if(src){x.src=src;x.alt=nice(lv.metric);x.hidden=false;x.onerror=()=>{x.hidden=true}}else x.hidden=true});
+ $$('[data-mast-level-icon]').forEach(x=>{if(lv&&lp?.portrait){x.dataset.modernSrc=lp.portrait;x.src=portraitFor(lp);x.alt=lp.name;x.hidden=false;x.onerror=()=>{x.hidden=true}}else{x.hidden=true;x.removeAttribute('src');x.alt=''}});
+ $$('[data-mast-level-skill-icon]').forEach(x=>{
+  const src=lv?window.UGV21.skillIconUrl?.(lv.metric):'';
+  if(!src){x.onload=x.onerror=null;x.hidden=true;x.removeAttribute('src');x.alt='';return}
+  let retried=false;
+  x.onload=()=>{x.hidden=false};
+  x.onerror=()=>{if(!retried){retried=true;x.src=src+(src.includes('?')?'&':'?')+'retry=1'}else x.hidden=true};
+  x.alt=nice(lv.metric);x.hidden=false;x.src=src;
+ });
  renderWeeklyLeader();renderMastValue()
 }
 
