@@ -336,42 +336,46 @@ html[data-theme="osrs"] body[data-page="home"] .player-card .v22-clog-quick>a:fo
 /* Keep stone-framed summaries spacious while the pillars narrow the page. */
 @media(min-width:701px) and (max-width:1359px){html[data-theme="osrs"] .mast-status.mast-status-six{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 
-/* Original stone frames, with a shared inset and a calmer content hierarchy. */
-html[data-theme="osrs"] body .mast-status.mast-status-six{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px;padding-block:4px 20px}
-html[data-theme="osrs"] body .mast-status-six .mast-stat{position:relative;isolation:isolate;padding:22px 24px;min-height:224px;gap:12px;background:transparent url('../img/osrs-theme/compare_users.gif') no-repeat center/100% 100%;filter:none}
-html[data-theme="osrs"] body .mast-status-six .mast-stat::before{content:"";position:absolute;inset:12px;z-index:-1;pointer-events:none;background:linear-gradient(180deg,rgba(16,14,9,.25),rgba(16,14,9,.57));box-shadow:inset 0 1px rgba(255,233,173,.07)}
-html[data-theme="osrs"] body .mast-status-six .mast-card-title{position:relative;justify-content:flex-start;min-height:42px;padding-bottom:10px;gap:9px;text-align:left;border-bottom:1px solid rgba(225,204,151,.23)}
-html[data-theme="osrs"] body .mast-status-six .mast-card-title>span{color:#e6d3a0;font-size:var(--type-meta)!important;line-height:1.4;letter-spacing:0;text-shadow:0 1px 2px #000}
-html[data-theme="osrs"] body .mast-status-six .mast-card-body{position:relative;min-height:0;align-items:center;justify-content:center!important;gap:9px;text-align:center;padding-block:5px}
-html[data-theme="osrs"] body .mast-status-six :is(.mast-card-body>b,.mast-achievement-row>b,.mast-value-amount>b){color:#fff3d4;font-size:1.5rem!important;line-height:1.25;text-shadow:0 2px 2px #000;font-variant-numeric:tabular-nums}
-html[data-theme="osrs"] body .mast-status-six .mast-stat-clog .mast-card-body>b{font-size:1.75rem!important}
-html[data-theme="osrs"] body .mast-status-six .mast-stat-xp [data-mast-xp]{font-size:clamp(1rem,1.7vw,1.5rem)!important;white-space:normal!important;letter-spacing:0}
-html[data-theme="osrs"] body .mast-status-six .mast-card-body small{font-size:var(--type-meta)!important;line-height:1.45;color:#e0d5bc;text-wrap:pretty}
-html[data-theme="osrs"] body .mast-status-six .mast-card-body strong{font-size:var(--type-ui)!important;color:#e6d3a0;font-weight:600}
-html[data-theme="osrs"] body .mast-status-six .mast-achievement-row{justify-content:center;gap:9px;width:100%;max-width:100%}
+/* Nine-slice the original stone artwork so corners and rivets keep their shape. */
+html[data-theme="osrs"] body .mast-status.mast-status-six{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px;padding-block:4px 22px;align-items:stretch}
+html[data-theme="osrs"] body .mast-status-six .mast-stat{position:relative;min-width:0;min-height:218px;padding:12px 16px 16px;gap:12px;border:10px solid transparent!important;border-image:url('../img/osrs-theme/compare_users.gif') 10 fill / 10px / 0 stretch;background:#302b20;filter:none;box-shadow:0 3px 8px #0005;isolation:isolate}
+html[data-theme="osrs"] body .mast-status-six .mast-card-title{justify-content:center;min-height:38px;gap:8px;padding:0 0 10px;text-align:center;border-bottom:1px solid #b5a78055}
+html[data-theme="osrs"] body .mast-status-six .mast-card-title>span{min-width:0;color:#ead6a0;font-size:.875rem!important;line-height:1.35;font-weight:600;text-shadow:1px 1px 2px #000}
+html[data-theme="osrs"] body .mast-status-six .mast-card-body{min-height:0;align-items:center;justify-content:center!important;text-align:center;gap:8px;padding:4px 0}
+html[data-theme="osrs"] body .mast-status-six :is(.mast-card-body>b,.mast-achievement-row>b,.mast-value-amount>b){color:#fff5da;font-size:1.5rem!important;line-height:1.25;text-shadow:1px 2px 2px #000;font-variant-numeric:tabular-nums}
+html[data-theme="osrs"] body .mast-status-six .mast-stat-clog .mast-card-body>b{font-size:1.625rem!important}
+html[data-theme="osrs"] body .mast-status-six .mast-stat-xp [data-mast-xp]{font-size:1.375rem!important;white-space:normal!important;letter-spacing:0}
+html[data-theme="osrs"] body .mast-status-six .mast-card-body small{color:#e3d8bd;font-size:var(--type-meta)!important;line-height:1.45;max-width:100%;text-wrap:pretty}
+html[data-theme="osrs"] body .mast-status-six .mast-card-body strong{color:#ead6a0;font-size:var(--type-ui)!important;font-weight:600}
+html[data-theme="osrs"] body .mast-status-six .mast-achievement-row{justify-content:center;gap:8px;width:100%;max-width:100%}
 html[data-theme="osrs"] body .mast-status-six .mast-achievement-row>b{min-width:0;overflow-wrap:anywhere!important}
-html[data-theme="osrs"] body .mast-status-six [data-mast-drop] a{color:inherit;text-decoration-color:#b6a779;text-underline-offset:4px;text-decoration-thickness:1px}
+html[data-theme="osrs"] body .mast-status-six [data-mast-drop] a{color:inherit;text-decoration-color:#baa66e;text-decoration-thickness:1px;text-underline-offset:4px}
 html[data-theme="osrs"] body .mast-status-six .mast-stat-value .mast-card-body{align-items:center;text-align:center;gap:12px}
 html[data-theme="osrs"] body .mast-status-six .mast-value-amount{justify-content:center;gap:10px}
-html[data-theme="osrs"] body .mast-status-six .mast-value-pie{width:40px;height:40px;flex:0 0 40px;box-shadow:0 2px 4px #0008}
-html[data-theme="osrs"] body .mast-status-six .mast-value-pie>i{inset:9px;background:#29251c}
+html[data-theme="osrs"] body .mast-status-six .mast-value-pie{width:40px;height:40px;flex:0 0 40px;box-shadow:0 2px 4px #0006}
+html[data-theme="osrs"] body .mast-status-six .mast-value-pie>i{inset:9px;background:#302b20}
 html[data-theme="osrs"] body .mast-status-six .mast-value-legend{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 12px;width:100%;max-width:260px;margin:0;text-align:left}
-html[data-theme="osrs"] body .mast-status-six .mast-value-legend>span{color:#e0d5bc;font-size:var(--type-meta)!important;gap:6px;line-height:1.4}
+html[data-theme="osrs"] body .mast-status-six .mast-value-legend>span{color:#e3d8bd;font:var(--type-meta)/1.4 Arial,Helvetica,sans-serif!important;gap:6px}
+html[data-theme="osrs"] body .mast-status-six .mast-value-legend>span>span{font:inherit}
 html[data-theme="osrs"] body .mast-status-six .mast-value-legend>span>i{width:7px;height:7px;flex-basis:7px;box-shadow:0 0 0 1px #0005}
-@media(hover:hover){
- html[data-theme="osrs"] body .mast-status-six .mast-stat:hover::before{background:linear-gradient(180deg,rgba(16,14,9,.12),rgba(16,14,9,.4))}
- html[data-theme="osrs"] body .mast-status-six .mast-stat:hover .mast-card-title>span{color:#fff0bc}
-}
 html[data-theme="osrs"] body .mast-status-six a.mast-stat:focus-visible,html[data-theme="osrs"] body .mast-status-six .mast-card-link:focus-visible{outline:2px solid #f4db92;outline-offset:-12px}
+@media(hover:hover){html[data-theme="osrs"] body .mast-status-six .mast-stat:hover{background:#302b20;filter:brightness(1.1)}}
 @media(max-width:700px){
  html[data-theme="osrs"] body .mast-status.mast-status-six{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px}
- html[data-theme="osrs"] body .mast-status-six .mast-stat{padding:20px 17px;min-height:218px;gap:10px}
- html[data-theme="osrs"] body .mast-status-six .mast-card-title{min-height:48px;gap:6px;padding-bottom:8px}
+ html[data-theme="osrs"] body .mast-status-six .mast-stat{min-height:224px;padding:10px 7px 12px;gap:8px}
+ html[data-theme="osrs"] body .mast-status-six .mast-card-title{min-height:46px;gap:5px;padding-bottom:8px}
+ html[data-theme="osrs"] body .mast-status-six .mast-card-title>span{font-size:.8125rem!important}
  html[data-theme="osrs"] body .mast-status-six :is(.mast-card-body>b,.mast-achievement-row>b,.mast-value-amount>b){font-size:1.125rem!important}
  html[data-theme="osrs"] body .mast-status-six .mast-stat-clog .mast-card-body>b{font-size:1.25rem!important}
- html[data-theme="osrs"] body .mast-status-six .mast-stat-xp [data-mast-xp]{font-size:1rem!important}
+ html[data-theme="osrs"] body .mast-status-six .mast-stat-xp [data-mast-xp]{font-size:1.125rem!important}
+ html[data-theme="osrs"] body .mast-status-six .mast-value-amount{gap:7px}
  html[data-theme="osrs"] body .mast-status-six .mast-value-pie{width:32px;height:32px;flex-basis:32px}
  html[data-theme="osrs"] body .mast-status-six .mast-value-pie>i{inset:7px}
  html[data-theme="osrs"] body .mast-status-six .mast-value-legend{grid-template-columns:minmax(0,1fr);gap:3px;width:auto;max-width:100%}
 }
-@media(max-width:360px){html[data-theme="osrs"] body .mast-status.mast-status-six{grid-template-columns:minmax(0,1fr)!important}html[data-theme="osrs"] body .mast-status-six .mast-stat{min-height:204px}}
+@media(max-width:360px){html[data-theme="osrs"] body .mast-status.mast-status-six{grid-template-columns:minmax(0,1fr)!important}html[data-theme="osrs"] body .mast-status-six .mast-stat{min-height:198px}}
+/* Portrait headers crop the artwork's pillar strips; the courtyard fills the screen. */
+@media(max-width:700px),(max-width:1100px) and (orientation:portrait){
+ html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .banner-frame{width:100%;max-width:none;margin-inline:0;overflow:hidden}
+ html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .group-banner{display:block;width:116.28%;max-width:none;left:-8.14%;height:auto;mask-image:none;transform:none}
+}
