@@ -64,14 +64,14 @@ async function run(){
  const {dom:pd}=await openPage('gim.html',{templeResponse:partial});
  const pw=pd.window;
  click(pw,pw.document.querySelector('[data-refresh-temple]'));
- await waitFor(()=>pw.document.querySelector('#pageNotice').textContent.includes('updated from Temple for 1/5'),'partial refresh count');
- assert(pw.document.querySelector('#pageNotice').textContent.includes('saved data retained'));
+ await waitFor(()=>pw.document.querySelector('[data-sync-source="temple"] [role="progressbar"]')?.title.includes('updated from Temple for 1/5'),'partial refresh count');
+ assert(pw.document.querySelector('[data-sync-source="temple"] [role="progressbar"]')?.title.includes('saved data retained'));
  // Storage quota errors must not prevent the specialised module from seeing successful sync data.
  const {dom:qd}=await openPage('gim.html#recent',{templeResponse:t});
  const qw=qd.window;
  qw.Storage.prototype.setItem=function(){throw new Error('simulated storage quota')};
  click(qw,qw.document.querySelector('[data-refresh-temple]'));
- await waitFor(()=>qw.document.querySelector('#pageNotice').textContent.includes('browser storage failed'),'quota warning');
+ await waitFor(()=>qw.document.querySelector('[data-sync-source="temple"] [role="progressbar"]')?.title.includes('browser storage failed'),'quota warning');
  await waitFor(()=>qw.document.querySelector('#recentDrops').textContent.includes('Sync regression item'),'quota in-memory redraw');
  assert.equal(qw.localStorage.getItem(T),null);
  // An unavailable selection remains unknown throughout the Collection Log.

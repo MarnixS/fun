@@ -74,7 +74,7 @@ function templeFinished(log){const d=log?.data??log;return Math.max(0,+(d?.total
 
 async function refreshSharedWom(){
  const progress=window.UGSyncProgress.start('wom',[...PLAYERS.map(p=>({id:p.key,label:p.name})),{id:'snapshot',label:'Load shared snapshot',weight:.5},{id:'apply',label:'Update website',weight:.5}]);
- const controls=$$('[data-refresh-wom]');controls.forEach(b=>{b.disabled=true;b.setAttribute('aria-busy','true');$('b',b).textContent='Refreshing stats…'});
+ setNotice('');const controls=$$('[data-refresh-wom]');controls.forEach(b=>{b.disabled=true;b.setAttribute('aria-busy','true');$('b',b).textContent='Refreshing stats…'});
  try{
   const beforeLevels=PLAYERS.reduce((n,p)=>n+derivedLevelEvents(p).length,0),results=[],failed=[];
   let receipt=null;
@@ -103,13 +103,13 @@ async function refreshSharedWom(){
   if(!cached)parts.push('browser storage failed; the shared baseline is safely saved');
   const warned=failed.length||!cached||results.some(r=>r.detailFailures?.length||r.historyFailures?.length||r.trackedOnly?.length);
   await renderPage();progress.step('apply',cached?'done':'warning',cached?'Website updated.':'Website updated; browser storage failed, but the shared baseline is saved.');
-  progress.finish(warned?'warning':'done',parts.join(' · ')+'.');setNotice(parts.join(' · ')+'.',warned?'warn':'');return doc;
- }catch(e){progress.finish('failed',e.message||String(e));throw e}
+  progress.finish(warned?'warning':'done',parts.join(' · ')+'.',`${results.length}/5`);return doc;
+ }catch(e){progress.finish('failed',(e.message||String(e))+'. The last known good WOM data is still loaded.');throw e}
  finally{controls.forEach(b=>{b.disabled=false;b.removeAttribute('aria-busy')});updateDataStatus()}
 }
 async function refreshSharedTemple(){
  const progress=window.UGSyncProgress.start('temple',[{id:'logs',label:'Refresh five Collection Logs',weight:8},{id:'snapshot',label:'Load shared snapshot'},{id:'apply',label:'Update website'}]);
- const controls=$$('[data-refresh-temple]');controls.forEach(b=>{b.disabled=true;b.setAttribute('aria-busy','true');$('b',b).textContent='Updating Collection Log…'});
+ setNotice('');const controls=$$('[data-refresh-temple]');controls.forEach(b=>{b.disabled=true;b.setAttribute('aria-busy','true');$('b',b).textContent='Updating Collection Log…'});
  try{
   progress.step('logs','running','Requesting all five Collection Logs and saving them for everyone. Temple returns the group together; progress advances when the response arrives.');
   const receipt=await window.UGSharedData.refresh('temple');
@@ -129,15 +129,15 @@ async function refreshSharedTemple(){
   if(!cached)issues.push('browser storage failed; the shared baseline is safely saved');
   const message=`Collection Log updated from Temple for ${fresh.length}/5 members · ${delta} new unique${delta===1?'':'s'} · ${diagnostics.derivedRecentItems||0} recent drops recovered from the full logs · saved for everyone${issues.length?'; '+issues.join('; '):''}.`;
   progress.step('apply',cached?'done':'warning',cached?'Website updated.':'Website updated; browser storage failed, but the shared baseline is saved.');
-  progress.finish(failed.length||!cached?'warning':'done',message);setNotice(message,failed.length||!cached?'warn':'');return doc;
- }catch(e){progress.finish('failed',e.message||String(e));console.warn('Shared Temple update',e);setNotice(`Temple update failed: ${esc(e.message||e)}. The last known good Collection Log is still loaded.`,'warn')}
+  progress.finish(failed.length||!cached?'warning':'done',message,`${fresh.length}/5`);return doc;
+ }catch(e){progress.finish('failed',(e.message||String(e))+'. The last known good Collection Log is still loaded.');console.warn('Shared Temple update',e)}
  finally{controls.forEach(b=>{b.disabled=false;b.removeAttribute('aria-busy')});updateDataStatus()}
 }
 let womRefreshInFlight=null,templeRefreshInFlight=null;
 function directRefreshWom(options={}){if(!womRefreshInFlight)womRefreshInFlight=refreshSharedWom().finally(()=>{womRefreshInFlight=null});return womRefreshInFlight}
 function directRefreshTemple(options={}){if(!templeRefreshInFlight)templeRefreshInFlight=refreshSharedTemple().finally(()=>{templeRefreshInFlight=null});return templeRefreshInFlight}
 function updateDataStatus(source='saved'){const wom=$('[data-wom-status]');if(wom){const b=$('b',wom),d=$('.dot',wom),at=state.womFetchedAt,latest=state.womSourceLatestAt;b.textContent=at?`${dateTime(at)}`:source;wom.title='Refresh stats via WOM'+(latest?` · newest snapshot: ${dateTime(latest)}`:'');wom.setAttribute('aria-label',`Refresh stats via WOM. ${b.textContent}`);d.classList.toggle('ok',Object.keys(state.profiles).length>0);d.classList.toggle('warn',!Object.keys(state.profiles).length)}const t=$('[data-temple-status]');if(t){const b=$('b',t),d=$('.dot',t),at=state.temple?.fetchedAt||state.temple?.fetched_at;b.textContent=at?`${state.temple?._browserOverride?'browser import · ':''}${dateTime(at)}`:(state.temple?'saved cache':'unavailable');t.setAttribute('aria-label',`Update Collection Log via Temple. ${b.textContent}`);d.classList.toggle('ok',!!state.temple);d.classList.toggle('warn',!state.temple)}}
-function bindCommon(){$$('[data-reload-temple]').forEach(b=>{b.textContent='Restore shared Collection Log';b.title='Replace this browser’s Collection Log with the shared website snapshot. This can undo a newer local refresh or import; it does not fetch Temple.'});$$('[data-refresh-wom]').forEach(b=>b.onclick=async()=>{b.disabled=true;b.setAttribute('aria-busy','true');$('b',b).textContent='Refreshing stats…';try{await directRefreshWom();await renderPage()}catch(e){console.warn('WOM update',e);setNotice(`WOM update failed: ${esc(e.message||e)}. The last known good WOM data is still loaded.`,'warn')}finally{b.disabled=false;b.removeAttribute('aria-busy');updateDataStatus()}});$$('[data-refresh-temple]').forEach(b=>b.onclick=directRefreshTemple);$$('[data-reload-temple]').forEach(b=>b.onclick=async()=>{b.disabled=true;const old=b.textContent;b.textContent='Reloading saved data…';try{await loadTempleSaved({discardBrowser:true});await renderPage();setNotice('Shared Collection Log restored. This did not request new data from Temple.')}catch(e){setNotice('Restore failed; your current Collection Log was kept.','warn')}finally{b.disabled=false;b.textContent=old}});$$('[data-period-button]').forEach(b=>b.onclick=async()=>{state.period=+b.dataset.periodButton;$$('[data-period-button]').forEach(x=>x.classList.toggle('active',+x.dataset.periodButton===state.period));$$('[data-period-copy]').forEach(x=>x.textContent=PERIODS[state.period]||`${state.period} days`);updateDataStatus();await renderPage()});$$('[data-mode]').forEach(b=>b.onclick=()=>{state.mode=b.dataset.mode;$$('[data-mode]').forEach(x=>x.classList.toggle('active',x===b));window.dispatchEvent(new CustomEvent('ug:mode-changed'))})}
+function bindCommon(){$$('[data-reload-temple]').forEach(b=>{b.textContent='Restore shared Collection Log';b.title='Replace this browser’s Collection Log with the shared website snapshot. This can undo a newer local refresh or import; it does not fetch Temple.'});$$('[data-refresh-wom]').forEach(b=>b.onclick=async()=>{b.disabled=true;b.setAttribute('aria-busy','true');$('b',b).textContent='Refreshing stats…';try{await directRefreshWom();await renderPage()}catch(e){console.warn('WOM update',e)}finally{b.disabled=false;b.removeAttribute('aria-busy');updateDataStatus()}});$$('[data-refresh-temple]').forEach(b=>b.onclick=directRefreshTemple);$$('[data-reload-temple]').forEach(b=>b.onclick=async()=>{b.disabled=true;const old=b.textContent;b.textContent='Reloading saved data…';try{await loadTempleSaved({discardBrowser:true});await renderPage();setNotice('Shared Collection Log restored. This did not request new data from Temple.')}catch(e){setNotice('Restore failed; your current Collection Log was kept.','warn')}finally{b.disabled=false;b.textContent=old}});$$('[data-period-button]').forEach(b=>b.onclick=async()=>{state.period=+b.dataset.periodButton;$$('[data-period-button]').forEach(x=>x.classList.toggle('active',+x.dataset.periodButton===state.period));$$('[data-period-copy]').forEach(x=>x.textContent=PERIODS[state.period]||`${state.period} days`);updateDataStatus();await renderPage()});$$('[data-mode]').forEach(b=>b.onclick=()=>{state.mode=b.dataset.mode;$$('[data-mode]').forEach(x=>x.classList.toggle('active',x===b));window.dispatchEvent(new CustomEvent('ug:mode-changed'))})}
 let mastPrices=null;
 async function loadMastPrices(){mastPrices=await window.UGPrices.load();renderPriceFreshness();return mastPrices}
 function mastItemPrice(id){return window.UGPrices.price(id)}

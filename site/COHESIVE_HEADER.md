@@ -4,8 +4,9 @@ The Old School header uses the approved `129773.jpg` artwork as one banner.
 An edge mask reveals the existing repeating page pillars in place of the
 supplied pillar strips. The same body background continues through the header,
 so there is no second painted copy to align or resample. The inner edge fades
-into the courtyard; the old rectangular border image is disabled. Status cards
-retain their previous content width and stone-frame dimensions.
+into the courtyard; the old rectangular border image is disabled. Status cards,
+navigation and page content share a width that stays inside the full pillar
+silhouette, with a gutter on both sides.
 
 The banner is 103.5% wide and centred with a −1.75% offset. The narrow edge
 fade begins outside the complete stone-and-vine silhouette (47 pixels in
