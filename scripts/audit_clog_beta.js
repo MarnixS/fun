@@ -9,7 +9,7 @@ const synthetic=M.build({players:{a:{data:{items:{one:[{id:1,count:3}],two:[{id:
 assert.deepEqual(M.shares(synthetic,1,[{key:'a'},{key:'b'},{key:'c'}]).entries.map(p=>[p.count,p.share]),[[3,.75],[1,.25],[null,0]],'shared-category items are counted once per player; unavailable stays unknown');
 assert.equal(M.shares(synthetic,2,[{key:'a'},{key:'b'}]).total,0);
 (async()=>{
- const requests=[],{dom,errors}=await openPage('clog-beta.html',{fetchLog:requests}),w=dom.window,d=w.document;
+ const requests=[],{dom,errors}=await openPage('collection-log.html',{fetchLog:requests}),w=dom.window,d=w.document;
  await waitFor(()=>d.querySelectorAll('[data-beta-tab]').length===5,'beta saved log');
  assert.equal(d.querySelectorAll('#betaMembers input[type=checkbox]').length,5);
  // Regression guard: a luck-calculation problem must never stop a normal category from opening.
@@ -35,7 +35,7 @@ assert.equal(M.shares(synthetic,2,[{key:'a'},{key:'b'}]).total,0);
  assert.equal(d.querySelector('[data-mast-log-sub]').textContent,`${greenCollections} / ${totalCollections} collections green logged`,'the header agrees with all green categories in the log');
  const search=d.querySelector('#betaSearch');search.value='Osmumten';search.dispatchEvent(new w.Event('input'));assert.equal(d.querySelectorAll('[data-beta-item]').length,0,'item names do not match category search');assert.equal(d.querySelectorAll('[data-beta-category]').length,0);
  search.value='TOMBS';search.dispatchEvent(new w.Event('input'));assert.equal(d.querySelectorAll('[data-beta-category]').length,1);assert.equal(d.querySelector('#betaCategoryTitle').textContent,'Tombs of Amascut');assert.equal(d.querySelector('[data-beta-tab="raids"]').getAttribute('aria-pressed'),'true');assert.equal(d.querySelectorAll('[data-beta-item]').length,model.categories.find(c=>c.key==='tombs_of_amascut').ids.length);d.querySelector('[data-beta-category]').click();assert.equal(search.value,'TOMBS','opening category keeps search');d.querySelector('[data-beta-item="26219"]').click();
- assert.equal(d.querySelector('.nav-link[href="clog-beta.html"]').getAttribute('aria-current'),'page');
+ assert.equal(d.querySelector('.nav-link[href="collection-log.html"]').getAttribute('aria-current'),'page');
  const expected=M.shares(model,26219,players);assert.deepEqual([...d.querySelectorAll('.beta-counts strong')].map(n=>Number(n.textContent.replace(/,/g,''))),expected.entries.map(p=>p.count));
  const picker=d.querySelector('#betaMembers');for(const k of keys.slice(1))picker.querySelector(`input[value="${k}"]`).click();assert.equal(d.querySelectorAll('.beta-counts>div').length,1);assert(d.querySelector('.beta-counts small').textContent==='100.0% of selected drops'||expected.entries[0].count===0);
  assert.equal(JSON.parse(w.localStorage.getItem('ug-v25-member-selection')).length,1);
@@ -50,5 +50,5 @@ assert.equal(M.shares(synthetic,2,[{key:'a'},{key:'b'}]).total,0);
  w.dispatchEvent(new w.CustomEvent('ug:data-updated',{detail:{key:'ug-v20-temple-cache',document:unknown,source:'test'}}));
  await waitFor(()=>d.querySelector('#betaCoverage').textContent.includes('No synced log for Dikste'),'unknown member');d.querySelector('[data-beta-item="13262"]').click();assert.equal(d.querySelector('.beta-counts strong').textContent,'Unknown');assert.equal(d.querySelectorAll('.beta-item-pie').length,0);assert(d.querySelector('#betaObtained').textContent.startsWith('?/'));assert(d.querySelector('#betaTotal').textContent.startsWith('? /'));
  assert.equal(errors.length,0,errors.join('; '));assert(!requests.some(r=>r.method==='POST'||r.url.includes('api.wiseoldman.net')||r.url.includes('/api/temple-collection-log')),'no automatic upstream updates');
- console.log(`Collection Log beta passed: ${checked} categories, ${ids.length} items, quantity shares, global duplicate counters, search, filters, links, overlay toggle, saved updates, unknown data and no automatic refresh.`);
+ console.log(`Collection Log Classic passed: ${checked} categories, ${ids.length} items, quantity shares, global duplicate counters, search, filters, links, overlay toggle, saved updates, unknown data and no automatic refresh.`);
 })().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)});

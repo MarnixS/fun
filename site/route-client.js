@@ -12,7 +12,7 @@ function file(value){
  if(['','/index','/index.html','/docs','/docs/index','/docs/index.html'].includes(path))return 'index.html';
  const parts=path.split('/');if(parts.length!==2&&!(parts.length===3&&parts[1]==='docs'))return '';
  const leaf=parts.at(-1),name=leaf.endsWith('.html')?leaf:leaf+'.html';
- return Object.hasOwn(files,name)?name:'';
+ return Object.hasOwn(files,name)?(files[name]==='/'?'index.html':files[name].slice(1)+'.html'):'';
 }
 function destination(value){
  const url=resolve(value);if(!url||url.origin!==location.origin)return null;

@@ -1,7 +1,7 @@
 /* Public feature URLs; legacy/offline docs remain usable without redirects. */
 (()=>{
 'use strict';
-const files={"chronicle.html":"/chronicle","clog-beta.html":"/clog-beta","cumulative-xp.html":"/cumulative-xp","developer.html":"/developer","experimental.html":"/experimental","faq.html":"/faq","gim.html":"/gim","goals.html":"/goals","group-chemistry.html":"/group-chemistry","hiscores.html":"/hiscores","history.html":"/history","hypothetical.html":"/hypothetical","index.html":"/","kc-comparison.html":"/kc-comparison","nemesis.html":"/nemesis","news.html":"/news","progress.html":"/progress","rng.html":"/rng","time-machine.html":"/time-machine","nemesis-beta.html":"/nemesis"};
+const files={"chronicle.html":"/chronicle","collection-log.html":"/collection-log","cumulative-xp.html":"/cumulative-xp","developer.html":"/developer","experimental.html":"/experimental","faq.html":"/faq","gim.html":"/gim","goals.html":"/goals","group-chemistry.html":"/group-chemistry","hiscores.html":"/hiscores","history.html":"/history","hypothetical.html":"/hypothetical","index.html":"/","kc-comparison.html":"/kc-comparison","nemesis.html":"/nemesis","news.html":"/news","progress.html":"/progress","rng.html":"/rng","time-machine.html":"/time-machine","xp-records.html":"/xp-records","nemesis-beta.html":"/nemesis","clog-beta.html":"/collection-log"};
 const enabled=!!document.querySelector('base[data-ug-public]')||['ugimps.com','www.ugimps.com'].includes(location.hostname);
 const scrollKey='ug:page-scroll',sections=new Set(['cumulativeSummary','gainCards']);
 const assetBase=document.baseURI;
@@ -12,7 +12,7 @@ function file(value){
  if(['','/index','/index.html','/docs','/docs/index','/docs/index.html'].includes(path))return 'index.html';
  const parts=path.split('/');if(parts.length!==2&&!(parts.length===3&&parts[1]==='docs'))return '';
  const leaf=parts.at(-1),name=leaf.endsWith('.html')?leaf:leaf+'.html';
- return Object.hasOwn(files,name)?name:'';
+ return Object.hasOwn(files,name)?(files[name]==='/'?'index.html':files[name].slice(1)+'.html'):'';
 }
 function destination(value){
  const url=resolve(value);if(!url||url.origin!==location.origin)return null;

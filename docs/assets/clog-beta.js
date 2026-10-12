@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const U=window.UGV21,M=window.UGClogBetaModel,L=window.UGClogLuck;if(!U||!M||!L||document.body.dataset.page!=='clog-beta')return;
+const U=window.UGV21,M=window.UGClogBetaModel,L=window.UGClogLuck;if(!U||!M||!L||document.body.dataset.page!=='collection-log')return;
 const {$,escapeHtml:esc,fmt,nice}=U;
 let model,selected=U.loadMemberSelection(),tab='bosses',category='',query='',chosen=null,wom;
 const players=()=>U.PLAYERS.filter(p=>selected.has(p.key));

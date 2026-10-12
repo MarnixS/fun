@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://ugimps.com/</loc></url>
   <url><loc>https://ugimps.com/chronicle</loc></url>
-  <url><loc>https://ugimps.com/clog-beta</loc></url>
+  <url><loc>https://ugimps.com/collection-log</loc></url>
   <url><loc>https://ugimps.com/cumulative-xp</loc></url>
   <url><loc>https://ugimps.com/experimental</loc></url>
   <url><loc>https://ugimps.com/faq</loc></url>
@@ -18,4 +18,5 @@
   <url><loc>https://ugimps.com/progress</loc></url>
   <url><loc>https://ugimps.com/rng</loc></url>
   <url><loc>https://ugimps.com/time-machine</loc></url>
+  <url><loc>https://ugimps.com/xp-records</loc></url>
 </urlset>

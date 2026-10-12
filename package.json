@@ -12,7 +12,8 @@
     "test:cumulative": "node scripts/test_cumulative_filters.js && node scripts/audit_cumulative_filters.js",
     "build": "python scripts/build_site.py",
     "check:pages": "python scripts/build_site.py --check && python scripts/check_site.py",
-    "test:routes": "node scripts/test_clean_routes.js"
+    "test:routes": "node scripts/test_clean_routes.js",
+    "test:records": "node scripts/test_xp_records.js && node scripts/audit_xp_records.js"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.2.5",
