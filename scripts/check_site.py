@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from html.parser import HTMLParser
-from urllib.parse import urlsplit, unquote
+from urllib.parse import urlsplit, unquote, urljoin
 
 root=Path('docs')
 class Page(HTMLParser):
@@ -17,7 +17,7 @@ class Page(HTMLParser):
             if a.get(key):self.links.append(a[key])
         if tag=='script' and a.get('src'):self.scripts.append(a['src'])
 
-for path in [Path('index.html'), *root.glob('*.html')]:
+for path in [*Path('.').glob('*.html'), *root.glob('*.html')]:
     text=path.read_text(encoding='utf-8');p=Page();p.feed(text)
     assert 'main-content' in p.ids,f'{path}: missing jump target'
     assert 'class="jump-to-content"' not in text,f'{path}: unwanted jump link'
@@ -25,8 +25,11 @@ for path in [Path('index.html'), *root.glob('*.html')]:
     for link in p.links:
         u=urlsplit(link)
         if not u.scheme and u.path:
-            base=path.parent/unquote(urlsplit(p.base).path)
-            assert (base/unquote(u.path)).exists(),f'{path}: broken local resource {link}'
+            page_url='https://site.test/'+path.as_posix()
+            base_url=urljoin(page_url,p.base)
+            resource=Path('.')/unquote(urlsplit(urljoin(base_url,link)).path).lstrip('/')
+            if not resource.exists() and not resource.suffix:resource=resource.with_suffix('.html')
+            assert resource.exists(),f'{path}: broken local resource {link}'
     assert not any('live-sync.js' in x for x in p.scripts),f'{path}: automatic sync must be disabled'
     script_paths=[urlsplit(s).path for s in p.scripts]
     if 'assets/app.js' in script_paths:

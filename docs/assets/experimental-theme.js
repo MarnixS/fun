@@ -99,7 +99,7 @@ const iconMap={'../':'play.gif','index.html':'play.gif','clog-beta.html':'manual
 function decoratedLink(link){
  const copy=link.cloneNode(true),icon=document.createElement('img');
  copy.className='osrs-menu-link'+(link.classList.contains('active')?' active':'');
- copy.querySelector('.nav-rune')?.remove();icon.src='img/osrs-theme/'+(iconMap[(link.getAttribute('href')||'').split('#')[0]]||'settings.png');icon.alt='';const custom=icon.getAttribute('src').includes('/menu-icons/');if(custom)icon.className='osrs-feature-icon';icon.width=custom?24:22;icon.height=custom?24:20;copy.prepend(icon);return copy;
+ copy.querySelector('.nav-rune')?.remove();icon.src='img/osrs-theme/'+(iconMap[window.UGRoutes?.file(link.getAttribute('href')||'')||(link.getAttribute('href')||'').split('#')[0]]||'settings.png');icon.alt='';const custom=icon.getAttribute('src').includes('/menu-icons/');if(custom)icon.className='osrs-feature-icon';icon.width=custom?24:22;icon.height=custom?24:20;copy.prepend(icon);return copy;
 }
 function mount(){
  if(!ready||!enabled)return;
@@ -117,9 +117,9 @@ function mount(){
  }
  if(!document.querySelector('[data-osrs-nav]')){
   const source=document.querySelector('.nav-inner'),host=document.querySelector('.main-nav');
-  if(source&&host){
+  if(source&&host&&source.querySelector('.nav-link')){
    const nav=document.createElement('div');nav.className='wrap osrs-navigation';nav.dataset.osrsNav='';
-   const overview=source.querySelector(':scope > .nav-link[href="../"], :scope > .nav-link[href="index.html"]');if(overview){const home=decoratedLink(overview);home.classList.add('osrs-overview');nav.append(home)}
+   const overview=source.querySelector(':scope > .nav-link[href="/"], :scope > .nav-link[href="../"], :scope > .nav-link[href="index.html"]');if(overview){const home=decoratedLink(overview);home.classList.add('osrs-overview');nav.append(home)}
    const groups=document.createElement('div');groups.className='osrs-navigation-groups';
    source.querySelectorAll('.nav-dropdown').forEach(group=>{
     const box=document.createElement('section'),heading=document.createElement('h2'),list=document.createElement('div');
@@ -162,5 +162,6 @@ apply();
 if(!requested)setEnabled(false,false);
 function init(){ready=true;if(enabled)mount();else restoreImages();syncControls();document.querySelectorAll('[data-osrs-theme-switch]').forEach(control=>{if(control.tagName==='BUTTON')control.addEventListener('click',event=>{const choice=event.target.closest('[data-theme-choice]');setEnabled(choice?choice.dataset.themeChoice==='osrs':!(loading?requested:enabled))});else control.addEventListener('change',()=>setEnabled(control.checked))})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+window.addEventListener('ug:navigation-ready',()=>{if(enabled)mount()});
 window.addEventListener('storage',event=>{if(event.key===key||event.key===null){let value=true;try{value=localStorage.getItem(key)!=='off'}catch{storageAvailable=false}setEnabled(value,false)}});
 })();

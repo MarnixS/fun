@@ -61,7 +61,7 @@ async function openPage(path, { selection, templeResponse, templeDocument, womRe
       if (womDocument) window.localStorage.setItem('ug-v20-wom-cache', JSON.stringify(womDocument));
       if (templeDocument) window.localStorage.setItem('ug-v20-temple-cache', JSON.stringify(templeDocument));
       window.fetch = async (input, options) => {
-        const url = new URL(String(input), window.location.href).href;
+        const url = new URL(String(input), window.document.baseURI).href;
         if(fetchLog)fetchLog.push({url,method:options?.method||'GET',body:options?.body});
         if(deferredReadyState&&new URL(url).pathname.endsWith('/assets/portrait-source.txt'))return new Response(fs.readFileSync('docs/assets/portrait-source.txt','utf8'));
         if(url.includes('/api/shared-data')){
