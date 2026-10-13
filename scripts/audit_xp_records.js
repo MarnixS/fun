@@ -3,9 +3,9 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const server=http.createServer((req,res)=>{const file=path.join(process.cwd(),'docs',new URL(req.url,'http://localhost').pathname);try{res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.json')?'application/json':file.endsWith('.css')?'text/css':'text/html');res.end(fs.readFileSync(file))}catch{res.statusCode=404;res.end()}});
 server.listen(0,'127.0.0.1',async()=>{let dom;try{
  process.env.SITE_TEST_URL=`http://127.0.0.1:${server.address().port}/`;const {openPage,waitFor}=require('./audit_v25_jsdom'),requests=[];
- const result=await openPage('xp-records.html?type=skill-xp&metric=agility&period=1',{fetchLog:requests});dom=result.dom;const w=dom.window,d=w.document;
+ const result=await openPage('time-records.html?type=skill-xp&metric=agility&period=1',{fetchLog:requests});dom=result.dom;const w=dom.window,d=w.document;
  await waitFor(()=>d.querySelectorAll('[data-record-key]').length===5&&d.querySelector('#recordsHeading').textContent==='Agility XP · 1 day','saved records with URL state');
- assert.equal(d.querySelector('#nav-record a[href="xp-records.html"]').getAttribute('aria-current'),'page');
+ assert.equal(d.querySelector('#nav-record a[href="time-records.html"]').getAttribute('aria-current'),'page');
  assert.equal(d.querySelectorAll('[data-record-window]').length,6);assert.equal(d.querySelectorAll('#recordsComparison tbody tr').length,5);
  const saved=JSON.parse(fs.readFileSync('docs/data/wom-cache.json')),keys=Array.from(w.UGV21.ALL_KEYS),model=M.build(saved,keys);
  const check=(id,days)=>{
@@ -32,6 +32,6 @@ server.listen(0,'127.0.0.1',async()=>{let dom;try{
  const missing={profiles:{},snapshots:{}};w.dispatchEvent(new w.CustomEvent('ug:data-updated',{detail:{key:w.UGV21.WKEY,document:missing}}));
  await waitFor(()=>d.querySelectorAll('[data-record-rank=""]').length===5,'unknown history stays unranked');assert(d.querySelector('#recordsEvidence').hidden);assert(!d.querySelector('#main-content').textContent.includes('NaN'));
  assert.equal(result.errors.length,0,result.errors.join('; '));assert(!requests.some(r=>r.method==='POST'||r.url.includes('api.wiseoldman.net')||r.url.includes('/api/temple-collection-log')),'no automatic upstream refresh');
- console.log('XP Records UI passed: all windows, XP/level/boss metrics, actual values and ranks, evidence, matrix, URL state, member comparison, saved updates, missing history and no automatic WOM requests.');
+ console.log('Time Records UI passed: all windows, XP/level/boss metrics, actual values and ranks, evidence, matrix, URL state, member comparison, saved updates, missing history and no automatic WOM requests.');
  dom.window.close();server.close();process.exit(0);
 }catch(error){console.error(error);dom?.window.close();server.close();process.exit(1)}});

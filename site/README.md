@@ -29,7 +29,7 @@ visits; they never contact the Wiki price API. Reading the latest commit avoids
 depending on a Pages rebuild for workflow-generated data commits. GitHub may
 delay scheduled runs, so prices can remain older than 12 hours until a run succeeds.
 
-XP Records reads saved WOM snapshots through the shared store. Its pure model
+Time Records reads saved WOM snapshots through the shared store. Its pure model
 finds the largest observed gain within rolling 1/7/30/90/180/365-day windows;
 unknown metrics and counter corrections do not create gains. The page shows
 endpoints and actual observed spans, because sparse history cannot establish

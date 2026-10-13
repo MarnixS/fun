@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const U=window.UGV21,M=window.UGXPRecords;if(!U||!M||document.body.dataset.page!=='xp-records')return;
+const U=window.UGV21,M=window.UGXPRecords;if(!U||!M||document.body.dataset.page!=='time-records')return;
 const {$,$$,fmt,escapeHtml:esc}=U,TYPES=['total-xp','skill-xp','skill-level','total-level','boss'];
 let model=null,selected=U.loadMemberSelection(),type='total-xp',metric='',days=7,evidenceKey='',loadRevision=0;
 const keys=()=>U.ALL_KEYS.filter(k=>selected.has(k));

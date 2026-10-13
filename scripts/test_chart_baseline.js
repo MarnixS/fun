@@ -4,6 +4,8 @@ const dom=new JSDOM('<div id="chart"></div>',{runScripts:'outside-only'}),w=dom.
 w.UGV21={$:s=>d.querySelector(s),fmt:n=>String(n),fmt1:n=>String(n),compact:n=>String(n)};
 w.eval(fs.readFileSync('docs/assets/v21-chartlib.js','utf8'));
 const host=d.querySelector('#chart'),C=w.UGV21Charts;
+const skillData={skills:{overall:{level:2100},slayer:{level:95}}};
+assert.equal(C.metricValue(skillData,'level','slayer'),95,'individual level targets use their own level');assert.equal(C.metricValue(skillData,'level','overall'),2100);assert.equal(C.metricValue(skillData,'level','unknown'),null);
 const line=values=>({name:'Player',color:'#fff',data:values.map((value,i)=>({date:`2026-09-${String(i+1).padStart(2,'0')}T00:00:00Z`,value}))});
 for(const values of [[100,150,250],[100,100,100],[0,0,1],[100,90,150]]){
  C.drawLine(host,[line(values)],{gainMode:true});const svg=host.querySelector('svg');

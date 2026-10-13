@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PAGES = ROOT / 'site/pages'
 PARTIALS = ROOT / 'site/partials'
 INCLUDE = re.compile(rb'<!-- @include ([a-z0-9-]+\.html) -->')
-ALIASES = {'nemesis-beta.html': 'nemesis.html', 'clog-beta.html': 'collection-log.html'}
+ALIASES = {'nemesis-beta.html': 'nemesis.html', 'clog-beta.html': 'collection-log.html', 'xp-records.html': 'time-records.html'}
 ORIGIN = 'https://ugimps.com'
 HREF = re.compile(rb'href="([^"]*)"')
 SCROLL_SECTIONS = {'cumulativeSummary', 'gainCards'}
@@ -50,7 +50,7 @@ def page_metadata(content, name, mapping, public):
                 '<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" type="image/x-icon">'
                 '<link rel="icon" href="/favicon.png" sizes="96x96" type="image/png">'
                 '<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">'
-                '<script src="assets/site-routes.js?v=2"></script>').encode()
+                '<script src="assets/site-routes.js?v=3"></script>').encode()
     base = b'<base href="/docs/" data-ug-public>' if public else b''
     return content.replace(b'<meta charset="utf-8">',
                            b'<meta charset="utf-8">' + base + metadata, 1)

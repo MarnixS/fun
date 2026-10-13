@@ -10,7 +10,7 @@
   function progress(goal,player,wom,temple) {
     if (!goal?.kind || goal.kind==='none') return null;
     let value, source='Reported by player';
-    const d=wom?.profiles?.[player]?.latestSnapshot?.data;
+    const profile=wom?.profiles?.[player],d=profile?.latestSnapshot?.data||profile?.latest_snapshot?.data;
     if(goal.kind==='manual') value=goal.current;
     else if(goal.kind==='level') {value=d?.skills?.[goal.metric]?.level;source='WOM';}
     else if(goal.kind==='xp') {value=d?.skills?.[goal.metric]?.experience;source='WOM';}
@@ -20,5 +20,18 @@
     if(value==null||!Number.isFinite(Number(value))||Number(value)<0||!Number.isFinite(target)||target<=0)return {unknown:true,source};
     return {value:Number(value),target,percent:Math.min(100,Math.max(0,Number(value)/target*100)),source,complete:Number(value)>=target};
   }
-  const api={progress,items};if(typeof module==='object'&&module.exports)module.exports=api;else root.UGGoalProgress=api;
+  function goalHref(player,kind,metric='',targetValue=null) {
+    const params=new URLSearchParams({player,kind});
+    if(metric)params.set('metric',metric);
+    if(targetValue!=null)params.set('target',String(targetValue));
+    return 'goals.html?'+params+'#new-goal';
+  }
+  function statsHref(goal,player) {
+    if(!['level','xp','boss'].includes(goal?.kind)||!goal.metric)return '';
+    const params=new URLSearchParams({player});
+    if(goal.kind==='boss'){params.set('boss',goal.metric);return 'kc-comparison.html?'+params;}
+    params.set('kind',goal.kind==='level'?'level':'skill');params.set('metric',goal.metric);
+    return 'hiscores.html?'+params;
+  }
+  const api={progress,items,goalHref,statsHref};if(typeof module==='object'&&module.exports)module.exports=api;else root.UGGoalProgress=api;
 })(typeof window==='undefined'?globalThis:window);

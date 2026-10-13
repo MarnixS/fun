@@ -12,6 +12,11 @@ uses 110% image width and a centred −5% offset, cropping empty margins while
 keeping the solid side-character silhouettes visible. Status cards, navigation
 and page content retain their common width inside the page pillars.
 
+The current roster layout reuses the unchanged bitmap in CSS layers. Its order
+is Poep Aura, Dikste, Big Dog Aura, Lijpste and Lompste. Each pet stays with its
+owner; the saved member filter fades unselected pairs to 22% opacity. See
+[BANNER_ROSTER.md](BANNER_ROSTER.md) for layout and verification notes.
+
 The `data-osrs-header="cohesive"` marker selects the combined foreground and
 suppresses duplicate logos and companions. Modern restores its existing
 banner at 1200 × 265. The approved 1536 × 512 JPEG, original logo, legacy

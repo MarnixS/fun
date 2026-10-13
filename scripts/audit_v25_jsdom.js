@@ -27,7 +27,7 @@ function jsonResponse(value, status = 200) {
   });
 }
 
-async function openPage(path, { selection, templeResponse, templeDocument, womResponse, womDocument, liveSync=false, savedTemple, fetchLog, sharedDocs, indexedDB, deferredReadyState=false, priceData={}, priceResponse, directTempleResponse, localState={}, deployedDocs } = {}) {
+async function openPage(path, { selection, templeResponse, templeDocument, womResponse, womDocument, liveSync=false, savedTemple, fetchLog, sharedDocs, indexedDB, deferredReadyState=false, priceData={}, priceResponse, directTempleResponse, localState={}, deployedDocs, goalResponse } = {}) {
   const {mergeWom,mergeTemple}=require('../docs/assets/wom-store');
   const templeTools=require('../api/temple-collection-log')._test;
   const backend=sharedDocs||{wom:JSON.parse(fs.readFileSync('docs/data/wom-cache.json')),temple:savedTemple||JSON.parse(fs.readFileSync('docs/data/temple-clog.json'))};
@@ -63,6 +63,7 @@ async function openPage(path, { selection, templeResponse, templeDocument, womRe
       window.fetch = async (input, options) => {
         const url = new URL(String(input), window.document.baseURI).href;
         if(fetchLog)fetchLog.push({url,method:options?.method||'GET',body:options?.body});
+        if(goalResponse&&new URL(url).pathname==='/api/player-goals')return goalResponse(options,jsonResponse);
         if(deferredReadyState&&new URL(url).pathname.endsWith('/assets/portrait-source.txt'))return new Response(fs.readFileSync('docs/assets/portrait-source.txt','utf8'));
         if(url.includes('/api/shared-data')){
           if((options?.method||'GET')==='GET')return sharedDocs?jsonResponse(receipt(new URL(url).searchParams.get('source'))):jsonResponse({error:'Testing saved fallback'},503);

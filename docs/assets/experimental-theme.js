@@ -55,7 +55,7 @@ function swapImage(image,target,player='',banner=false){
  if(image.dataset.modernSrc){const original=originalImages.get(image);original.src=image.dataset.modernSrc;original.alt=image.getAttribute('data-modern-alt')??image.getAttribute('alt')}
  if(current===target){if(player)image.dataset.osrsPlayer=player;return}
  image.setAttribute('src',target);image.removeAttribute('srcset');if(player)image.dataset.osrsPlayer=player;
- if(banner){const cohesive=image.dataset.osrsHeader==='cohesive';image.alt=cohesive?'United Gimps: Dikste, Big Dog Aura, Lijpste, Poep Aura and Lompste with their pets, the United Gimps logo and ten Old School side characters':'Original in-game appearances of Dikste, Big Dog Aura, Lijpste, Poep Aura and Lompste in an Old School courtyard';image.width=cohesive?2172:2048;image.height=cohesive?724:690}
+ if(banner){const cohesive=image.dataset.osrsHeader==='cohesive';image.alt=cohesive?'United Gimps: Poep Aura, Dikste, Big Dog Aura, Lijpste and Lompste with their pets, the United Gimps logo and ten Old School side characters':'Original in-game appearances of Dikste, Big Dog Aura, Lijpste, Poep Aura and Lompste in an Old School courtyard';image.width=cohesive?2172:2048;image.height=cohesive?724:690}
 }
 function refreshImages(){
  if(!enabled||typeof document==='undefined'||!document.body)return;
@@ -95,7 +95,7 @@ function restoreImages(){
  document.querySelectorAll('img[data-modern-src]').forEach(image=>{const key=playerKeyFor(image);for(const name of ['src','srcset','alt','width','height']){const value=image.getAttribute('data-modern-'+name);if(value!==null)image.setAttribute(name,name==='src'?modernPlayerImage(key,value):value)}});
 }
 try{requested=localStorage.getItem(key)!=='off'}catch{storageAvailable=false}
-const iconMap={'../':'play.gif','index.html':'play.gif','collection-log.html':'manual.gif','gim.html':'menu-icons/advanced-log.svg','hypothetical.html':'menu-icons/hypothetical-log.svg','rng.html':'menu-icons/rng-index.svg','hiscores.html':'hiscore.gif','cumulative-xp.html':'menu-icons/cumulative-xp.svg','progress.html':'menu-icons/stat-progress.svg','time-machine.html':'worldmap.gif','chronicle.html':'manual.gif','history.html':'menu-icons/timeline.svg','xp-records.html':'menu-icons/xp-records.svg','goals.html':'menu-icons/goals.svg','kc-comparison.html':'menu-icons/kc-comparison.svg','nemesis.html':'create.gif','nemesis-beta.html':'create.gif','faq.html':'support.png','news.html':'comment.gif','experimental.html':'beta.gif'};
+const iconMap={'../':'play.gif','index.html':'play.gif','collection-log.html':'manual.gif','gim.html':'menu-icons/advanced-log.svg','hypothetical.html':'menu-icons/hypothetical-log.svg','rng.html':'menu-icons/rng-index.svg','hiscores.html':'hiscore.gif','cumulative-xp.html':'menu-icons/cumulative-xp.svg','progress.html':'menu-icons/stat-progress.svg','time-machine.html':'worldmap.gif','chronicle.html':'manual.gif','history.html':'menu-icons/timeline.svg','time-records.html':'menu-icons/xp-records.svg','xp-records.html':'menu-icons/xp-records.svg','goals.html':'menu-icons/goals.svg','kc-comparison.html':'menu-icons/kc-comparison.svg','nemesis.html':'create.gif','nemesis-beta.html':'create.gif','faq.html':'support.png','news.html':'comment.gif','experimental.html':'beta.gif'};
 function decoratedLink(link){
  const copy=link.cloneNode(true),icon=document.createElement('img');
  copy.className='osrs-menu-link'+(link.classList.contains('active')?' active':'');
