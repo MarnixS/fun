@@ -1,0 +1,1355 @@
+{
+  "retrieved_at": "2026-10-13",
+  "source": "Old School RuneScape Wiki",
+  "source_api": "https://oldschool.runescape.wiki/api.php",
+  "wom_reference_commit": "bd792deef6513b1e137d3c3277b8825f6acbeef5",
+  "metrics": {
+    "abyssal_sire": {
+      "name": "Abyssal Sire",
+      "npcs": [
+        "Abyssal Sire"
+      ],
+      "files": [
+        "abyssal-sire-icon.png"
+      ]
+    },
+    "alchemical_hydra": {
+      "name": "Alchemical Hydra",
+      "npcs": [
+        "Alchemical Hydra"
+      ],
+      "files": [
+        "alchemical-hydra-icon.png"
+      ]
+    },
+    "amoxliatl": {
+      "name": "Amoxliatl",
+      "npcs": [
+        "Amoxliatl"
+      ],
+      "files": [
+        "amoxliatl.png"
+      ]
+    },
+    "araxxor": {
+      "name": "Araxxor",
+      "npcs": [
+        "Araxxor"
+      ],
+      "files": [
+        "araxxor.png"
+      ]
+    },
+    "artio": {
+      "name": "Artio",
+      "npcs": [
+        "Artio"
+      ],
+      "files": [
+        "artio.png"
+      ]
+    },
+    "barrows_chests": {
+      "name": "Barrows Chests",
+      "npcs": [
+        "Barrows Brothers"
+      ],
+      "files": [
+        "barrows-brothers-icon.png"
+      ]
+    },
+    "brutus": {
+      "name": "Brutus",
+      "npcs": [
+        "Brutus"
+      ],
+      "files": [
+        "brutus.png"
+      ]
+    },
+    "bryophyta": {
+      "name": "Bryophyta",
+      "npcs": [
+        "Bryophyta"
+      ],
+      "files": [
+        "bryophyta-icon.png"
+      ]
+    },
+    "callisto": {
+      "name": "Callisto",
+      "npcs": [
+        "Callisto"
+      ],
+      "files": [
+        "callisto.png"
+      ]
+    },
+    "calvarion": {
+      "name": "Calvar'ion",
+      "npcs": [
+        "Calvar'ion"
+      ],
+      "files": [
+        "calvar-ion.png"
+      ]
+    },
+    "cerberus": {
+      "name": "Cerberus",
+      "npcs": [
+        "Cerberus"
+      ],
+      "files": [
+        "cerberus-icon.png"
+      ]
+    },
+    "chambers_of_xeric": {
+      "name": "Chambers Of Xeric",
+      "npcs": [
+        "Great Olm"
+      ],
+      "files": [
+        "great-olm-icon.png"
+      ]
+    },
+    "chambers_of_xeric_challenge_mode": {
+      "name": "Chambers Of Xeric (CM)",
+      "npcs": [
+        "Great Olm"
+      ],
+      "files": [
+        "great-olm-icon.png"
+      ]
+    },
+    "chaos_elemental": {
+      "name": "Chaos Elemental",
+      "npcs": [
+        "Chaos Elemental"
+      ],
+      "files": [
+        "chaos-elemental.png"
+      ]
+    },
+    "chaos_fanatic": {
+      "name": "Chaos Fanatic",
+      "npcs": [
+        "Chaos Fanatic"
+      ],
+      "files": [
+        "chaos-fanatic.png"
+      ]
+    },
+    "commander_zilyana": {
+      "name": "Commander Zilyana",
+      "npcs": [
+        "Commander Zilyana"
+      ],
+      "files": [
+        "commander-zilyana-icon.png"
+      ]
+    },
+    "corporeal_beast": {
+      "name": "Corporeal Beast",
+      "npcs": [
+        "Corporeal Beast"
+      ],
+      "files": [
+        "corporeal-beast-icon.png"
+      ]
+    },
+    "crazy_archaeologist": {
+      "name": "Crazy Archaeologist",
+      "npcs": [
+        "Crazy Archaeologist"
+      ],
+      "files": [
+        "crazy-archaeologist.png"
+      ]
+    },
+    "dagannoth_prime": {
+      "name": "Dagannoth Prime",
+      "npcs": [
+        "Dagannoth Prime"
+      ],
+      "files": [
+        "dagannoth-prime.png"
+      ]
+    },
+    "dagannoth_rex": {
+      "name": "Dagannoth Rex",
+      "npcs": [
+        "Dagannoth Rex"
+      ],
+      "files": [
+        "dagannoth-rex.png"
+      ]
+    },
+    "dagannoth_supreme": {
+      "name": "Dagannoth Supreme",
+      "npcs": [
+        "Dagannoth Supreme"
+      ],
+      "files": [
+        "dagannoth-supreme.png"
+      ]
+    },
+    "deranged_archaeologist": {
+      "name": "Deranged Archaeologist",
+      "npcs": [
+        "Deranged Archaeologist"
+      ],
+      "files": [
+        "deranged-archaeologist.png"
+      ]
+    },
+    "doom_of_mokhaiotl": {
+      "name": "Doom of Mokhaiotl",
+      "npcs": [
+        "Doom of Mokhaiotl"
+      ],
+      "files": [
+        "doom-of-mokhaiotl.png"
+      ]
+    },
+    "duke_sucellus": {
+      "name": "Duke Sucellus",
+      "npcs": [
+        "Duke Sucellus"
+      ],
+      "files": [
+        "duke-sucellus.png"
+      ]
+    },
+    "general_graardor": {
+      "name": "General Graardor",
+      "npcs": [
+        "General Graardor"
+      ],
+      "files": [
+        "general-graardor-icon.png"
+      ]
+    },
+    "giant_mole": {
+      "name": "Giant Mole",
+      "npcs": [
+        "Giant Mole"
+      ],
+      "files": [
+        "giant-mole-icon.png"
+      ]
+    },
+    "grotesque_guardians": {
+      "name": "Grotesque Guardians",
+      "npcs": [
+        "Grotesque Guardians"
+      ],
+      "files": [
+        "grotesque-guardians-icon.png"
+      ]
+    },
+    "hespori": {
+      "name": "Hespori",
+      "npcs": [
+        "Hespori"
+      ],
+      "files": [
+        "hespori-icon.png"
+      ]
+    },
+    "the_hueycoatl": {
+      "name": "The Hueycoatl",
+      "npcs": [
+        "The Hueycoatl"
+      ],
+      "files": [
+        "the-hueycoatl.png"
+      ]
+    },
+    "kalphite_queen": {
+      "name": "Kalphite Queen",
+      "npcs": [
+        "Kalphite Queen"
+      ],
+      "files": [
+        "kalphite-queen-icon.png"
+      ]
+    },
+    "king_black_dragon": {
+      "name": "King Black Dragon",
+      "npcs": [
+        "King Black Dragon"
+      ],
+      "files": [
+        "king-black-dragon-icon.png"
+      ]
+    },
+    "kraken": {
+      "name": "Kraken",
+      "npcs": [
+        "Kraken"
+      ],
+      "files": [
+        "kraken.png"
+      ]
+    },
+    "kreearra": {
+      "name": "Kree'Arra",
+      "npcs": [
+        "Kree'Arra"
+      ],
+      "files": [
+        "kree-arra-icon.png"
+      ]
+    },
+    "kril_tsutsaroth": {
+      "name": "K'ril Tsutsaroth",
+      "npcs": [
+        "K'ril Tsutsaroth"
+      ],
+      "files": [
+        "k-ril-tsutsaroth-icon.png"
+      ]
+    },
+    "lunar_chests": {
+      "name": "Lunar Chests",
+      "npcs": [
+        "Eclipse Moon",
+        "Blue Moon",
+        "Blood Moon"
+      ],
+      "files": [
+        "eclipse-moon.png",
+        "blue-moon.png",
+        "blood-moon.png"
+      ]
+    },
+    "mad_angel": {
+      "name": "Mad Angel",
+      "npcs": [
+        "Mad Angel"
+      ],
+      "files": [
+        "mad-angel.webp"
+      ]
+    },
+    "maggot_king": {
+      "name": "Maggot King",
+      "npcs": [
+        "Maggot King"
+      ],
+      "files": [
+        "maggot-king.png"
+      ]
+    },
+    "mimic": {
+      "name": "Mimic",
+      "npcs": [
+        "Mimic"
+      ],
+      "files": [
+        "the-mimic-icon.png"
+      ]
+    },
+    "nex": {
+      "name": "Nex",
+      "npcs": [
+        "Nex"
+      ],
+      "files": [
+        "nex-icon.png"
+      ]
+    },
+    "nightmare": {
+      "name": "Nightmare",
+      "npcs": [
+        "Nightmare"
+      ],
+      "files": [
+        "the-nightmare-icon.png"
+      ]
+    },
+    "phosanis_nightmare": {
+      "name": "Phosani's Nightmare",
+      "npcs": [
+        "Phosani's Nightmare"
+      ],
+      "files": [
+        "the-nightmare-icon.png"
+      ]
+    },
+    "obor": {
+      "name": "Obor",
+      "npcs": [
+        "Obor"
+      ],
+      "files": [
+        "obor-icon.png"
+      ]
+    },
+    "phantom_muspah": {
+      "name": "Phantom Muspah",
+      "npcs": [
+        "Phantom Muspah"
+      ],
+      "files": [
+        "phantom-muspah-ranged.png"
+      ]
+    },
+    "sarachnis": {
+      "name": "Sarachnis",
+      "npcs": [
+        "Sarachnis"
+      ],
+      "files": [
+        "sarachnis-icon.png"
+      ]
+    },
+    "scorpia": {
+      "name": "Scorpia",
+      "npcs": [
+        "Scorpia"
+      ],
+      "files": [
+        "scorpia.png"
+      ]
+    },
+    "scurrius": {
+      "name": "Scurrius",
+      "npcs": [
+        "Scurrius"
+      ],
+      "files": [
+        "scurrius.png"
+      ]
+    },
+    "shellbane_gryphon": {
+      "name": "Shellbane Gryphon",
+      "npcs": [
+        "Shellbane Gryphon"
+      ],
+      "files": [
+        "shellbane-gryphon.png"
+      ]
+    },
+    "skotizo": {
+      "name": "Skotizo",
+      "npcs": [
+        "Skotizo"
+      ],
+      "files": [
+        "skotizo-icon.png"
+      ]
+    },
+    "sol_heredit": {
+      "name": "Sol Heredit",
+      "npcs": [
+        "Sol Heredit"
+      ],
+      "files": [
+        "sol-heredit.png"
+      ]
+    },
+    "spindel": {
+      "name": "Spindel",
+      "npcs": [
+        "Spindel"
+      ],
+      "files": [
+        "spindel.png"
+      ]
+    },
+    "tempoross": {
+      "name": "Tempoross",
+      "npcs": [
+        "Tempoross"
+      ],
+      "files": [
+        "tempoross-icon.png"
+      ]
+    },
+    "the_gauntlet": {
+      "name": "The Gauntlet",
+      "npcs": [
+        "Crystalline Hunllef"
+      ],
+      "files": [
+        "crystalline-hunllef-icon.png"
+      ]
+    },
+    "the_corrupted_gauntlet": {
+      "name": "The Corrupted Gauntlet",
+      "npcs": [
+        "Corrupted Hunllef"
+      ],
+      "files": [
+        "corrupted-hunllef.png"
+      ]
+    },
+    "the_leviathan": {
+      "name": "The Leviathan",
+      "npcs": [
+        "The Leviathan"
+      ],
+      "files": [
+        "the-leviathan.png"
+      ]
+    },
+    "the_royal_titans": {
+      "name": "The Royal Titans",
+      "npcs": [
+        "Eldric the Ice King",
+        "Branda the Fire Queen"
+      ],
+      "files": [
+        "eldric-the-ice-king.png",
+        "branda-the-fire-queen.png"
+      ]
+    },
+    "the_whisperer": {
+      "name": "The Whisperer",
+      "npcs": [
+        "The Whisperer"
+      ],
+      "files": [
+        "the-whisperer.png"
+      ]
+    },
+    "theatre_of_blood": {
+      "name": "Theatre Of Blood",
+      "npcs": [
+        "Verzik Vitur"
+      ],
+      "files": [
+        "verzik-vitur-icon.png"
+      ]
+    },
+    "theatre_of_blood_hard_mode": {
+      "name": "Theatre Of Blood (HM)",
+      "npcs": [
+        "Verzik Vitur"
+      ],
+      "files": [
+        "verzik-vitur-icon.png"
+      ]
+    },
+    "thermonuclear_smoke_devil": {
+      "name": "Thermonuclear Smoke Devil",
+      "npcs": [
+        "Thermonuclear Smoke Devil"
+      ],
+      "files": [
+        "thermonuclear-smoke-devil-icon.png"
+      ]
+    },
+    "tombs_of_amascut": {
+      "name": "Tombs of Amascut",
+      "npcs": [
+        "Tumeken's Warden"
+      ],
+      "files": [
+        "tumeken-s-warden-level-544.png"
+      ]
+    },
+    "tombs_of_amascut_expert": {
+      "name": "Tombs of Amascut (Expert Mode)",
+      "npcs": [
+        "Tumeken's Warden"
+      ],
+      "files": [
+        "tumeken-s-warden-level-544.png"
+      ]
+    },
+    "tzkal_zuk": {
+      "name": "TzKal-Zuk",
+      "npcs": [
+        "TzKal-Zuk"
+      ],
+      "files": [
+        "tzkal-zuk-icon.png"
+      ]
+    },
+    "tztok_jad": {
+      "name": "TzTok-Jad",
+      "npcs": [
+        "TzTok-Jad"
+      ],
+      "files": [
+        "tztok-jad.png"
+      ]
+    },
+    "vardorvis": {
+      "name": "Vardorvis",
+      "npcs": [
+        "Vardorvis"
+      ],
+      "files": [
+        "vardorvis.png"
+      ]
+    },
+    "venenatis": {
+      "name": "Venenatis",
+      "npcs": [
+        "Venenatis"
+      ],
+      "files": [
+        "venenatis.png"
+      ]
+    },
+    "vetion": {
+      "name": "Vet'ion",
+      "npcs": [
+        "Vet'ion"
+      ],
+      "files": [
+        "vet-ion.png"
+      ]
+    },
+    "vorkath": {
+      "name": "Vorkath",
+      "npcs": [
+        "Vorkath"
+      ],
+      "files": [
+        "vorkath-icon.png"
+      ]
+    },
+    "wintertodt": {
+      "name": "Wintertodt",
+      "npcs": [
+        "Wintertodt"
+      ],
+      "files": [
+        "wintertodt-icon.png"
+      ]
+    },
+    "yama": {
+      "name": "Yama",
+      "npcs": [
+        "Yama"
+      ],
+      "files": [
+        "yama.png"
+      ]
+    },
+    "zalcano": {
+      "name": "Zalcano",
+      "npcs": [
+        "Zalcano"
+      ],
+      "files": [
+        "zalcano-icon.png"
+      ]
+    },
+    "zulrah": {
+      "name": "Zulrah",
+      "npcs": [
+        "Zulrah"
+      ],
+      "files": [
+        "zulrah-icon.png"
+      ]
+    }
+  },
+  "assets": {
+    "Abyssal Sire icon.png": {
+      "file": "abyssal-sire-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 473,
+      "sha256": "0715adc0be7c6c0aa96902ca5bbeeb85eb9c57050b19482802df8ebf88209b00",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Abyssal_Sire_icon.png",
+      "wiki_original_sha1": "721c34997983fb6fa4db6f56af1e7a0185ed178a",
+      "download_url": "https://oldschool.runescape.wiki/images/Abyssal_Sire_icon.png?31517"
+    },
+    "Alchemical Hydra icon.png": {
+      "file": "alchemical-hydra-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 434,
+      "sha256": "2a5d37024d6d3425410eee826a8e073ce3e541c347fa3a72e7df15875e6d2054",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Alchemical_Hydra_icon.png",
+      "wiki_original_sha1": "945ae6cf8d6547b2e29d68e3c5c50f7ca2c51e4e",
+      "download_url": "https://oldschool.runescape.wiki/images/Alchemical_Hydra_icon.png?31517"
+    },
+    "Amoxliatl.png": {
+      "file": "amoxliatl.png",
+      "width": 31,
+      "height": 64,
+      "bytes": 2833,
+      "sha256": "3d20513367a9a7bdec610209c168187ca28c5d16246ce22190389e9b0bbdbec4",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Amoxliatl.png",
+      "wiki_original_sha1": "e417e613b303480f31cd5d591029a4d5adebc6f8",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Amoxliatl.png/31px-Amoxliatl.png?01b12"
+    },
+    "Araxxor.png": {
+      "file": "araxxor.png",
+      "width": 64,
+      "height": 39,
+      "bytes": 3767,
+      "sha256": "352ab6712529592e26ed0066280d3713948cb4b4b7a5db2853fd8d59b78f7df8",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Araxxor.png",
+      "wiki_original_sha1": "966ee78e7d2801d53c03b68815595bb30a270d12",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Araxxor.png/64px-Araxxor.png?35d2e"
+    },
+    "Artio.png": {
+      "file": "artio.png",
+      "width": 64,
+      "height": 50,
+      "bytes": 4594,
+      "sha256": "6e6d6b03f3660d79b11b193c13489078c966f5b240d1b8e411283588d442f2a7",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Artio.png",
+      "wiki_original_sha1": "1bc2a057e1e62bdbe150219ac3d903074c1a5d94",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Artio.png/64px-Artio.png?bfba7"
+    },
+    "Barrows Brothers icon.png": {
+      "file": "barrows-brothers-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 402,
+      "sha256": "5b07b800ba0bbe694776bb304070a1bccf65fbc7ea79556f88fc8d49760b455b",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Barrows_Brothers_icon.png",
+      "wiki_original_sha1": "cfe0a179199d828197e1684cc7a880f2c1d415a1",
+      "download_url": "https://oldschool.runescape.wiki/images/Barrows_Brothers_icon.png?31517"
+    },
+    "Blood Moon.png": {
+      "file": "blood-moon.png",
+      "width": 34,
+      "height": 63,
+      "bytes": 2940,
+      "sha256": "256c2b37986970e45e4a13f7aeb2c153cd3164e203f12475e6fe1948bcc98a33",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Blood_Moon.png",
+      "wiki_original_sha1": "0f95084d1048c84370a9001afb38b0d38e2de38e",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Blood_Moon.png/34px-Blood_Moon.png?c3e72"
+    },
+    "Blue Moon.png": {
+      "file": "blue-moon.png",
+      "width": 37,
+      "height": 64,
+      "bytes": 2801,
+      "sha256": "91234b975e158c182a3a47816850a3d8b1fa110239ae28ed09da7478093b9cba",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Blue_Moon.png",
+      "wiki_original_sha1": "f9ce46705692ca105e652521a0f7af291504399b",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Blue_Moon.png/37px-Blue_Moon.png?c3e72"
+    },
+    "Brutus.png": {
+      "file": "brutus.png",
+      "width": 64,
+      "height": 47,
+      "bytes": 4331,
+      "sha256": "adc4db243e91ac14dfba7b5dc42b4e95cb02b7a8ace3faccabd9f4bbe3f450c1",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Brutus.png",
+      "wiki_original_sha1": "cf7b9d6b94345728bd1d8789184d1bcd31bdbf0e",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Brutus.png/64px-Brutus.png?eda9e"
+    },
+    "Bryophyta icon.png": {
+      "file": "bryophyta-icon.png",
+      "width": 23,
+      "height": 25,
+      "bytes": 409,
+      "sha256": "dd5b3ffd75ce93a840fd1b07a1630bd11f54ac4de5cf5e88f0286bf101a52164",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Bryophyta_icon.png",
+      "wiki_original_sha1": "3f6a393590f598157643cea37ce7835aec12a40d",
+      "download_url": "https://oldschool.runescape.wiki/images/Bryophyta_icon.png?31517"
+    },
+    "Callisto.png": {
+      "file": "callisto.png",
+      "width": 64,
+      "height": 50,
+      "bytes": 4549,
+      "sha256": "cc3a91ea77fde7b420245a0c807716eb5b2be640b63cfe1e603bcfbb754ff550",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Callisto.png",
+      "wiki_original_sha1": "1684de79f0bcdc7e47fef3941467d2e4e9808f51",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Callisto.png/64px-Callisto.png?bfba7"
+    },
+    "Calvar'ion.png": {
+      "file": "calvar-ion.png",
+      "width": 35,
+      "height": 64,
+      "bytes": 4505,
+      "sha256": "e975da142d9965a96002d3d1011634cf1137ab90fb5303d7dc97b5dab3a20e33",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Calvar%27ion.png",
+      "wiki_original_sha1": "0f292ba59cee8712d125a36e8784e52a3ccf5dc7",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Calvar%27ion.png/35px-Calvar%27ion.png?6268f"
+    },
+    "Cerberus icon.png": {
+      "file": "cerberus-icon.png",
+      "width": 24,
+      "height": 28,
+      "bytes": 481,
+      "sha256": "6359ac3463abf372ecda1b307d771d34dd260d49f5f4008105ca6261cfab3582",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Cerberus_icon.png",
+      "wiki_original_sha1": "c36bccee181c07c1962b4f1adc722a94ae67d55a",
+      "download_url": "https://oldschool.runescape.wiki/images/Cerberus_icon.png?8b471"
+    },
+    "Chaos Elemental.png": {
+      "file": "chaos-elemental.png",
+      "width": 64,
+      "height": 28,
+      "bytes": 2775,
+      "sha256": "eff37dca2d943a8be6bfbe847f153ecf8c202acb1111d32e1774c20711031e10",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Chaos_Elemental.png",
+      "wiki_original_sha1": "69bf45fc233662cd25f62abf908b28e0abfa8d5f",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Chaos_Elemental.png/64px-Chaos_Elemental.png?c170c"
+    },
+    "Chaos Fanatic.png": {
+      "file": "chaos-fanatic.png",
+      "width": 36,
+      "height": 64,
+      "bytes": 4464,
+      "sha256": "9c034a2338b7936f9767a8777998c05d91ccc94703cc785ab989412fdcb88ec4",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Chaos_Fanatic.png",
+      "wiki_original_sha1": "dbfaaf3c8552cefa2eea923ef252ddde8c54adaf",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Chaos_Fanatic.png/36px-Chaos_Fanatic.png?8871d"
+    },
+    "Commander Zilyana icon.png": {
+      "file": "commander-zilyana-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 451,
+      "sha256": "3ecc42e7164ce4ebdef4ec7e16c0958d87b8146409b531b74362fa47c734f494",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Commander_Zilyana_icon.png",
+      "wiki_original_sha1": "129be0305f1726a4f18d645a4d3423a99febd693",
+      "download_url": "https://oldschool.runescape.wiki/images/Commander_Zilyana_icon.png?31517"
+    },
+    "Corporeal Beast icon.png": {
+      "file": "corporeal-beast-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 405,
+      "sha256": "2524fdeaf4157c25eeb3ac776e2900e2421ba6c9b3cf42d9cb30be9c33ccb10c",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Corporeal_Beast_icon.png",
+      "wiki_original_sha1": "a53324a8260b9ca3389d366f317244aaf3a514f8",
+      "download_url": "https://oldschool.runescape.wiki/images/Corporeal_Beast_icon.png?31517"
+    },
+    "Crazy archaeologist.png": {
+      "file": "crazy-archaeologist.png",
+      "width": 21,
+      "height": 62,
+      "bytes": 3132,
+      "sha256": "ace1c7fe763662fb11a89f8b648f0659e358a42d21a8a05d0b854fcbe3275761",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Crazy_archaeologist.png",
+      "wiki_original_sha1": "3213e5244e8395e31b05504b9eec83f4a24e6718",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Crazy_archaeologist.png/21px-Crazy_archaeologist.png?78fa1"
+    },
+    "Dagannoth Prime.png": {
+      "file": "dagannoth-prime.png",
+      "width": 45,
+      "height": 64,
+      "bytes": 4168,
+      "sha256": "1b0b2fcfcfc4550d11fa40e3d146fa9759500e9188eb68a336f8783c14bb91e3",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Dagannoth_Prime.png",
+      "wiki_original_sha1": "db2cc710866806a716254bde0ab79dbe74b595ac",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Dagannoth_Prime.png/45px-Dagannoth_Prime.png?945b1"
+    },
+    "Dagannoth Rex.png": {
+      "file": "dagannoth-rex.png",
+      "width": 56,
+      "height": 64,
+      "bytes": 4788,
+      "sha256": "16baa38778fd866df5a84283980cfc65a5e2892d5741f776c0ae805a5561c72d",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Dagannoth_Rex.png",
+      "wiki_original_sha1": "8fe3877706a582883dbb203bddaac0a995f6c462",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Dagannoth_Rex.png/56px-Dagannoth_Rex.png?a99a9"
+    },
+    "Dagannoth Supreme.png": {
+      "file": "dagannoth-supreme.png",
+      "width": 46,
+      "height": 64,
+      "bytes": 4114,
+      "sha256": "0ef44e07188ef8d21b7bd183c8a1b3f1fae3f216531d16a71d6024b81473ef31",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Dagannoth_Supreme.png",
+      "wiki_original_sha1": "292ffe866808b4b8ec5f7fc07b20c52cd0df85ad",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Dagannoth_Supreme.png/46px-Dagannoth_Supreme.png?81f00"
+    },
+    "Deranged archaeologist.png": {
+      "file": "deranged-archaeologist.png",
+      "width": 21,
+      "height": 62,
+      "bytes": 2754,
+      "sha256": "d266764d8f6ee227f556e6636fbbc3705160c1d9ce7100489c0d9b8e417d5a3c",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Deranged_archaeologist.png",
+      "wiki_original_sha1": "d12ef7d8b8206e07ebb65ce83fba5a401b7ea10c",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Deranged_archaeologist.png/21px-Deranged_archaeologist.png?32c7e"
+    },
+    "Doom of Mokhaiotl.png": {
+      "file": "doom-of-mokhaiotl.png",
+      "width": 64,
+      "height": 45,
+      "bytes": 5420,
+      "sha256": "8e800408dbfc58f46fc712d377cc445be83598619dc3e5e00fbc46d06d63f762",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Doom_of_Mokhaiotl.png",
+      "wiki_original_sha1": "1a8cd43815f314f9142e0e22ae2b7ea5ff718512",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Doom_of_Mokhaiotl.png/64px-Doom_of_Mokhaiotl.png?e5edb"
+    },
+    "Duke Sucellus.png": {
+      "file": "duke-sucellus.png",
+      "width": 58,
+      "height": 64,
+      "bytes": 6838,
+      "sha256": "9b993983e6f9b8e723c94c8323656cbf42836b7505f014421790bac08644fa46",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Duke_Sucellus.png",
+      "wiki_original_sha1": "d7005161496b872c8758be23073d723d3c1c7876",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Duke_Sucellus.png/58px-Duke_Sucellus.png?d588a"
+    },
+    "Eclipse Moon.png": {
+      "file": "eclipse-moon.png",
+      "width": 34,
+      "height": 63,
+      "bytes": 2739,
+      "sha256": "22045519c8e7f1d25cc530a2c699b9e081b29799a7e540721085f001f65b9fe9",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Eclipse_Moon.png",
+      "wiki_original_sha1": "5b38bd1fb72f3c2bba28b4b8c0ade70bdc6002d2",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Eclipse_Moon.png/34px-Eclipse_Moon.png?c3e72"
+    },
+    "General Graardor icon.png": {
+      "file": "general-graardor-icon.png",
+      "width": 24,
+      "height": 25,
+      "bytes": 464,
+      "sha256": "8cb6dc2e5877f571a44cd32b178b9f503dc68009beabc127116a639230bc4b4f",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:General_Graardor_icon.png",
+      "wiki_original_sha1": "0fe45b561303cd454a463edecb9ef51f59b84032",
+      "download_url": "https://oldschool.runescape.wiki/images/General_Graardor_icon.png?73109"
+    },
+    "Giant Mole icon.png": {
+      "file": "giant-mole-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 281,
+      "sha256": "561a8e44e3e7d5c1870e95f5bd3e236cdcfe2803289e1058e7ae1d0ff84e6d77",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Giant_Mole_icon.png",
+      "wiki_original_sha1": "684ee8fcecc5916a0cc74993c297d505ab312bac",
+      "download_url": "https://oldschool.runescape.wiki/images/Giant_Mole_icon.png?31517"
+    },
+    "Great Olm icon.png": {
+      "file": "great-olm-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 409,
+      "sha256": "4f907d93a3ddcd7c28fb37a03b0f94dc377b7715b6025d2ea4a590df798a5119",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Great_Olm_icon.png",
+      "wiki_original_sha1": "5a00655cc7d3d1d2778e9053255a434617adacd5",
+      "download_url": "https://oldschool.runescape.wiki/images/Great_Olm_icon.png?73109"
+    },
+    "Grotesque Guardians icon.png": {
+      "file": "grotesque-guardians-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 297,
+      "sha256": "1d388cac6658eed3e8523b61a68c69ab96e861e5a277671c9c9099d5d232e611",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Grotesque_Guardians_icon.png",
+      "wiki_original_sha1": "d1dca364aa6691bbd749e8eef229f741d7ede1c8",
+      "download_url": "https://oldschool.runescape.wiki/images/Grotesque_Guardians_icon.png?31517"
+    },
+    "Hespori icon.png": {
+      "file": "hespori-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 302,
+      "sha256": "c6ed601f8a078006bd9c8239412bc10cc2d313152f196b11c4c3e2c6f98f6bea",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Hespori_icon.png",
+      "wiki_original_sha1": "d453f560cc81514ea7858bc434bd863135109194",
+      "download_url": "https://oldschool.runescape.wiki/images/Hespori_icon.png?31517"
+    },
+    "K'ril Tsutsaroth icon.png": {
+      "file": "k-ril-tsutsaroth-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 325,
+      "sha256": "11ed3afa3011cca8969468ffa9e9a92a41c5d3e03ca67d5646961f4bf4e99dd1",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:K%27ril_Tsutsaroth_icon.png",
+      "wiki_original_sha1": "f4c4646579d10a3e1b5863202b6735f2a61c0a1c",
+      "download_url": "https://oldschool.runescape.wiki/images/K%27ril_Tsutsaroth_icon.png?73109"
+    },
+    "Kalphite Queen icon.png": {
+      "file": "kalphite-queen-icon.png",
+      "width": 25,
+      "height": 23,
+      "bytes": 352,
+      "sha256": "bf8a4be23753053bc1d75faf523e3004203d4c46b0206488a34bd7b0c4678c71",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Kalphite_Queen_icon.png",
+      "wiki_original_sha1": "ec99270259f1c6c91515698b4dde6a7ac7b6304a",
+      "download_url": "https://oldschool.runescape.wiki/images/Kalphite_Queen_icon.png?73109"
+    },
+    "King Black Dragon icon.png": {
+      "file": "king-black-dragon-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 407,
+      "sha256": "4afa49a4e6baf7f5c92b5e59b7c9fa86703e4638ec92163cfc5e0052fde5501d",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:King_Black_Dragon_icon.png",
+      "wiki_original_sha1": "94a58375f4d04fe4d312b5e9b07283ff0d9de788",
+      "download_url": "https://oldschool.runescape.wiki/images/King_Black_Dragon_icon.png?31517"
+    },
+    "Kree'arra icon.png": {
+      "file": "kree-arra-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 402,
+      "sha256": "56311703a3a9c32d765deed210fe3d5f16bfcfca6f4d269a33bd8cf0d7818f64",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Kree%27arra_icon.png",
+      "wiki_original_sha1": "e7366884550a9041ce1d9fab955d27e17a8934e1",
+      "download_url": "https://oldschool.runescape.wiki/images/Kree%27arra_icon.png?73109"
+    },
+    "Mad Angel.webp": {
+      "file": "mad-angel.webp",
+      "width": 47,
+      "height": 64,
+      "bytes": 180924,
+      "sha256": "1dd9baee2f63c389f10fee6a37d9dd8a368622083dce8d88a4ed050b0d9df4fc",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Mad_Angel.webp",
+      "wiki_original_sha1": "e41437473df5d871da760313ca00fc6880781806",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Mad_Angel.webp/47px-Mad_Angel.webp?c7990"
+    },
+    "Maggot King.png": {
+      "file": "maggot-king.png",
+      "width": 64,
+      "height": 50,
+      "bytes": 5786,
+      "sha256": "57a309b9d7cab6d3894566c5eb7508d4c0bb5fc13f8e1c2a5c9f6091d8dbecf8",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Maggot_King.png",
+      "wiki_original_sha1": "f688cc74a2a46707b5e2c58311fa47a59f21c36a",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Maggot_King.png/64px-Maggot_King.png?a6790"
+    },
+    "Nex icon.png": {
+      "file": "nex-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 451,
+      "sha256": "b22aba43f6e840eeebad161290756d82a043ac07de2d142731373322add1004f",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Nex_icon.png",
+      "wiki_original_sha1": "0e5071cbbbf139c3766e93424c122267f1d63ed1",
+      "download_url": "https://oldschool.runescape.wiki/images/Nex_icon.png?31517"
+    },
+    "Obor icon.png": {
+      "file": "obor-icon.png",
+      "width": 21,
+      "height": 25,
+      "bytes": 394,
+      "sha256": "3c711b47489273b53148670ed5484951329e4f7aa6a760a58b673477b21d1bbc",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Obor_icon.png",
+      "wiki_original_sha1": "c487b3fd0b90f4d195b23e79747b3e53d05b198d",
+      "download_url": "https://oldschool.runescape.wiki/images/Obor_icon.png?31517"
+    },
+    "Phantom Muspah (ranged).png": {
+      "file": "phantom-muspah-ranged.png",
+      "width": 64,
+      "height": 64,
+      "bytes": 6314,
+      "sha256": "92f3757e3f1018ab4260bb62fbc7069fccc945ac83b807cdea368498f9a7d77e",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Phantom_Muspah_(ranged).png",
+      "wiki_original_sha1": "a11e1ce6d8cad362b2c60ad7121c6656b4e8c2c1",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Phantom_Muspah_%28ranged%29.png/64px-Phantom_Muspah_%28ranged%29.png?9cf6a"
+    },
+    "Sarachnis icon.png": {
+      "file": "sarachnis-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 318,
+      "sha256": "e135890163621a15f46aded353189f030e5a27aa8f2471e9dbcdbb7bca2e8335",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Sarachnis_icon.png",
+      "wiki_original_sha1": "8972281c133e79ad301f278a71ca69d3f06cb471",
+      "download_url": "https://oldschool.runescape.wiki/images/Sarachnis_icon.png?73109"
+    },
+    "Scorpia.png": {
+      "file": "scorpia.png",
+      "width": 64,
+      "height": 49,
+      "bytes": 4383,
+      "sha256": "5ad383d0398dbce0a5e42265e4ff2aab771881119230e8e955df80e0b1e5e266",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Scorpia.png",
+      "wiki_original_sha1": "ba4a6f76d818b7bb11f26c8d2c0e3734e4e4e6e4",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Scorpia.png/64px-Scorpia.png?517c9"
+    },
+    "The Hueycoatl.png": {
+      "file": "the-hueycoatl.png",
+      "width": 64,
+      "height": 43,
+      "bytes": 6273,
+      "sha256": "3272c737f13a65ed0efaea531586eeea81c566b97f7b54fe3736e1e5581f117d",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:The_Hueycoatl.png",
+      "wiki_original_sha1": "1b47c429f979cc5ec763b9595a7f62d99b21aa6f",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/The_Hueycoatl.png/64px-The_Hueycoatl.png?7b216"
+    },
+    "The Mimic icon.png": {
+      "file": "the-mimic-icon.png",
+      "width": 23,
+      "height": 25,
+      "bytes": 431,
+      "sha256": "3eef5a3a84a32f9cda18874a09df0d6435c86745129b6c2600bfe9f9a16ef306",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:The_Mimic_icon.png",
+      "wiki_original_sha1": "8ba084fc5d3b9e276b94c35b529c3702349b05ff",
+      "download_url": "https://oldschool.runescape.wiki/images/The_Mimic_icon.png?73109"
+    },
+    "The Nightmare icon.png": {
+      "file": "the-nightmare-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 428,
+      "sha256": "93739fb24377e4cccdcbec3956279eb88ea12a7ac4c791b76750c28580ed5a38",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:The_Nightmare_icon.png",
+      "wiki_original_sha1": "f4d56def066e1a886d05f58936e64cb51da94d3b",
+      "download_url": "https://oldschool.runescape.wiki/images/The_Nightmare_icon.png?31517"
+    },
+    "Branda the Fire Queen.png": {
+      "file": "branda-the-fire-queen.png",
+      "width": 40,
+      "height": 64,
+      "bytes": 4670,
+      "sha256": "4d9dcc0280178ef08f02f0d2d06570aaff376c0f80d5859aebcb86492fc6b15a",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Branda_the_Fire_Queen.png",
+      "wiki_original_sha1": "69690a80224257b27d1b01c75d07fef5cb57c6f8",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Branda_the_Fire_Queen.png/40px-Branda_the_Fire_Queen.png?0687c"
+    },
+    "Corrupted Hunllef.png": {
+      "file": "corrupted-hunllef.png",
+      "width": 64,
+      "height": 40,
+      "bytes": 4070,
+      "sha256": "b48e8a8daa2262d0a08e26d10ac5323958ccc84d424ffe2fa28b46dc51850ff1",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Corrupted_Hunllef.png",
+      "wiki_original_sha1": "d9c291fdc5e53705b82e022fe07bec4628c39397",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Corrupted_Hunllef.png/64px-Corrupted_Hunllef.png?0cd55"
+    },
+    "Crystalline Hunllef icon.png": {
+      "file": "crystalline-hunllef-icon.png",
+      "width": 25,
+      "height": 23,
+      "bytes": 290,
+      "sha256": "67e89fcdaf2c0907328c5a7510ff9e53ca0bfe6120e260061bdcd657e6c307f1",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Crystalline_Hunllef_icon.png",
+      "wiki_original_sha1": "f8665556e0b2265f55581a75991e6440ca350e8b",
+      "download_url": "https://oldschool.runescape.wiki/images/Crystalline_Hunllef_icon.png?31517"
+    },
+    "Eldric the Ice King.png": {
+      "file": "eldric-the-ice-king.png",
+      "width": 42,
+      "height": 64,
+      "bytes": 5602,
+      "sha256": "2b1699b5f81f1e8ea21b29d80f96653e36f44a522d37267e821efffdd403e836",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Eldric_the_Ice_King.png",
+      "wiki_original_sha1": "7691352d3efc6d2cd2e422f827eeeae23a6a0a0e",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Eldric_the_Ice_King.png/42px-Eldric_the_Ice_King.png?6bd48"
+    },
+    "Scurrius.png": {
+      "file": "scurrius.png",
+      "width": 62,
+      "height": 64,
+      "bytes": 6435,
+      "sha256": "1a4835a1409982a19905b6669a7dec5ea18db150d21043e071ab35a4e6bc8fe1",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Scurrius.png",
+      "wiki_original_sha1": "2a874850b1d8e56c413ba5c68233c1758e59b0bf",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Scurrius.png/62px-Scurrius.png?e66a5"
+    },
+    "Shellbane gryphon.png": {
+      "file": "shellbane-gryphon.png",
+      "width": 64,
+      "height": 52,
+      "bytes": 6222,
+      "sha256": "4b9e52087b626c9d65bc499a7b6d0b86ab2a20c987d9a0b829e8ee51f5123b15",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Shellbane_gryphon.png",
+      "wiki_original_sha1": "0ff68fd76f4d01df5da1d9e5f6b6a624ce0c0fd0",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Shellbane_gryphon.png/64px-Shellbane_gryphon.png?bc76e"
+    },
+    "Skotizo icon.png": {
+      "file": "skotizo-icon.png",
+      "width": 18,
+      "height": 25,
+      "bytes": 349,
+      "sha256": "8c2daca702a2d3bd5003b6296a77011a7f4bb89cebe376f8dce0b7228b79d48c",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Skotizo_icon.png",
+      "wiki_original_sha1": "db45f3749595ce4f4af9ca45f04486526db0a117",
+      "download_url": "https://oldschool.runescape.wiki/images/Skotizo_icon.png?73109"
+    },
+    "Sol Heredit.png": {
+      "file": "sol-heredit.png",
+      "width": 44,
+      "height": 64,
+      "bytes": 5386,
+      "sha256": "1534f005dfbe9ef6853433c856b71e7c597f3f1241aaadb8503a7e5c07cabc90",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Sol_Heredit.png",
+      "wiki_original_sha1": "8cf4b439493d646841ef61f35e2696afd492ba88",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Sol_Heredit.png/44px-Sol_Heredit.png?91250"
+    },
+    "Spindel.png": {
+      "file": "spindel.png",
+      "width": 64,
+      "height": 35,
+      "bytes": 3681,
+      "sha256": "0828c45f8ae8acc15474bcae4840c1a6ee69c13d69ebb5bf144eebb031df5d89",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Spindel.png",
+      "wiki_original_sha1": "cd6d9e3976e2618d2f00b099f25cb2c5942c9289",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Spindel.png/64px-Spindel.png?2c818"
+    },
+    "Tempoross icon.png": {
+      "file": "tempoross-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 272,
+      "sha256": "1d12b72a7c363df2f1e27a14c604a7da61e0b218db11ac2ffa070b32338d46c6",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Tempoross_icon.png",
+      "wiki_original_sha1": "b65d4d06874d34a946de952006c583be03315078",
+      "download_url": "https://oldschool.runescape.wiki/images/Tempoross_icon.png?73109"
+    },
+    "The Leviathan.png": {
+      "file": "the-leviathan.png",
+      "width": 53,
+      "height": 64,
+      "bytes": 6210,
+      "sha256": "5f8e20faa3d6f20778fb97a8e6651704f51831eb6fec5ed862d6320a5f2d4d6f",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:The_Leviathan.png",
+      "wiki_original_sha1": "a4e8fcfb2987abf4a50616ce73b8293f9084cf1f",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/The_Leviathan.png/53px-The_Leviathan.png?d588a"
+    },
+    "The Whisperer.png": {
+      "file": "the-whisperer.png",
+      "width": 25,
+      "height": 64,
+      "bytes": 2606,
+      "sha256": "5b0449935a8846f4df71f237426b911e54e655f3c255b75e5d04da529da64aea",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:The_Whisperer.png",
+      "wiki_original_sha1": "7efd8154da52ad7266085057e8028f255c37523f",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/The_Whisperer.png/25px-The_Whisperer.png?aedab"
+    },
+    "Thermonuclear smoke devil icon.png": {
+      "file": "thermonuclear-smoke-devil-icon.png",
+      "width": 17,
+      "height": 25,
+      "bytes": 323,
+      "sha256": "518d94678d0dacef7b5475bbf2b73400687fdbd662015814a9ea24da2ea42b7c",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Thermonuclear_smoke_devil_icon.png",
+      "wiki_original_sha1": "a5d35b081ef082878c89b6d31b8e5a8485df4255",
+      "download_url": "https://oldschool.runescape.wiki/images/Thermonuclear_smoke_devil_icon.png?31517"
+    },
+    "TzKal-Zuk icon.png": {
+      "file": "tzkal-zuk-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 282,
+      "sha256": "f3240b3c2c89a4cefa55cc87c7507de5a3a8c059d17f4a04ac8a7d6b3c2d2162",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:TzKal-Zuk_icon.png",
+      "wiki_original_sha1": "1604ba5ff7b94742224bd7139296d236faaa7747",
+      "download_url": "https://oldschool.runescape.wiki/images/TzKal-Zuk_icon.png?e32e0"
+    },
+    "TzTok-Jad.png": {
+      "file": "tztok-jad.png",
+      "width": 58,
+      "height": 64,
+      "bytes": 5579,
+      "sha256": "a2c33e6b8b769f226085e77995e86ee9b0240a02654589718761847eef371674",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:TzTok-Jad.png",
+      "wiki_original_sha1": "6ec9be785c2c4bd25d4907e9b27a6e3a684ef1f4",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/TzTok-Jad.png/58px-TzTok-Jad.png?df681"
+    },
+    "Vardorvis.png": {
+      "file": "vardorvis.png",
+      "width": 35,
+      "height": 63,
+      "bytes": 4148,
+      "sha256": "18999a2e590707f07d49e3ee59b6d8463c298417e43de3245ebeae64715b7f04",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Vardorvis.png",
+      "wiki_original_sha1": "82cc9ddd555fe6ff12dab42022f87f4be084b6bb",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Vardorvis.png/35px-Vardorvis.png?48af8"
+    },
+    "Venenatis.png": {
+      "file": "venenatis.png",
+      "width": 64,
+      "height": 35,
+      "bytes": 3681,
+      "sha256": "0828c45f8ae8acc15474bcae4840c1a6ee69c13d69ebb5bf144eebb031df5d89",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Venenatis.png",
+      "wiki_original_sha1": "cd6d9e3976e2618d2f00b099f25cb2c5942c9289",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Venenatis.png/64px-Venenatis.png?13693"
+    },
+    "Verzik Vitur icon.png": {
+      "file": "verzik-vitur-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 306,
+      "sha256": "10593967015be2f55b6ecf022a7144e3ca7ad06e0a24fd2c4b00d3395b0f31d2",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Verzik_Vitur_icon.png",
+      "wiki_original_sha1": "adb9d02a6063292292f819dbb776076c3dcb8c63",
+      "download_url": "https://oldschool.runescape.wiki/images/Verzik_Vitur_icon.png?31517"
+    },
+    "Vet'ion.png": {
+      "file": "vet-ion.png",
+      "width": 35,
+      "height": 64,
+      "bytes": 4505,
+      "sha256": "e975da142d9965a96002d3d1011634cf1137ab90fb5303d7dc97b5dab3a20e33",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Vet%27ion.png",
+      "wiki_original_sha1": "0f292ba59cee8712d125a36e8784e52a3ccf5dc7",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Vet%27ion.png/35px-Vet%27ion.png?8695f"
+    },
+    "Vorkath icon.png": {
+      "file": "vorkath-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 454,
+      "sha256": "91f3bb18110d4a5bb72401004308ea5f4ced31b493b739e5d31a19478d1ee6f0",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Vorkath_icon.png",
+      "wiki_original_sha1": "c6b9a3ea77d1ad898ec7d68a1974ce7568609c8e",
+      "download_url": "https://oldschool.runescape.wiki/images/Vorkath_icon.png?73109"
+    },
+    "Wintertodt icon.png": {
+      "file": "wintertodt-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 257,
+      "sha256": "8582c2a69aa8654155bd66df3d7a00e53a385112c20d2e5847c9e94f053b7720",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Wintertodt_icon.png",
+      "wiki_original_sha1": "717f5402a6db5166da5db714200e9b1fa655d006",
+      "download_url": "https://oldschool.runescape.wiki/images/Wintertodt_icon.png?73109"
+    },
+    "Yama.png": {
+      "file": "yama.png",
+      "width": 64,
+      "height": 58,
+      "bytes": 6966,
+      "sha256": "f7dabd768cd91fe43d1222e4e5da174ee287ed4504b2262273172ab06f1b3434",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Yama.png",
+      "wiki_original_sha1": "1856346764b0ec04ddfcc4ed99c8d5d6c72d57dd",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Yama.png/64px-Yama.png?7653a"
+    },
+    "Zalcano icon.png": {
+      "file": "zalcano-icon.png",
+      "width": 18,
+      "height": 25,
+      "bytes": 356,
+      "sha256": "2d8ca605263de088e8cd7dc451c51dead896a5e5aaa01218e1d0ffd966fb3cf3",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Zalcano_icon.png",
+      "wiki_original_sha1": "170bf7b1085f5396a52c67064e9f90f549ecd92b",
+      "download_url": "https://oldschool.runescape.wiki/images/Zalcano_icon.png?73109"
+    },
+    "Zulrah icon.png": {
+      "file": "zulrah-icon.png",
+      "width": 25,
+      "height": 25,
+      "bytes": 401,
+      "sha256": "d68fc9ea6051bc9168af960559dcc7e703a1a4bcc34753841d57375997469489",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Zulrah_icon.png",
+      "wiki_original_sha1": "77c3522b0bb405cc3ab342e3822f0231b26615b9",
+      "download_url": "https://oldschool.runescape.wiki/images/Zulrah_icon.png?73109"
+    },
+    "Kraken.png": {
+      "file": "kraken.png",
+      "width": 64,
+      "height": 48,
+      "bytes": 4601,
+      "sha256": "74836c437bcaf1132a4e18ebd71ea72430cd687ab4a08fe0c03cb153cd4b6206",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Kraken.png",
+      "wiki_original_sha1": "d181d487df402edc5825c76e9cc4d02599d05cc0",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Kraken.png/64px-Kraken.png?a4955"
+    },
+    "Tumeken's Warden (level-544).png": {
+      "file": "tumeken-s-warden-level-544.png",
+      "width": 60,
+      "height": 64,
+      "bytes": 7472,
+      "sha256": "806c21bb93ca2b605f3e0641d7e4f230b07f75309f06a930135f065d76d318aa",
+      "wiki_file": "https://oldschool.runescape.wiki/w/File:Tumeken%27s_Warden_(level-544).png",
+      "wiki_original_sha1": "4d59099f221769eb2e97f90bfc5adbf0640ecd04",
+      "download_url": "https://oldschool.runescape.wiki/images/thumb/Tumeken%27s_Warden_%28level-544%29.png/60px-Tumeken%27s_Warden_%28level-544%29.png?7db9d"
+    }
+  }
+}

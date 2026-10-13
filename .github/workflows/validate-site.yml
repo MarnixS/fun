@@ -64,6 +64,7 @@ jobs:
           node scripts/audit_live_sync.js
           node scripts/audit_sync_progress.js
           node scripts/audit_chronicle_goals.js
+          node scripts/audit_chronicle_boss_icons.js
           node scripts/audit_chart_ranges.js
 
           node scripts/audit_shared_goals.js
