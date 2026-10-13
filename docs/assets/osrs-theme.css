@@ -5,7 +5,16 @@
 @font-face{font-family:OSRSPetrockLight;src:url('../img/osrs-theme/fonts/Kingthings_Petrock_light-webfont.woff') format('woff');font-weight:400;font-style:normal;font-display:swap}
 /* Reserve the full 47px pillar silhouette plus a 13px gutter on each side of the 910px artwork. */
 html[data-theme="osrs"]{--osrs-frame-width:max(910px,100%);--osrs-content-width:min(1190px,calc(100% - 24px),calc(var(--osrs-frame-width) * .868131868));--bg:#000;--panel:#c7b17d;--panel2:#d1bd8c;--panel3:#baa16d;--edge:#70552e;--edge2:#382418;--gold:#544019;--gold2:#3f321a;--text:#21190e;--muted:#51432d;--green:#336312;--red:#8d251a;--shadow:#0007;background:#000;scrollbar-color:#85754c #21190f}
-html[data-theme="osrs"] body{background:#000 url('../img/osrs-theme/bg2.jpg') repeat-y center top;background-size:var(--osrs-frame-width) auto;color:#21190e;font-family:Arial,Helvetica,sans-serif;font-size:var(--type-body);line-height:1.55}
+/* Keep material detail independent of viewport width. The 1254px backdrop
+   repeats at 400 CSS pixels, covering 3x displays without enlarging its pixels. */
+html[data-theme="osrs"] body{position:relative;isolation:isolate;background-color:#080705;background-image:linear-gradient(90deg,#0008,#0003 15%,#0003 85%,#0008),url('../img/osrs-theme/stone-backdrop-hires.webp');background-position:center top;background-size:100% 100%,400px 400px;background-repeat:no-repeat,repeat;color:#21190e;font-family:Arial,Helvetica,sans-serif;font-size:var(--type-body);line-height:1.55}
+.osrs-page-frame{display:none}
+html[data-theme="osrs"] .osrs-page-frame{display:block;position:absolute;inset:0;overflow:hidden;z-index:-1;pointer-events:none}
+/* The 768px transparent canvas contains a 241px pillar at x=255. Size and
+   position that silhouette inside the original 47/910 frame-width allocation.
+   The wrapper clips off-screen pillars on phones without horizontal overflow. */
+html[data-theme="osrs"] .osrs-page-frame::before,html[data-theme="osrs"] .osrs-page-frame::after{content:"";position:absolute;top:0;bottom:0;left:calc((100% - var(--osrs-frame-width)) / 2);width:calc(var(--osrs-frame-width) * .051648352);background:url('../img/osrs-theme/ivy-pillar-hires.webp') repeat-y 48.387096774% top;background-size:318.67219917% auto}
+html[data-theme="osrs"] .osrs-page-frame::after{left:auto;right:calc((100% - var(--osrs-frame-width)) / 2);transform:scaleX(-1)}
 html[data-theme="osrs"] .wrap{width:var(--osrs-content-width)}
 html[data-theme="osrs"] .site-top{background:transparent;border:0;padding-top:12px}
 /* Match the logo's visible artwork to the original characters' height;
