@@ -1,55 +1,26 @@
 # Cohesive Old School header
 
-The Old School header uses the approved `129773.jpg` artwork as one banner.
-An edge mask reveals the existing repeating page pillars in place of the
-supplied pillar strips. The same body background continues through the header,
-so there is no second painted copy to align or resample. The inner edge fades
-into the courtyard; the old rectangular border image is disabled. Status cards,
-navigation and page content share a width that stays inside the full pillar
-silhouette, with a gutter on both sides.
+The shared Old School header keeps the approved five-player composition in one
+banner. Its current asset is `docs/img/osrs-theme/united-gimps-cutout-banner.webp`
+(2172 × 724), with genuine transparency around the United Gimps wordmark,
+crossed swords, five players, five pets and ten flanking characters.
 
-The banner is 103.5% wide and centred with a −1.75% offset. The narrow edge
-fade begins outside the complete stone-and-vine silhouette (47 pixels in
-the 910-pixel page background). This fills the former black gap and restores
-the side characters without painting over the continuing site pillars.
+The courtyard, upper wall and embedded pillar strips were removed after the
+high-resolution page background and separate ivy pillars were published.
+The page material now continues through all empty banner areas. The header
+uses 110% image width and a centred −5% offset, cropping empty margins while
+keeping the solid side-character silhouettes visible. Status cards, navigation
+and page content retain their common width inside the page pillars.
 
-The supplied artwork is unchanged:
+The `data-osrs-header="cohesive"` marker selects the combined foreground and
+suppresses duplicate logos and companions. Modern restores its existing
+banner at 1200 × 265. The approved 1536 × 512 JPEG, original logo, legacy
+courtyard image and companion sprites remain available in the project.
 
-- Asset: `docs/img/osrs-theme/united-gimps-cohesive-banner.jpg`
-- Dimensions: 1536 × 512
-- SHA-256: `f342b9ce3fd5f63c05c936f1f948e236d3b71811bcd88daaf79298f82a91e0c2`
+See [CUTOUT_HEADER.md](CUTOUT_HEADER.md) for asset paths, provenance,
+generation prompts and verification, and [HIGH_RES_FRAME.md](HIGH_RES_FRAME.md)
+for the page material and pillars.
 
-The `data-osrs-header="cohesive"` marker scopes the layout and selects the
-combined artwork. The original logo, courtyard image, companion sprites and
-legacy theme initialization remain available. Modern continues to restore
-its original banner and dimensions.
-
-## Rollback
-
-To undo the latest refinements, revert **Refine overview cards, collection links
-and header alignment**. This restores the previous banner sizing, card content
-layout, overview headings and Collection Log controls in one step. The earlier
-approved banner remains in place. The Latest item card also returns to its
-previous feed logic; its updated version shares Chronicle’s eligibility rules
-and repeat-copy labels.
-
-To undo the original combined-banner change as well, revert **Use the approved
-cohesive banner with continuous site pillars**. Original artwork and Modern
-assets remain available. Snapshot, FAQ and news updates are separate.
-
-## Verification
-
-- Site unit tests and mobile regression suite.
-- All six status frames retain identical dimensions at six widths from 390 to
-  1920 pixels; only the content spacing and type sizes change.
-- Shared page generation and resource checks for all 20 routes and the root.
-- Browser layout checks at 320, 360, 390, 412, 700, 701, 850, 910, 950, 951,
-  1024, 1280, 1440, 1536, 1920 and 2560 pixels, with native scrollbars.
-- 45 browser layout checks passed with no JavaScript page errors.
-- 28 left/right strips covering the complete stone-and-vine silhouette matched
-  the unobstructed body background exactly, including 12 pixels below the banner.
-- Chronicle and developer headers, scrolling, 200% pixel scale, static
-  rendering before JavaScript, home link and Old School/Modern switching.
-
-The theme regression test verifies that the combined banner has one logo and
-one set of companions, and that Old School leaves Modern resources deferred.
+To restore the approved courtyard banner, revert the transparent-header
+commit. The sharper stone background and separate pillars are an earlier,
+independent change.

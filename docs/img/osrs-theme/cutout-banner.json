@@ -1,0 +1,14 @@
+{
+  "created_at": "2026-10-13",
+  "generator": "Built-in Image Generation",
+  "mode": "Transparent background removal from the approved cohesive banner",
+  "reference": "united-gimps-cohesive-banner.jpg",
+  "reference_sha256": "f342b9ce3fd5f63c05c936f1f948e236d3b71811bcd88daaf79298f82a91e0c2",
+  "file": "united-gimps-cutout-banner.webp",
+  "width": 2172,
+  "height": 724,
+  "bytes": 445802,
+  "sha256": "782b0476ddbe70cb3a72029068153bf0971fd9d4ec273fbf862b71cb2feaeb6a",
+  "generated_source_sha256": "56dd15e7f3fe997a636ddc0d32a496d23ebbad35361f103c4472f66358896099",
+  "encoding": "WebP quality 95, original generated dimensions and alpha preserved"
+}

@@ -31,9 +31,9 @@ html[data-theme="osrs"] .mast{border:0;background:transparent;box-shadow:none}
 html[data-theme="osrs"] .mast-wordmark{display:none}
 html[data-theme="osrs"] .banner-frame{background:transparent;padding:0;margin:0 0 14px;border:0;overflow:hidden;border-image:url('../img/osrs-theme/border.webp') 62 / 14px / 0 stretch}
 html[data-theme="osrs"] .group-banner{border:0;box-shadow:none}
-/* Crop the artwork's embedded pillar strips inside the page content area.
-   The original background pillars remain visible beside the header, including
-   portrait phones using Chrome's wider desktop layout viewport. */
+/* The transparent foreground reveals the same stone material as the page.
+   Crop only its empty margins, retaining every flanking character and leaving
+   the separate ivy pillars visible beside the header. */
 .osrs-header-title{display:none}
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"]{position:relative}
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"]>.wrap{width:100%}
@@ -42,7 +42,7 @@ html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .mast-status{posi
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .mast-status{width:var(--osrs-content-width);margin-inline:auto}
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .banner-home-link{display:block}
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .banner-frame{border-image:none;width:var(--osrs-content-width);margin-inline:auto}
-html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .group-banner{display:block;width:116.28%;max-width:none;height:auto;position:relative;left:-8.14%;transform:none;margin:0;mask-image:none}
+html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .group-banner{display:block;width:110%;max-width:none;height:auto;position:relative;left:-5%;transform:none;margin:0;mask-image:none}
 html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .osrs-header-title{display:block;position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 html[data-theme="osrs"] .mast-status{background:transparent;border:0;gap:10px;padding:6px 0 18px}
 html[data-theme="osrs"] .mast-stat{background:transparent url('../img/osrs-theme/compare_users.gif') no-repeat center/100% 100%;border:0;box-shadow:none;border-radius:0;padding:17px 20px;color:#fff;min-height:165px}
@@ -397,7 +397,7 @@ html[data-theme="osrs"] body .mast-status-six a.mast-stat:focus-visible,html[dat
  html[data-theme="osrs"] body .mast-status-six .mast-value-legend>span>i{width:4px;height:4px;flex-basis:4px}
 }
 @media(max-width:360px){html[data-theme="osrs"] body .mast-status.mast-status-six{grid-template-columns:minmax(0,1fr)!important}}
-/* Phone layouts have no visible page pillars, so the courtyard fills the screen.
+/* Phone layouts have no visible page pillars, so the foreground fills the screen.
    Orientation alone must not expand a desktop-mode header over its pillars. */
 @media(max-width:700px){
  html[data-theme="osrs"] .site-top[data-osrs-header="cohesive"] .banner-frame{width:100%;max-width:none;margin-inline:0;overflow:hidden}
