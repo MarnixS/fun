@@ -129,7 +129,7 @@ async function openPage(path, { selection, templeResponse, templeDocument, womRe
     await waitFor(() => dom.window.document.querySelectorAll('#currentSkillsTable thead th').length > 1, 'Hiscores module');
   }
   if (path === 'progress.html') {
-    await waitFor(() => dom.window.document.querySelectorAll('#skillGainTable thead th').length > 1, 'Progress module');
+    await waitFor(() => dom.window.document.body.dataset.progressReady === 'true', 'Progress module');
   }
   if (path === 'gim.html') {
     await waitFor(() => dom.window.document.querySelector('#clogMemberPicker fieldset'), 'Collection Log module');
@@ -258,7 +258,9 @@ async function testSharedSelectionEverywhere() {
     if (page === 'index.html') {
       await waitFor(() => document.querySelectorAll('#standingTable thead th').length === 3, 'selected overview table');
     } else if (page === 'progress.html') {
-      await waitFor(() => document.querySelectorAll('#skillGainTable thead th').length === 3, 'selected progress table');
+      document.querySelector('#progressMetric').value='overall';
+      document.querySelector('#progressMetric').dispatchEvent(new dom.window.Event('change'));
+      await waitFor(() => document.querySelectorAll('[data-progress-player]').length === selection.length, 'selected progress comparison');
     } else if (page === 'history.html') {
       await waitFor(() => document.querySelectorAll('#historyCoverage .kpi').length === 2, 'selected history coverage');
       assert.equal(document.querySelectorAll('#activityEras .era-lane').length, 2);

@@ -37,12 +37,16 @@ function assertLinks(d,selector,label){const cells=[...d.querySelectorAll(select
   if(page==='time-machine.html'){d.querySelector('#timeDate').value='2026-01-01';d.querySelector('#timeGo').click();await waitFor(()=>d.querySelector('#timeSkills tbody tr'),'Time Machine results');assert(d.querySelector('#timeSkills [data-v21-skill]'));assert(d.querySelector('#timeBosses [data-v21-boss]'))}
   if(page==='history.html'){for(const el of d.querySelectorAll('.era-details details'))el.open=true;assert(d.querySelector('.era-details [data-v21-skill]'));assert(d.querySelector('.era-details [data-v21-boss]'))}
   if(page==='chronicle.html'){assertLinks(d,'.chronicle-event[data-event-type="drop"]','Chronicle drops');assert(d.querySelector('.chronicle-event[data-event-type="level"] [data-v21-skill]'));for(const kind of ['drops','milestones','all']){d.querySelector(`[data-chrono-filter="${kind}"]`).click();assert(d.querySelectorAll('.chronicle-event').length>0);assert([...d.querySelectorAll('.chronicle-event')].every(e=>kind==='drops'?e.dataset.eventType==='drop':kind==='milestones'?e.dataset.eventType!=='drop':true))}}
+  if(page==='progress.html'){
+   d.querySelector('#progressMetric').value='attack';d.querySelector('#progressMetric').dispatchEvent(new w.Event('change'));assert.equal(d.querySelector('#progressMetric').value,'attack');assert(d.querySelector('#progressHeading').textContent.includes('Attack XP gained'));
+   d.querySelector('[data-progress-view="bars"]').click();assert(d.querySelector('#xpChart svg rect'));d.querySelector('[data-progress-view="timeline"]').click();assert(d.querySelector('#xpChart svg[data-y-min="0"]'));
+  }
   const seen=new Set();for(const button of [...d.querySelectorAll(graphSelector)].filter(visible)){
    const key=JSON.stringify({...button.dataset});if(seen.has(key))continue;seen.add(key);button.focus();button.click();await waitFor(()=>d.querySelector('#v21MetricModal[aria-hidden="false"] svg'),'graph from '+page+' '+button.textContent);
    assert.equal(d.querySelectorAll('.modal:not([hidden])').length,1,'exactly one graph opens');assert(!d.querySelector('#v21ModalChart').innerHTML.includes('NaN'),'finite chart geometry');assert.match(d.querySelector('#v21ModalMembers').textContent,/Dikste/);
    d.querySelector('#v21MetricModal [data-modal-close]').click();assert(d.querySelector('#v21MetricModal').hidden);assert.equal(d.activeElement,button,'close restores focus to its trigger');graphClicks++;
   }
-  if(!['developer.html','gim.html'].includes(page))assert(seen.size>0,page+' has graph interactions');
+  if(!['developer.html','gim.html','progress.html'].includes(page))assert(seen.size>0,page+' has graph interactions');
   const picker=d.querySelector('#statsMemberPicker,#clogMemberPicker,#chronicleMemberPicker');if(picker){for(const input of [...picker.querySelectorAll('input[type="checkbox"]')].slice(1)){const current=picker.querySelector(`input[value="${input.value}"]`);if(current.checked)current.click()}await waitFor(()=>picker.querySelectorAll('input:checked').length===1,'one selected member');picker.querySelector('input:checked').click();assert.equal(picker.querySelectorAll('input:checked').length,1,'last member cannot be deselected')}
   assert(!requests.some(r=>r.method==='POST'||r.url.includes('api.wiseoldman.net')||r.url.includes('/api/temple-collection-log')),page+' interactions never refresh data');assert.equal(errors.length,0,errors.join('; '));console.log('Interactions passed:',page,seen.size,'different graphs');
  }

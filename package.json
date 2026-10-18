@@ -13,7 +13,8 @@
     "build": "python scripts/build_site.py",
     "check:pages": "python scripts/build_site.py --check && python scripts/check_site.py",
     "test:routes": "node scripts/test_clean_routes.js",
-    "test:records": "node scripts/test_xp_records.js && node scripts/audit_xp_records.js"
+    "test:records": "node scripts/test_xp_records.js && node scripts/audit_xp_records.js",
+    "test:progress": "node scripts/test_stat_progress.js && node scripts/audit_stat_progress.js"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.2.5",
