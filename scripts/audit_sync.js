@@ -44,7 +44,10 @@ async function run(){
    assert(d.querySelector('#bossTable').textContent.includes('4,321'));
    await waitFor(()=>d.querySelector('#v21ModalChart').textContent.includes('12.3M'),'open graph refresh');
   }
-  if(page==='progress.html')await waitFor(()=>d.querySelector('#gainCards').textContent.includes('9.88M'),'gain refresh');
+  if(page==='progress.html'){
+   const M=require('../docs/assets/stat-progress-model'),expected=M.build(w,keys).compare('xp','overall',7).rows.find(r=>r.key==='dikste').gain;
+   await waitFor(()=>d.querySelector('[data-progress-player="dikste"] .records-gain b')?.textContent===(expected===null?'—':'+'+expected.toLocaleString('en-GB')),'gain refresh uses the updated observed counters');
+  }
   if(page==='gim.html'){
    click(win,d.querySelector('[data-gim-tab="recent"]'));
    await waitFor(()=>d.querySelector('#recentDrops').textContent.includes('Sync regression item'),'drop refresh');
