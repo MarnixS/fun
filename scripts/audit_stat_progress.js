@@ -3,46 +3,64 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const server=http.createServer((req,res)=>{const file=path.join(process.cwd(),'docs',new URL(req.url,'http://localhost').pathname);try{res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.json')?'application/json':file.endsWith('.css')?'text/css':'text/html');res.end(fs.readFileSync(file))}catch{res.statusCode=404;res.end()}});
 server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
  process.env.SITE_TEST_URL=`http://127.0.0.1:${server.address().port}/`;const {openPage,waitFor}=require('./audit_v25_jsdom'),requests=[];
- const result=await openPage('progress.html?type=skill-xp&metric=agility&period=1',{fetchLog:requests});doms.push(result.dom);
+ const result=await openPage('progress.html',{fetchLog:requests});doms.push(result.dom);
  const w=result.dom.window,d=w.document,doc=JSON.parse(fs.readFileSync('docs/data/wom-cache.json')),keys=Array.from(w.UGV21.ALL_KEYS),model=M.build(doc,keys);
- await waitFor(()=>d.querySelectorAll('[data-progress-player]').length===5,'progress loaded');
- assert.equal(d.querySelector('#progressHeading').textContent,'Agility XP gained · 1 day');
- assert.equal(d.querySelectorAll('#progressPeriods [data-progress-window]').length,6);assert.equal(d.querySelectorAll('#progressGraphPeriods [data-progress-window]').length,6);
- assert(d.querySelectorAll('#progressHighlights [data-progress-metric]').length>0,'biggest progressed stats are highlighted immediately');
+ const change=(id,value)=>{const select=d.querySelector(id);select.value=value;select.dispatchEvent(new w.Event('change'))};
+ assert.equal(d.querySelector('#progressMetric').value,'','no arbitrary skill or weekly result on arrival');
+ assert(d.querySelector('#progressResults').hidden);assert(d.querySelector('#progressSupplement').hidden);assert(!d.querySelector('#progressEmpty').hidden);
+ assert.equal(d.querySelectorAll('[data-progress-player]').length,0);assert.equal(d.querySelector('#xpChart').children.length,0);
+ assert(!d.querySelector('#progressMetric').closest('[hidden],details'),'skill selection is visible without another control');
+ assert(d.querySelector('#progressMetric').compareDocumentPosition(d.querySelector('#progressResults'))&w.Node.DOCUMENT_POSITION_FOLLOWING,'selection precedes results');
+ assert.equal(w.getComputedStyle(d.querySelector('.mast-status-six')).display,'none','unrelated fixed weekly/current summaries are hidden on this page');
  assert(!d.querySelector('[data-mode="absolute"]'));assert(!d.querySelector('#skillShares'));
+ d.querySelector('#progressPeriods [data-progress-window="30"]').click();assert(d.querySelector('#progressResults').hidden,'period selection alone does not show unrelated gains');
+ const blankReload=await openPage('progress.html'+w.location.search);doms.push(blankReload.dom);assert(blankReload.dom.window.document.querySelector('#progressResults').hidden,'an unfinished selection survives a shared/reloaded URL');
+ change('#progressMetric','agility');assert(!d.querySelector('#progressResults').hidden);assert(d.querySelector('#progressEmpty').hidden);
  function check(kind,metric,days,selected=keys){
   const {rows,domain}=model.compare(kind,metric,days,selected);
-  assert.deepEqual([...d.querySelectorAll('[data-progress-player]')].map(n=>n.dataset.progressPlayer),rows.map(r=>r.key));
-  assert.deepEqual([...d.querySelectorAll('[data-progress-rank]')].map(n=>n.dataset.progressRank),rows.map(r=>String(r.rank??'')));
+  assert.deepEqual([...d.querySelectorAll('[data-progress-player]')].map(node=>node.dataset.progressPlayer),rows.map(row=>row.key));
+  assert.deepEqual([...d.querySelectorAll('[data-progress-rank]')].map(node=>node.dataset.progressRank),rows.map(row=>String(row.rank??'')));
+  assert.equal(d.querySelectorAll('#gainCards thead th').length,3,'player table stays three columns');
+  assert.equal(d.querySelectorAll('#skillGainTable thead th').length,2,'metric list stays two columns');
+  assert.equal(d.querySelectorAll('#skillGainTable .rank-chip').length,0,'no rank badges inside the metric values');
   for(const row of rows){const actual=d.querySelector(`[data-progress-player="${row.key}"] .records-gain b`).textContent;assert.equal(actual,row.gain===null?'—':'+'+(kind==='computed'?row.gain.toLocaleString('en-GB',{maximumFractionDigits:1}):Math.round(row.gain).toLocaleString('en-GB')))}
   const svg=d.querySelector('#xpChart svg');if(svg&&d.querySelector('[data-progress-view="timeline"]').getAttribute('aria-pressed')==='true'){
    assert.equal(Number(svg.dataset.rangeEnd)-Number(svg.dataset.rangeStart),days*M.DAY);assert.equal(Number(svg.dataset.rangeEnd),domain.end);assert.equal(Number(svg.dataset.yMin),0);
-   for(const point of svg.querySelectorAll('circle'))assert(Number(point.getAttribute('cx'))>=61.9&&Number(point.getAttribute('cx'))<=882.1,'all observations stay within selected dates');
+   for(const point of svg.querySelectorAll('circle'))assert(Number(point.getAttribute('cx'))>=61.9&&Number(point.getAttribute('cx'))<=882.1,'observations remain within the period');
   }
  }
- for(const p of M.PERIODS){const b=d.querySelector(`[data-progress-window="${p.days}"]`);b.focus();b.click();check('xp','agility',p.days);assert.equal(d.activeElement.dataset.progressWindow,String(p.days))}
- for(const p of M.PERIODS){const b=d.querySelector(`#progressGraphPeriods [data-progress-window="${p.days}"]`);b.focus();b.click();check('xp','agility',p.days);assert.equal(d.activeElement.closest('#progressGraphPeriods')?.id,'progressGraphPeriods');assert.equal(d.querySelector('#progressPeriods [aria-pressed=true]').dataset.progressWindow,String(p.days));assert(d.querySelector('#progressHighlightsTitle').textContent.includes(p.label))}
- const change=(id,value)=>{const select=d.querySelector(id);select.value=value;select.dispatchEvent(new w.Event('change'))};
- for(const [type,kind,key]of [['total-xp','xp','overall'],['total-level','level','overall'],['skill-level','level','agility'],['boss','boss','chambers_of_xeric'],['ehp','computed','ehp'],['ehb','computed','ehb']]){change('#progressType',type);check(kind,key,365)}
- change('#progressType','skill-xp');change('#progressMetric','attack');check('xp','attack',365);
- const search=d.querySelector('#progressSearch');search.value='agil';search.dispatchEvent(new w.Event('input'));assert.equal(d.querySelectorAll('#progressMetrics button').length,1);assert.equal(d.querySelector('#progressMetrics button').textContent.trim(),'Agility');d.querySelector('#progressMetrics button').click();check('xp','agility',365);assert.equal(d.activeElement.dataset.progressMetric,'xp:agility');
- search.value='no such skill';search.dispatchEvent(new w.Event('input'));assert(d.querySelector('#progressMetrics').textContent.includes('No matching stats'));search.value='';search.dispatchEvent(new w.Event('input'));
- d.querySelector('[data-progress-view="bars"]').click();assert(d.querySelector('#xpChart svg rect'));assert.equal(new URL(w.location.href).searchParams.get('view'),'bars');check('xp','agility',365);
- d.querySelector('[data-progress-view="timeline"]').click();assert.equal(new URL(w.location.href).searchParams.get('view'),null);check('xp','agility',365);
- const hit=d.querySelector('#xpChart [role="slider"]');if(hit){hit.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Home',bubbles:true}));assert.equal(hit.getAttribute('aria-valuenow'),'0');assert(d.querySelector('.v21-chart-readout').textContent.includes('Dikste'))}
- d.querySelector('[data-progress-sort="lijpste"]').click();assert.equal(d.querySelector('#skillGainTable th[aria-sort="descending"] button').dataset.progressSort,'lijpste');
- d.querySelector('[data-progress-window="30"]').click();assert.equal(d.querySelector('#skillGainTable th[aria-sort="descending"] button').dataset.progressSort,'lijpste');
- d.querySelector('#statsMemberPicker input[value="lompste"]').click();check('xp','agility',30,keys.filter(k=>k!=='lompste'));assert.equal(d.querySelectorAll('#skillGainTable thead th').length,5);assert(!d.querySelector('#progressAll').hidden);
+ check('xp','agility',30);
+ for(const host of ['#progressPeriods','#progressGraphPeriods'])for(const period of M.PERIODS){
+  const button=d.querySelector(`${host} [data-progress-window="${period.days}"]`);button.focus();button.click();check('xp','agility',period.days);
+  assert.equal(d.activeElement.closest(host)?.id,host.slice(1),'keyboard focus stays at the chosen period control');
+  assert.equal(d.querySelector('#progressPeriods [aria-pressed=true]').dataset.progressWindow,String(period.days));
+  assert.equal(d.querySelector('#progressGraphPeriods [aria-pressed=true]').dataset.progressWindow,String(period.days));
+ }
+ for(const [family,metric]of [['xp','overall'],['xp','attack'],['level','overall'],['level','agility'],['boss','zulrah'],['computed','ehp'],['computed','ehb']]){
+  change('#progressType',family);assert(d.querySelector('#progressResults').hidden,'a new measure waits for its metric');change('#progressMetric',metric);check(family,metric,365);
+ }
+ change('#progressType','xp');change('#progressMetric','agility');
+ for(const graph of ['bars','share','timeline']){d.querySelector(`[data-progress-view="${graph}"]`).click();assert(d.querySelector('#xpChart svg'));assert.equal(d.querySelector(`[data-progress-view="${graph}"]`).getAttribute('aria-pressed'),'true');check('xp','agility',365)}
+ const hit=d.querySelector('#xpChart [role="slider"]');hit.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Home',bubbles:true}));assert.equal(hit.getAttribute('aria-valuenow'),'0');
+ const search=d.querySelector('#progressSearch');d.querySelector('#progressMetricPicker').open=true;search.value='agil';search.dispatchEvent(new w.Event('input'));assert.equal(d.querySelectorAll('#progressMetrics button').length,1);d.querySelector('#progressMetrics button').click();assert.equal(d.activeElement.dataset.progressMetric,'agility');
+ search.value='no such skill';search.dispatchEvent(new w.Event('input'));assert(d.querySelector('#progressMetrics').textContent.includes('No matching metrics'));search.value='';search.dispatchEvent(new w.Event('input'));d.querySelector('#progressMetricPicker').open=false;
+ const listed=()=>[...d.querySelectorAll('#skillGainTable tbody tr')].filter(row=>row.querySelector('button')).map(row=>({key:row.querySelector('button').dataset.progressMetric,gain:Number(row.lastElementChild.textContent.replace(/[^0-9]/g,''))}));
+ assert(listed().every(row=>row.gain>0),'unchanged metrics do not clutter the default gain list');assert(listed().every((row,index,all)=>!index||all[index-1].gain>=row.gain));
+ change('#progressSort','name');const names=[...d.querySelectorAll('#skillGainTable tbody button')].map(button=>button.textContent.trim());assert.deepEqual(names,[...names].sort((a,b)=>a.localeCompare(b)));
+ d.querySelector('#progressUnchanged').click();assert.equal(listed().length,model.metrics.skills.length+1);
+ d.querySelector('#skillGainTable [data-progress-metric="attack"]').click();assert.equal(d.querySelector('#progressMetric').value,'attack');check('xp','attack',365);change('#progressMetric','agility');
+ d.querySelector('#progressPeriods [data-progress-window="30"]').click();
+ d.querySelector('#statsMemberPicker input[value="lompste"]').click();check('xp','agility',30,keys.filter(key=>key!=='lompste'));assert(!d.querySelector('#progressAll').hidden);
  d.querySelector('#progressAll').click();check('xp','agility',30);assert(d.querySelector('#progressAll').hidden);
- const params=new URL(d.querySelector('#progressRecords').href).searchParams;assert.equal(params.get('type'),'skill-xp');assert.equal(params.get('metric'),'agility');assert.equal(params.get('period'),'30');
- assert.equal(new URL(d.querySelector('#progressGoal').href).searchParams.get('metric'),'agility');
+ const params=new URL(d.querySelector('#progressRecords').href).searchParams;assert.equal(params.get('type'),'skill-xp');assert.equal(params.get('metric'),'agility');assert.equal(params.get('period'),'30');assert.equal(new URL(d.querySelector('#progressGoal').href).searchParams.get('kind'),'xp');
  const updated=structuredClone(doc),next=structuredClone(updated.profiles.dikste.latestSnapshot);next.createdAt=new Date(Date.parse(next.createdAt)+3600000).toISOString();next.data.skills.agility.experience+=1000000000;updated.profiles.dikste.latestSnapshot=next;
  w.dispatchEvent(new w.CustomEvent('ug:data-updated',{detail:{key:w.UGV21.WKEY,document:updated}}));
  await waitFor(()=>d.querySelector('[data-progress-player]')?.dataset.progressPlayer==='dikste'&&d.querySelector('.records-gain b').textContent.includes('1,000,'),'fresh data updates gains');
  w.dispatchEvent(new w.CustomEvent('ug:data-updated',{detail:{key:w.UGV21.WKEY,document:{profiles:{},snapshots:{}}}}));
- await waitFor(()=>d.querySelectorAll('[data-progress-rank=""]').length===5,'missing history is unknown');assert(d.querySelector('#xpChart').textContent.includes('At least two'));assert(!d.querySelector('main').textContent.includes('NaN'));
- assert.equal(result.errors.length,0,result.errors.join('; '));assert(!requests.some(r=>r.method==='POST'||r.url.includes('api.wiseoldman.net')||r.url.includes('/api/temple-collection-log')),'viewing and choosing metrics never refresh external data');
+ await waitFor(()=>d.querySelectorAll('[data-progress-rank=""]').length===5,'missing history stays unknown');assert.equal(d.querySelector('#progressMetric').value,'agility','a partial update retains the user’s selected skill');assert(d.querySelector('#xpChart').textContent.includes('At least two'));assert(!d.querySelector('main').textContent.includes('NaN'));
+ assert.equal(result.errors.length,0,result.errors.join('; '));assert(!requests.some(request=>request.method==='POST'||request.url.includes('api.wiseoldman.net')||request.url.includes('/api/temple-collection-log')),'browsing gains does not refresh upstream data');
  const linked=await openPage('progress.html?kind=skill&metric=attack&player=dikste&period=7');doms.push(linked.dom);assert.equal(linked.dom.window.document.querySelectorAll('[data-progress-player]').length,1);assert.equal(linked.dom.window.document.querySelector('#progressMetric').value,'attack');
- console.log('Stat Progress UI passed: six windows, XP/level/KC/EHP/EHB, actual ranks and values, search, graphs and zero baseline, keyboard inspector, sorting, filters, goal/record/legacy links, data updates and missing history.');
+ const weekly=await openPage('progress.html?period=7');doms.push(weekly.dom);assert.equal(weekly.dom.window.document.querySelector('#progressMetric').value,'overall','the existing weekly overview shortcut retains its explicit intent');
+ console.log('Stat Progress passed: visible selection before results; gains-only views; all retained metrics; six synchronized graph periods; clean three/two-column tables; sort/filter/search; shared selection; legacy links; updates and unknown history.');
  doms.forEach(dom=>dom.window.close());server.close();process.exit(0);
 }catch(error){console.error(error);doms.forEach(dom=>dom.window.close());server.close();process.exit(1)}});
