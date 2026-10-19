@@ -22,6 +22,21 @@ function destination(value){
 }
 function href(value){return enabled?destination(value)?.path||value:value}
 window.UGRoutes={enabled,file,href};
+// Privacy-friendly visitor analytics. Activate by setting the Cloudflare Web Analytics
+// site token obtained from Cloudflare > Web Analytics > ugimps.com > Manage site.
+// Do not count local previews, the old github.io mirror, or developer maintenance.
+// No token means disabled: never pretend that statistics are being collected.
+const analyticsToken='';
+const isPublicDomain=['ugimps.com','www.ugimps.com'].includes(location.hostname);
+if(isPublicDomain && analyticsToken && !['developer.html'].includes(file(location.pathname))){
+  const beacon=document.createElement('script');
+  beacon.defer=true;
+  beacon.src='https://static.cloudflareinsights.com/beacon.min.js';
+  beacon.setAttribute('data-cf-beacon',JSON.stringify({token:analyticsToken}));
+  document.head.appendChild(beacon);
+}
+window.UGAnalytics={configured:!!analyticsToken,active:isPublicDomain&&!!analyticsToken,provider:'Cloudflare Web Analytics'};
+
 if(!enabled)return;
 function remember(target){try{sessionStorage.setItem(scrollKey,JSON.stringify({...target,at:Date.now()}))}catch{}}
 function normalize(link){
