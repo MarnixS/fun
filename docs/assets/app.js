@@ -182,7 +182,7 @@ function latestRecordedLevel(){
  return events[0]
 }
 function renderLatestItem(){
- const dr=chronicleDropEvents().sort(window.UGHistory.compareEvents)[0],dp=dr?playerByKey(dr.key):null;
+ const dr=chronicleDropEvents().filter(e=>e.date>0).sort(window.UGHistory.compareEvents)[0],dp=dr?playerByKey(dr.key):null;
  $$('[data-mast-drop]').forEach(x=>x.innerHTML=dr?chronicleEventLink(dr):'No recent item activity');
  $$('[data-mast-drop-sub]').forEach(x=>x.textContent=dr?`${dateOnly(dr.date)} · ${dr.player||'Group'}`:'No qualifying item events');
  $$('[data-mast-drop-avatar]').forEach(x=>{if(dp?.portrait){x.dataset.modernSrc=dp.portrait;x.src=portraitFor(dp);x.alt=dp.name;x.hidden=false;x.onerror=()=>{x.hidden=true}}else{x.hidden=true;x.removeAttribute('src');x.alt=''}});
@@ -305,6 +305,36 @@ function chronicleGroupCounts(recent,keys){
  }
  return result;
 }
+function chronicleLogHistory(recent,keys){
+ const logs=new Map(),totals=new Map(),byItem=new Map(),out=[];
+ for(const key of keys){
+  const items=new Map();
+  for(const item of templeItemsFor(key))if(Number.isSafeInteger(item.count)&&item.count>0&&item.count>(items.get(item.id)?.count||0))items.set(item.id,item);
+  logs.set(key,items);
+  for(const item of items.values())totals.set(item.id,(totals.get(item.id)||0)+item.count);
+ }
+ for(const d of recent){const key=playerKey(d.player),sig=`${key}|${d.id}`;if(!byItem.has(sig))byItem.set(sig,[]);byItem.get(sig).push(d)}
+ for(const [key,items] of logs)for(const item of items.values()){
+  const value=mastItemPrice(item.id);if(!item.name||value<=500000)continue;
+  const rows=byItem.get(`${key}|${item.id}`)||[],ranges=[],countedDates=new Set(),rawDates=new Set();
+  for(const d of rows){
+   if(Number.isSafeInteger(d.previousCount)&&d.previousCount>=0&&Number.isSafeInteger(d.currentCount)&&d.currentCount>d.previousCount){
+    ranges.push([d.previousCount,Math.min(item.count,d.currentCount)]);countedDates.add(d.date);
+   }else rawDates.add(d.date);
+  }
+  // Count only the copies actually represented by saved events. Overlapping
+  // transitions and repeated raw feed rows must not hide missing history.
+  let represented=0,end=0;
+  for(const [a,b] of ranges.sort((a,b)=>a[0]-b[0])){represented+=Math.max(0,b-Math.max(a,end));end=Math.max(end,b)}
+  represented+=[...rawDates].filter(date=>!countedDates.has(date)).length;
+  const unrecordedCount=Math.max(0,item.count-represented);if(!unrecordedCount)continue;
+  const p=playerByKey(key);
+  // Temple's full-log date may be a bulk import, not an acquisition date.
+  // Retain an honest count summary instead of inventing individual drop times.
+  out.push({type:'drop',player:p.name,key,core:p.core,date:0,name:item.name,itemId:item.id,value,broadcast:true,newPlayerUnlock:false,newGroupUnlock:false,notable:true,score:9,repeatDrop:item.count>1,historicalLog:true,recordedCount:item.count,unrecordedCount,groupRecordedCount:keys.length===PLAYERS.length?totals.get(item.id):null,source:'Saved Collection Log history via Temple'});
+ }
+ return out;
+}
 function chronicleDropEvents(){
  const recent=templeRecent(),ownersByItem=new Map(),keys=syncedKeys(),groupCounts=chronicleGroupCounts(recent,keys);
  const record=(id,key,date)=>{if(!key)return;let owners=ownersByItem.get(id);if(!owners){owners=new Map();ownersByItem.set(id,owners)}const old=owners.get(key);if(old===undefined||date>0&&(!old||date<old))owners.set(key,date)};
@@ -312,12 +342,13 @@ function chronicleDropEvents(){
  // the selected members or the recent feed. Unknown dates cannot prove a first.
  for(const key of keys)for(const item of templeItemsFor(key))if(item.count>0)record(item.id,key,templeDateMs(item.date_unix??item.date));
  for(const d of recent){const key=playerKey(d.player);record(d.id,key,d.repeatDrop||d.previousCount>0?0:d.date)}
- return recent.flatMap(d=>{
+ const events=recent.flatMap(d=>{
   const key=playerKey(d.player),p=playerByKey(key),value=mastItemPrice(d.id),newPlayerUnlock=!d.repeatDrop&&!(d.previousCount>0),broadcast=value>500000;
   if(!p||!newPlayerUnlock&&!broadcast)return[];
   const owners=ownersByItem.get(d.id),newGroupUnlock=newPlayerUnlock&&keys.length===PLAYERS.length&&[...owners].every(([owner,date])=>owner===key||date>d.date);
   return[{type:'drop',player:p.name,key,core:p.core,date:d.date,name:d.name,itemId:d.id,value,broadcast,newPlayerUnlock,newGroupUnlock,notable:d.notable||broadcast,score:d.notable||broadcast?9:3,countDelta:d.countDelta,previousCount:d.previousCount,currentCount:d.currentCount,...groupCounts.get(d),repeatDrop:!newPlayerUnlock,detectedFromCount:d.detectedFromCount,source:d.source||'Collection Log recent unlock via Temple'}];
  });
+ return [...events,...chronicleLogHistory(recent,keys)];
 }
 function chronicleEvents(){const all=[...officialAchievements(),...PLAYERS.flatMap(derivedLevelEvents),...PLAYERS.flatMap(derivedMilestones),...chronicleDropEvents()];const seen=new Set(),out=[];for(const e of all.sort((a,b)=>(a.date>0?0:1)-(b.date>0?0:1))){const bucket=Math.round(e.date/864e5),sig=e.type==='level'&&e.metric&&e.level?`${e.key}|level|${e.metric}|${e.level}`:e.type==='drop'?`${e.key}|drop|${e.itemId}|${e.date}|${e.currentCount??''}`:`${e.key}|${e.type}|${String(e.name).toLowerCase()}|${bucket}`;if(seen.has(sig))continue;seen.add(sig);out.push(e)}return out.sort(window.UGHistory.compareEvents)}
 function nextMark(v,marks){return marks.find(x=>x>v)}
@@ -345,7 +376,7 @@ function renderGoals(){
   return `<article class="goal-card ${p.core?'':'side'}" data-goal-player="${p.key}" style="--pc:${p.color}"><div class="goal-head"><img src="${portraitFor(p)}" data-modern-src="${p.portrait}" alt=""><h3>${p.name}</h3></div>${goals.slice(0,4).map(line).join('')}${goals.length>4?`<details data-goal-player="${p.key}"${expanded.has(p.key)?' open':''}><summary>Show ${goals.length-4} more goals</summary>${goals.slice(4).map(line).join('')}</details>`:''}${goals.length?'':'<div class="muted">Not enough data for suggested goals.</div>'}</article>`;
  }).join('');
 }
-function chronicleEventLink(e){if(e.type==='drop')return window.UGV21.itemLink(e.itemId,e.repeatDrop&&e.currentCount>1?`${e.name} · #${fmt(e.currentCount)}`:e.name);const data=snapData(e.key)||{},kind=e.metric in (data.skills||{})?(e.metric==='overall'&&/total level/i.test(e.name)?'level':'skill'):e.metric in (data.bosses||{})?'boss':e.metric in (data.activities||{})?'activity':e.metric in (data.computed||{})?'computed':null;return kind?window.UGV21.metricLink(kind,e.metric,e.name,e.type!=='level'):esc(e.name)}
+function chronicleEventLink(e){if(e.type==='drop')return window.UGV21.itemLink(e.itemId,e.historicalLog?`${e.name} · ${fmt(e.recordedCount)} logged`:e.repeatDrop&&e.currentCount>1?`${e.name} · #${fmt(e.currentCount)}`:e.name);const data=snapData(e.key)||{},kind=e.metric in (data.skills||{})?(e.metric==='overall'&&/total level/i.test(e.name)?'level':'skill'):e.metric in (data.bosses||{})?'boss':e.metric in (data.activities||{})?'activity':e.metric in (data.computed||{})?'computed':null;return kind?window.UGV21.metricLink(kind,e.metric,e.name,e.type!=='level'):esc(e.name)}
 let chronoFilter='all',chronoPage=1,chronoPageSize=100;
 function chroniclePagerHtml(total,totalPages,start,end){
  if(!total)return'';
@@ -360,6 +391,7 @@ function bindChroniclePager(){
  $$('[data-chrono-size]').forEach(b=>b.onclick=()=>{chronoPageSize=b.dataset.chronoSize==='all'?'all':100;chronoPage=1;renderChronicle()});
 }
 function chronicleCountDetail(e){
+ if(e.historicalLog)return `<p class="chronicle-counts">Recorded Collection Log counts: Individual ${fmt(e.recordedCount)}${e.groupRecordedCount!=null?`, Group ${fmt(e.groupRecordedCount)}`:''}</p>`;
  if(e.type!=='drop'||e.previousCount==null||e.currentCount==null)return '';
  const group=e.groupPreviousCount!=null&&e.groupCurrentCount!=null?`${fmt(e.groupPreviousCount)} → ${fmt(e.groupCurrentCount)}`:'not recorded';
  return `<p class="chronicle-counts">Individual Collection Log count ${fmt(e.previousCount)} → ${fmt(e.currentCount)}, <span${e.groupCountScope==='refresh'?' title="Group totals across all five saved logs before and after the same Collection Log refresh"':''}>Group Collection Log count ${group}</span></p>`;
@@ -381,12 +413,12 @@ async function renderChronicle(){
   if(y!==year){h+=`<div class="chronicle-year">${y}</div>`;year=y}
   const side=e.core===false?'side':'',notable=e.notable||e.score>=8?'notable':'',broadcast=e.broadcast?'broadcast':'';
   const historical=e.source==='Historical screenshot comparison';
-  const kind=e.type==='drop'?(e.repeatDrop?'Repeat drop detected from Collection Log count change':'New Collection Log unlock for this player'):historical?(e.type==='level'?'Skill level gained between historical observations':'Stats milestone between historical observations'):e.type==='level'?'Skill level gained via WOM snapshot comparison':'Stats milestone via WOM';
-  const dateLabel=historical?`${dateOnly(e.intervalStart)} → ${dateOnly(e.date)} · exact time unknown`:`${e.date>0?dateTime(e.date):'Date unknown · recorded by WOM'}${e.accuracy>0?` · WOM accuracy ±${Math.round(e.accuracy/36e5)}h`:''}`;
+  const kind=e.historicalLog?`${fmt(e.unrecordedCount)} ${e.unrecordedCount===1?'copy has':'copies have'} no individual drop date`:e.type==='drop'?(e.repeatDrop?'Repeat drop detected from Collection Log count change':'New Collection Log unlock for this player'):historical?(e.type==='level'?'Skill level gained between historical observations':'Stats milestone between historical observations'):e.type==='level'?'Skill level gained via WOM snapshot comparison':'Stats milestone via WOM';
+  const dateLabel=e.historicalLog?'Date unknown · recorded in Collection Log':historical?`${dateOnly(e.intervalStart)} → ${dateOnly(e.date)} · exact time unknown`:`${e.date>0?dateTime(e.date):'Date unknown · recorded by WOM'}${e.accuracy>0?` · WOM accuracy ±${Math.round(e.accuracy/36e5)}h`:''}`;
   const detection=e.detectedFromCount?` title="Exact drop time unavailable; detected on Collection Log refresh" aria-label="${esc(dateLabel)}. Exact drop time unavailable; detected on Collection Log refresh"`:'';
   const image=e.type==='drop'?`<img src="https://static.runelite.net/cache/item/icon/${e.itemId}.png" alt="">`:e.type==='level'&&window.UGV21.skillIconUrl?.(e.metric)?`<img class="chronicle-skill-icon" src="${window.UGV21.skillIconUrl(e.metric)}" alt="${esc(nice(e.metric))}">`:'';
   const price=e.type==='drop'?` · <span class="chronicle-item-price">${mastPrices?(e.value>0?`GE value: ${fmt(Math.round(e.value))} gp each`:'GE value unavailable'):'GE prices loading / unavailable'}</span>`:'';
-  h+=`<article class="chronicle-event ${side} ${notable} ${broadcast}" data-event-type="${e.type}" data-player-key="${esc(e.key)}"${e.newGroupUnlock?' data-group-unlock="true"':''}${e.level?` data-level="${e.level}" data-metric="${esc(e.metric)}"`:''}><div class="chronicle-date"${detection}>${dateLabel}</div><div class="chronicle-main">${image}<div><h4>${esc(e.player)} · ${chronicleEventLink(e)}</h4><p>${kind}${e.newGroupUnlock?' · <strong class="chronicle-group-unlock">New group Collection Log unlock</strong>':''}${price}${e.source==='WOM snapshot'?' · derived from saved snapshot crossing':''}${e.type==='level'&&e.source==='WOM snapshot comparison'?' · every crossed level is listed':''}</p>${chronicleCountDetail(e)}</div></div></article>`;
+  h+=`<article class="chronicle-event ${side} ${notable} ${broadcast}" data-event-type="${e.type}" data-player-key="${esc(e.key)}"${e.historicalLog?' data-log-history="true"':''}${e.newGroupUnlock?' data-group-unlock="true"':''}${e.level?` data-level="${e.level}" data-metric="${esc(e.metric)}"`:''}><div class="chronicle-date"${detection}>${dateLabel}</div><div class="chronicle-main">${image}<div><h4>${esc(e.player)} · ${chronicleEventLink(e)}</h4><p>${kind}${e.newGroupUnlock?' · <strong class="chronicle-group-unlock">New group Collection Log unlock</strong>':''}${price}${e.source==='WOM snapshot'?' · derived from saved snapshot crossing':''}${e.type==='level'&&e.source==='WOM snapshot comparison'?' · every crossed level is listed':''}</p>${chronicleCountDetail(e)}</div></div></article>`;
  }
  host.innerHTML=h||'<div class="notice">No Chronicle events matched this filter.</div>';
  const pager=chroniclePagerHtml(total,totalPages,start,end);
