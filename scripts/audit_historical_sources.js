@@ -36,10 +36,10 @@ server.listen(0,'127.0.0.1',async()=>{let dom;try{
  // Stat Progress must consume screenshot checkpoints through its normal model
  // and UI, rather than relying on the Time Machine's separate rendering.
  const pair=photos.filter(row=>['2023-04-25','2023-05-04'].includes(row.createdAt.slice(0,10))),history={profiles:{[key]:{...doc.profiles[key],latestSnapshot:pair.at(-1)}},snapshots:{[key]:pair},gains:{},achievements:{}};
- const progress=await openPage('progress.html?type=skill-xp&metric=crafting&period=30&mode=records',{selection:[key],deployedDocs:{wom:history}});dom=progress.dom;
- const pd=dom.window.document,expected=require('../docs/assets/stat-progress-model').build(history,[key]).compare('xp','crafting',30,[key],'records').rows[0];
- assert.equal(expected.proof.start,Date.parse('2023-04-25'));assert.equal(expected.proof.end,Date.parse('2023-05-04'));assert(expected.gain>0);
- assert.equal(pd.querySelector('[data-progress-player="big dog aura"] .records-gain b').textContent,'≥ +'+expected.gain.toLocaleString('en-GB'));assert.match(pd.querySelector('#progressCoverage').textContent,/25 Apr 2023 → 4 May 2023/);assert.equal(progress.errors.length,0,progress.errors.join('; '));
+ const progress=await openPage('progress.html?type=skill-xp&metric=crafting&period=30',{selection:[key],deployedDocs:{wom:history}});dom=progress.dom;
+ const pd=dom.window.document,expected=require('../docs/assets/stat-progress-model').build(history,[key]).compare('xp','crafting',30,[key],'recent').rows[0];
+ assert.equal(expected.start,Date.parse('2023-04-25'));assert.equal(expected.end,Date.parse('2023-05-04'));assert(expected.gain>0);
+ assert.equal(pd.querySelector('[data-progress-player="big dog aura"] .records-gain b').textContent,'+'+expected.gain.toLocaleString('en-GB'));assert.match(pd.querySelector('#progressCoverage').textContent,/25 Apr 2023 → 4 May 2023/);assert.equal(progress.errors.length,0,progress.errors.join('; '));
  console.log('Historical UI passed: all seven Time Machine dates, source disclosure, known totals, inherited uncertainty, no invented EHP/KC or upstream updates, and Chronicle level-ups across obscured screenshots with honest date intervals; screenshot-only Stat Progress gains.');
  dom.window.close();server.close();process.exit(0);
 }catch(error){console.error(error);dom?.window.close();server.close();process.exit(1)}});

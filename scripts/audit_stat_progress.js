@@ -53,25 +53,15 @@ server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
  d.querySelector('#statsMemberPicker input[value="lompste"]').click();check('xp','agility',30,keys.filter(key=>key!=='lompste'));assert(!d.querySelector('#progressAll').hidden);
  d.querySelector('#progressAll').click();check('xp','agility',30);assert(d.querySelector('#progressAll').hidden);
  const params=new URL(d.querySelector('#progressRecords').href).searchParams;assert.equal(params.get('type'),'skill-xp');assert.equal(params.get('metric'),'agility');assert.equal(params.get('period'),'30');assert.equal(new URL(d.querySelector('#progressGoal').href).searchParams.get('kind'),'xp');
- d.querySelector('[data-progress-mode="records"]').click();
- assert.equal(new URL(w.location.href).searchParams.get('mode'),'records');
- assert(d.querySelector('#progressHeading').textContent.includes('personal bests'));
- assert(d.querySelector('#progressTotalNote').textContent.includes('combined minimum · record dates vary'));
- for(const period of M.PERIODS){d.querySelector(`#progressPeriods [data-progress-window="${period.days}"]`).click();check('xp','agility',period.days,keys,'records')}
- d.querySelector('#progressPeriods [data-progress-window="90"]').click();
- assert(d.querySelector('[data-progress-player="lijpste"] .records-gain b').textContent.includes('6,406,522'),'the user’s earlier Agility run is displayed as the record');
- for(const [family,metric]of [['xp','overall'],['level','agility'],['boss','zulrah'],['computed','ehp']]){change('#progressType',family);change('#progressMetric',metric);check(family,metric,90,keys,'records')}
- change('#progressType','xp');change('#progressMetric','agility');
- assert(d.querySelector('[data-progress-view="timeline"]').hidden,'inferred records cannot fabricate a timeline');
- for(const graph of ['bars','share']){d.querySelector(`[data-progress-view="${graph}"]`).click();check('xp','agility',90,keys,'records')}
- change('#progressMetric','farming');d.querySelector('#progressPeriods [data-progress-window="30"]').click();
- const farming=d.querySelector('[data-progress-player="big dog aura"]');assert(farming.querySelector('.records-gain b').textContent.includes('2,189,811'));assert(farming.querySelector('.progress-observed').textContent.includes('exact run dates unknown'));assert(!farming.textContent.includes('5 Jun 2025'));
- change('#progressMetric','agility');d.querySelector('#progressPeriods [data-progress-window="90"]').click();
- const bestReload=await openPage('progress.html'+w.location.search);doms.push(bestReload.dom);
- assert.equal(bestReload.dom.window.document.querySelector('[data-progress-mode="records"]').getAttribute('aria-pressed'),'true','personal-best mode survives a shared URL');
- d.querySelector('[data-progress-mode="recent"]').click();d.querySelector('#progressPeriods [data-progress-window="30"]').click();check('xp','agility',30);
+ assert(!d.querySelector('[data-progress-mode]'),'personal best tabs are absent from Stat Progress');
  assert(d.querySelector('#progressHeading').textContent.includes('latest'));
- assert(!new URL(w.location.href).searchParams.has('mode'));
+ const bestReload=await openPage('progress.html?type=skill-xp&metric=agility&period=90&mode=records');doms.push(bestReload.dom);
+ const bd=bestReload.dom.window.document;
+ assert(!bd.querySelector('[data-progress-mode]'));
+ assert(bd.querySelector('#progressHeading').textContent.includes('latest 3 months'),'legacy personal-best URLs show the recent progress view');
+ assert(!new URL(bestReload.dom.window.location.href).searchParams.has('mode'),'the removed mode is cleared from shared URLs');
+ assert.equal(bd.querySelector('[data-progress-player="lijpste"] .records-gain b').textContent,'+'+model.compare('xp','agility',90,keys,'recent').rows.find(row=>row.key==='lijpste').gain.toLocaleString('en-GB'));
+ assert.equal(bestReload.errors.length,0,bestReload.errors.join('; '));
  const updated=structuredClone(doc),next=structuredClone(updated.profiles.dikste.latestSnapshot);next.createdAt=new Date(Date.parse(next.createdAt)+3600000).toISOString();next.data.skills.agility.experience+=1000000000;updated.profiles.dikste.latestSnapshot=next;
  w.dispatchEvent(new w.CustomEvent('ug:data-updated',{detail:{key:w.UGV21.WKEY,document:updated}}));
  await waitFor(()=>d.querySelector('[data-progress-player]')?.dataset.progressPlayer==='dikste'&&d.querySelector('.records-gain b').textContent.includes('1,000,'),'fresh data updates gains');
