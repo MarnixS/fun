@@ -90,7 +90,7 @@ function render(){
  searchMetrics();
  if(!metric){$('#progressStatus').textContent='Choose what to compare above. Results will use the selected players and period.';$('#gainCards').innerHTML='';$('#skillGainTable').innerHTML='';$('#xpChart').innerHTML='';return}
  const {domain,rows}=compare(metric),known=rows.filter(row=>row.gain!==null),total=known.reduce((sum,row)=>sum+row.gain,0),period=M.PERIODS.find(item=>item.days===days),records=mode==='records';
- $('#progressHeading').innerHTML=icon(metric)+`<span>${esc(label())} · ${records?'personal bests within':'latest'} ${period.label}</span>`;
+ $('#progressHeading').innerHTML=icon(metric)+`<span>${esc(label())} gained · ${records?'personal bests within':'latest'} ${period.label}</span>`;
  $('#progressRange').textContent=records?'Best runs across all saved dates. Each player’s record dates appear below.':domain?date(domain.start)+' → '+date(domain.end):'No saved observations.';
  $('#progressTotal').textContent=known.length?'+'+number(total)+' '+unit():'—';
  $('#progressTotalNote').textContent=known.length?(records?'sum of personal bests · dates vary':'combined recent gain')+' · '+known.length+' of '+rows.length+' players with observations':'Insufficient history for this comparison';
