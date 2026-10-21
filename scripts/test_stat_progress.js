@@ -44,10 +44,14 @@ for(const [kind,metric]of [['xp','overall'],['level','overall'],...progress.metr
  for(const row of best){
   const current=latest.find(current=>current.key===row.key);
   if(current.gain!==null)assert(row.gain>=current.gain,'a personal best cannot be lower than an observed recent run');
-  if(row.gain!==null){assert.equal(row.gain,row.points.at(-1).value-row.points[0].value);assert(row.span<=period.days*M.DAY)}
+  if(row.gain!==null){
+   if(row.inferred){assert.equal(row.start,null);assert.equal(row.end,null);assert.equal(row.points.length,0,'an inferred minimum cannot fabricate a timeline');assert(row.proof.span>period.days*M.DAY)}
+   else{assert.equal(row.gain,row.points.at(-1).value-row.points[0].value);assert(row.span<=period.days*M.DAY)}
+   assert.deepEqual(row.proof,expected.find(other=>other.key===row.key).record.proof);
+  }
   comparisons++;
  }
 }
 assert.throws(()=>model.compare('xp','overall',7,keys,'invalid'),RangeError);
-console.log(`Historical records agree across both pages for ${comparisons} player/metric/window comparisons; every observed recent gain is bounded by its personal best.`);
+console.log(`Historical records agree across both pages for ${comparisons} player/metric/window comparisons; every observed recent gain is bounded by its personal best, with matching evidence and no invented inferred timelines.`);
 console.log('Stat Progress model passed: common windows, matching graph/rank endpoints, summary dates, ties, missing data, zero gains, corrections and invalid counters.');

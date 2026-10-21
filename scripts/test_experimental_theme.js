@@ -20,9 +20,10 @@ async function finishModern(page){page.d.querySelector('#modernThemeStyles').dis
  assert.equal(d.querySelectorAll('.osrs-menu-box').length,4);assert.equal(d.querySelectorAll('[data-osrs-banner]').length,0);assert.equal(d.querySelectorAll('.group-banner[data-osrs-header="cohesive"]').length,1);assert.equal(d.querySelectorAll('[data-osrs-pets]').length,0);assert.equal(d.querySelectorAll('[data-osrs-nav]').length,1);
  assert.equal(d.querySelectorAll('.osrs-menu-link').length,d.querySelectorAll('.nav-inner .nav-link').length);
  assert(d.querySelector('[data-osrs-nav] a[href="cumulative-xp.html"]'));assert(!d.querySelector('[data-osrs-nav] a[href="nemesis.html"]'));assert(d.querySelector('.experimental-card a[href="nemesis.html"]'));
- const featurePages=['gim.html','hypothetical.html','rng.html','goals.html','history.html','cumulative-xp.html','kc-comparison.html'],featureSources=[];
+ assert(!d.querySelector('[data-osrs-nav] a[href="history.html"]'));assert(d.querySelector('.experimental-card a[href="history.html"]'));
+ const featurePages=['gim.html','hypothetical.html','rng.html','goals.html','cumulative-xp.html','kc-comparison.html'],featureSources=[];
  for(const page of featurePages){const image=d.querySelector('[data-osrs-nav] a[href="'+page+'"] img');assert(image.classList.contains('osrs-feature-icon'));assert.equal(image.width,24);assert.equal(image.height,24);assert(fs.existsSync('docs/'+image.getAttribute('src')));featureSources.push(image.src)}
- assert.equal(new Set(featureSources).size,7,'distinct feature icons stay intact');
+ assert.equal(new Set(featureSources).size,6,'distinct feature icons stay intact');
  w.localStorage.setItem('ug:members','keep');const originalNav=d.querySelector('.nav-inner'),originalMain=d.querySelector('main'),oldStyles=d.querySelector('#osrsThemeStyles');
  const toggle=d.querySelector('[data-osrs-theme-switch]');toggle.click();
  assert(d.querySelector('#modernThemeStyles'));assert.equal(d.querySelector('#modernThemeStyles').getAttribute('blocking'),'render');

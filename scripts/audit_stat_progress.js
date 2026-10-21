@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http'),M=require('../docs/assets/stat-progress-model');
-const server=http.createServer((req,res)=>{const file=path.join(process.cwd(),'docs',new URL(req.url,'http://localhost').pathname);try{res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.json')?'application/json':file.endsWith('.css')?'text/css':'text/html');res.end(fs.readFileSync(file))}catch{res.statusCode=404;res.end()}});
+const server=http.createServer((req,res)=>{const file=path.join(process.cwd(),'docs',new URL(req.url,'http://localhost').pathname);try{res.setHeader('Connection','close');res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.json')?'application/json':file.endsWith('.css')?'text/css':'text/html');res.end(fs.readFileSync(file))}catch{res.statusCode=404;res.end()}});
 server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
  process.env.SITE_TEST_URL=`http://127.0.0.1:${server.address().port}/`;const {openPage,waitFor}=require('./audit_v25_jsdom'),requests=[];
  const result=await openPage('progress.html',{fetchLog:requests});doms.push(result.dom);
@@ -23,7 +23,7 @@ server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
   assert.equal(d.querySelectorAll('#gainCards thead th').length,3,'player table stays three columns');
   assert.equal(d.querySelectorAll('#skillGainTable thead th').length,2,'metric list stays two columns');
   assert.equal(d.querySelectorAll('#skillGainTable .rank-chip').length,0,'no rank badges inside the metric values');
-  for(const row of rows){const actual=d.querySelector(`[data-progress-player="${row.key}"] .records-gain b`).textContent;assert.equal(actual,row.gain===null?'—':'+'+(kind==='computed'?row.gain.toLocaleString('en-GB',{maximumFractionDigits:1}):Math.round(row.gain).toLocaleString('en-GB')))}
+  for(const row of rows){const actual=d.querySelector(`[data-progress-player="${row.key}"] .records-gain b`).textContent;assert.equal(actual,row.gain===null?'—':(mode==='records'?'≥ +':'+')+(kind==='computed'?row.gain.toLocaleString('en-GB',{maximumFractionDigits:1}):Math.round(row.gain).toLocaleString('en-GB')))}
   const svg=d.querySelector('#xpChart svg');if(svg&&d.querySelector('[data-progress-view="timeline"]').getAttribute('aria-pressed')==='true'){
    assert.equal(Number(svg.dataset.rangeEnd)-Number(svg.dataset.rangeStart),domain.end-domain.start);assert.equal(Number(svg.dataset.rangeEnd),domain.end);assert.equal(Number(svg.dataset.yMin),0);
    for(const point of svg.querySelectorAll('circle'))assert(Number(point.getAttribute('cx'))>=61.9&&Number(point.getAttribute('cx'))<=882.1,'observations remain within the period');
@@ -56,13 +56,17 @@ server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
  d.querySelector('[data-progress-mode="records"]').click();
  assert.equal(new URL(w.location.href).searchParams.get('mode'),'records');
  assert(d.querySelector('#progressHeading').textContent.includes('personal bests'));
- assert(d.querySelector('#progressTotalNote').textContent.includes('sum of personal bests · dates vary'));
+ assert(d.querySelector('#progressTotalNote').textContent.includes('combined minimum · record dates vary'));
  for(const period of M.PERIODS){d.querySelector(`#progressPeriods [data-progress-window="${period.days}"]`).click();check('xp','agility',period.days,keys,'records')}
  d.querySelector('#progressPeriods [data-progress-window="90"]').click();
  assert(d.querySelector('[data-progress-player="lijpste"] .records-gain b').textContent.includes('6,406,522'),'the user’s earlier Agility run is displayed as the record');
  for(const [family,metric]of [['xp','overall'],['level','agility'],['boss','zulrah'],['computed','ehp']]){change('#progressType',family);change('#progressMetric',metric);check(family,metric,90,keys,'records')}
  change('#progressType','xp');change('#progressMetric','agility');
- for(const graph of ['bars','share','timeline']){d.querySelector(`[data-progress-view="${graph}"]`).click();check('xp','agility',90,keys,'records')}
+ assert(d.querySelector('[data-progress-view="timeline"]').hidden,'inferred records cannot fabricate a timeline');
+ for(const graph of ['bars','share']){d.querySelector(`[data-progress-view="${graph}"]`).click();check('xp','agility',90,keys,'records')}
+ change('#progressMetric','farming');d.querySelector('#progressPeriods [data-progress-window="30"]').click();
+ const farming=d.querySelector('[data-progress-player="big dog aura"]');assert(farming.querySelector('.records-gain b').textContent.includes('2,189,811'));assert(farming.querySelector('.progress-observed').textContent.includes('exact run dates unknown'));assert(!farming.textContent.includes('5 Jun 2025'));
+ change('#progressMetric','agility');d.querySelector('#progressPeriods [data-progress-window="90"]').click();
  const bestReload=await openPage('progress.html'+w.location.search);doms.push(bestReload.dom);
  assert.equal(bestReload.dom.window.document.querySelector('[data-progress-mode="records"]').getAttribute('aria-pressed'),'true','personal-best mode survives a shared URL');
  d.querySelector('[data-progress-mode="recent"]').click();d.querySelector('#progressPeriods [data-progress-window="30"]').click();check('xp','agility',30);

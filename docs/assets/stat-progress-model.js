@@ -16,12 +16,13 @@ function build(doc,keys){
   if(!PERIODS.some(p=>p.days===days))throw new RangeError('Unsupported gain period');
   if(!['recent','records'].includes(mode))throw new RangeError('Unsupported gain comparison');
   if(mode==='records'){
-   const rows=history.records(kind+':'+key,days,selected).map(({key:player,record,rank})=>({
+   const rows=history.records(kind+':'+key,days,selected).map(({key:player,record,rank,rankRange,observedRecord,coverage})=>({
     key:player,rank,gain:record?.gain??null,start:record?.start??null,end:record?.end??null,
-    span:record?.span||0,maxGap:record?.maxGap||0,corrections:0,
-    points:record?history.points(player,kind+':'+key).filter(p=>p.time>=record.start&&p.time<=record.end):[]
+    span:record?.span??null,maxGap:record?.maxGap??null,corrections:coverage.corrections,
+    inferred:record?.inferred??false,proof:record?.proof??null,upperBound:record?.upperBound??null,rankRange,observedRecord,
+    points:record&&!record.inferred?history.points(player,kind+':'+key).filter(p=>p.time>=record.start&&p.time<=record.end):[]
    }));
-   const known=rows.filter(row=>row.gain!==null);
+   const known=rows.filter(row=>row.start!==null);
    const domain=known.length?{start:Math.min(...known.map(row=>row.start)),end:Math.max(...known.map(row=>row.end))}:null;
    return {domain,rows};
   }

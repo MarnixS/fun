@@ -27,7 +27,10 @@ for(const [metric,expected]of [['xp:agility',4623816],['xp:overall',4623816],['l
 const summaries={snapshots:{a:[snapshot(0,0),snapshot(10,7000000)]},gains:{week:{a:{startsAt:new Date(origin+2*M.DAY).toISOString(),endsAt:new Date(origin+2.5*M.DAY).toISOString(),data:{skills:{agility:{experience:{start:0,end:7000000,gained:999999999}}}}}}}};
 assert.equal(M.build(summaries,['a']).records('xp:agility',1)[0].record.gain,7000000,'dated summary counters can prove a record absent from full snapshots; gained is never trusted');
 summaries.snapshots.a.push(snapshot(2.5,-1));
-assert.equal(M.build(summaries,['a']).records('xp:agility',1)[0].record,null,'an unknown full snapshot overrides a conflicting summary endpoint');
+const unknownSummary=M.build(summaries,['a']).records('xp:agility',1)[0];
+assert.equal(unknownSummary.observedRecord,null,'an unknown full snapshot overrides a conflicting summary endpoint');
+assert.equal(unknownSummary.record.gain,875000,'the remaining summary start and saved end prove a daily minimum');
+assert.equal(unknownSummary.record.start,null,'a derived record has no fabricated start date');
 const doc={profiles:{a:{latestSnapshot:snapshot(1,80)}},snapshots:{a:[snapshot(1,50),snapshot(0,10),{createdAt:'invalid',data:{}},snapshot(1,60)]}};
 assert.deepEqual(M.snapshots(doc,'a').map(s=>s.data.skills.overall.experience),[10,80],'timestamps are sorted/deduplicated; latest snapshot wins');
 const ranked=M.rank([{key:'z',record:null},{key:'b',record:{gain:20}},{key:'a',record:{gain:20}},{key:'c',record:{gain:0}}]);
@@ -51,8 +54,52 @@ for(let trial=0;trial<80;trial++){
 }
 const saved=JSON.parse(fs.readFileSync('docs/data/wom-cache.json')),keys=Object.keys(saved.profiles),model=M.build(saved,keys);
 assert(model.metrics.skills.includes('agility')&&model.metrics.skills.includes('sailing'));assert(model.metrics.bosses.length>60);
-let checked=0;
-for(const metric of ['xp:overall','level:overall',...model.metrics.skills.flatMap(k=>['xp:'+k,'level:'+k]),...model.metrics.bosses.map(k=>'boss:'+k)])for(const p of M.PERIODS){
- for(const row of model.records(metric,p.days))if(row.record){assert(row.record.span<=p.days*M.DAY);assert.equal(row.record.gain,row.record.endValue-row.record.startValue);assert(row.record.observations>=2);assert(Number.isFinite(row.record.gain));checked++}
+// All-interval oracle, independent of the two-pointer observed-run scan.
+// Dense hidden histories also check that both bounds enclose the real maximum.
+for(let trial=0;trial<80;trial++){
+ let total=0;const dense=[];
+ for(let i=0;i<=80;i++){total+=Math.floor(random()*100);dense.push({time:origin+i*M.DAY/4,value:total})}
+ const sparse=dense.filter((_,i)=>i===0||i===80||random()<.14);
+ for(const days of [1,2,7,30]){
+  const result=M.boundedPoints(sparse,days).record;let expected=0;
+  for(let a=0;a<sparse.length;a++)for(let b=a+1;b<sparse.length;b++)expected=Math.max(expected,Math.ceil((sparse[b].value-sparse[a].value)/Math.ceil((sparse[b].time-sparse[a].time)/(days*M.DAY))));
+  assert.equal(result.gain,expected,'every observed interval contributes, not only preset window winners');
+  const actual=M.bestPoints(dense,days).record.gain;
+  assert(result.gain<=actual&&actual<=result.upperBound,'proven minimum <= actual dense record <= possible maximum');
+  if(result.inferred){assert.equal(result.start,null);assert.equal(result.end,null);assert(result.proof.span>days*M.DAY)}
+ }
 }
-console.log(`XP Records model passed: irregular windows, exact boundaries, missing/unranked counters, corrections, ties, deduplication, exhaustive comparisons and ${checked} saved-history records.`);
+const farApart=[{time:origin,value:0},{time:origin+800*M.DAY,value:8001}];
+assert.equal(M.boundedPoints(farApart,1).record.gain,11,'intervals beyond one year still prove shorter minimums');
+assert.equal(M.boundedPoints(farApart,365).record.gain,2667);
+assert.equal(M.boundedPoints(farApart,1).record.upperBound,8001,'all gains could occur in one unsaved day');
+assert.equal(M.boundedPoints([{time:origin,value:0},{time:origin+2*M.DAY,value:1.5}],1,false).record.gain,.75,'computed hours are not rounded to integer gains');
+assert.equal(M.boundedPoints([{time:origin,value:0},{time:origin+2*M.DAY,value:1}],1).record.gain,1,'indivisible gains round up');
+assert.equal(M.boundedPoints([{time:origin,value:0},{time:origin+M.DAY,value:100},{time:origin+2*M.DAY,value:0}],1).record.upperBound,null,'a correction leaves unknown gains across that gap');
+assert.equal(M.boundedPoints([{time:origin,value:20}],1).record,null,'one observation cannot prove zero');
+const farming30=model.records('xp:farming',30).find(row=>row.key==='big dog aura'),farming90=model.records('xp:farming',90).find(row=>row.key==='big dog aura');
+assert.equal(farming30.observedRecord.gain,1719359,'the reported insufficient monthly endpoint record is reproduced');
+assert.equal(farming90.record.gain,6569431);
+assert.equal(farming30.record.gain,2189811,'83.37 days proves a monthly record of at least ceil(6569431 / 3)');
+assert.equal(farming30.record.inferred,true);assert.equal(farming30.record.start,null);assert.equal(farming30.record.end,null);assert.equal(farming30.record.proof.parts,3);
+assert.equal(farming30.record.proof.gain,6569431);assert(farming30.record.proof.span<90*M.DAY);
+const rankBounds=M.rank([{key:'a',record:{gain:10,upperBound:30}},{key:'b',record:{gain:20,upperBound:20}},{key:'c',record:{gain:5,upperBound:5}}]);
+assert.deepEqual(rankBounds.map(row=>[row.key,row.rankRange]),[['b',{best:1,worst:2}],['a',{best:1,worst:2}],['c',{best:3,worst:3}]],'overlapping record bounds must not claim a certain winner');
+let checked=0,inequalities=0;
+for(const metric of ['xp:overall','level:overall',...model.metrics.skills.flatMap(k=>['xp:'+k,'level:'+k]),...model.metrics.bosses.map(k=>'boss:'+k)]){
+ const windows=M.PERIODS.map(p=>({days:p.days,rows:model.records(metric,p.days)}));
+ for(const {days,rows}of windows)for(const row of rows)if(row.record){
+  const r=row.record,p=r.proof;assert.equal(p.gain,p.endValue-p.startValue);assert(p.observations>=2);assert(Number.isFinite(r.gain));
+  assert.equal(r.gain,Math.ceil(p.gain/Math.ceil(p.span/(days*M.DAY))));
+  if(r.inferred){assert.equal(r.start,null);assert.equal(r.end,null);assert(p.span>days*M.DAY)}
+  else{assert(r.span<=days*M.DAY);assert.equal(r.gain,r.endValue-r.startValue)}
+  if(r.upperBound!==null)assert(r.gain<=r.upperBound);
+  assert(row.rankRange.best<=row.rankRange.worst);checked++;
+  for(const larger of windows.filter(w=>w.days>days)){
+   const large=larger.rows.find(other=>other.key===row.key).record;assert(large);
+   assert(large.gain>=r.gain,'longer records cannot be smaller');
+   assert(large.gain<=Math.ceil(larger.days/days)*r.gain,metric+' '+row.key+': longer gains must imply sufficient shorter gains');inequalities++;
+  }
+ }
+}
+console.log(`Record bounds passed: Farming regression, all-interval oracle, 320 hidden-history cases, resets, uncertainty, ${checked} saved records and ${inequalities} cross-window inequalities.`);
