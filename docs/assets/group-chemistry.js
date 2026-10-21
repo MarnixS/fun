@@ -30,6 +30,6 @@ for(const id of ['chemDiscovery','chemMap'])$('#'+id).onclick=e=>{const b=e.targ
 $('#chemRemovals').onclick=e=>{const b=e.target.closest('[data-toggle]');if(!b)return;const key=b.dataset.toggle,keys=new Set(chosenKeys);if(keys.has(key))keys.delete(key);else keys.add(key);const team=model.teams.find(t=>t.keys.length===keys.size&&t.keys.every(k=>keys.has(k)));if(team){select(team.mask);$('#chemRemovals').querySelector('[data-toggle="'+key+'"]')?.focus({preventScroll:true})}};
 $('#chemLostMore').onclick=()=>{lostLimit+=18;render()};$('#chemOpenLog').onclick=()=>{U.saveMemberSelection(new Set(chosenKeys));location.assign(window.UGRoutes?.href('collection-log.html')||'collection-log.html')};
 window.addEventListener('ug:members-changed',e=>{const next=U.cleanSelection(e.detail?.keys,U.ALL_KEYS);if(U.sameSelection(next,selected))return;selected=next;chosenKeys=null;pick();rebuild()});
-window.addEventListener('ug:data-updated',async e=>{if(![U.WKEY,U.TKEY].includes(e.detail?.key))return;[wom,doc]=await Promise.all([U.loadWom(),U.loadClog()]);rebuild()});
+U.onDataUpdate(async e=>{if(![U.WKEY,U.TKEY].includes(e.detail?.key))return;[wom,doc]=await Promise.all([U.loadWom(),U.loadClog()]);rebuild()});
 Promise.all([U.loadWom(),U.loadClog()]).then(([w,d])=>{wom=w;doc=d;pick();rebuild()}).catch(e=>{$('#chemStatus').textContent='Saved group data could not be loaded. Reload to retry.';console.warn('Group Chemistry unavailable',e)});
 })();

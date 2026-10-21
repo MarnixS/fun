@@ -47,6 +47,6 @@ $('#betaGrid').addEventListener('click',e=>{const button=e.target.closest('[data
 $('#betaSearch').addEventListener('input',e=>{query=e.target.value.trim().toLowerCase();chosen=null;render()});
 $('#betaOverlay').addEventListener('change',e=>$('#betaGame').classList.toggle('beta-hide-pies',!e.target.checked));
 window.addEventListener('ug:members-changed',e=>{const keys=U.cleanSelection(e.detail?.keys,U.ALL_KEYS);if(U.sameSelection(selected,keys))return;selected=keys;if(model){picker();render()}});
-window.addEventListener('ug:data-updated',async e=>{if(e.detail?.key===U.TKEY){model=M.build(await U.loadClog(),U.PLAYERS);picker();render()}else if(e.detail?.key===U.WKEY){wom=await U.loadWom();render()}});
+U.onDataUpdate(async e=>{if(e.detail?.key===U.TKEY){model=M.build(await U.loadClog(),U.PLAYERS);picker();render()}else if(e.detail?.key===U.WKEY){wom=await U.loadWom();render()}});
 Promise.all([U.loadClog(),U.loadWom()]).then(([doc,w])=>{model=M.build(doc,U.PLAYERS);wom=w;picker();render()}).catch(()=>{$('#betaCoverage').textContent='The saved Collection Log could not be loaded. Reload to retry.'});
 })();

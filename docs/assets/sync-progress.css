@@ -3,11 +3,21 @@
 .sync-progress-run{position:relative;min-width:0}
 .sync-progress-bar{position:relative;display:grid;place-items:center;min-height:44px;overflow:hidden;border:2px solid #8c1111;background:#000;box-shadow:0 0 0 1px #000;isolation:isolate}
 .sync-progress-fill{position:absolute;inset:0 auto 0 0;width:0;background:#8c1111;z-index:-1;transition:width .2s linear}
+.sync-progress-run .sync-progress-emblem{display:none;position:absolute;left:12px;top:50%;width:22px;height:22px;margin-top:-11px;color:#ffdf65;filter:drop-shadow(2px 2px #000)}
+.sync-progress-emblem svg{display:block;width:100%;height:100%;fill:currentColor;shape-rendering:crispEdges}
+.sync-progress-run[data-sync-state="done"] .sync-progress-emblem{display:block;animation:sync-level-up .7s steps(5,end) both}
+.sync-progress-run[data-sync-state="done"] .sync-progress-bar{border-color:#c5a14d;animation:sync-gold-flash 1.2s steps(4,end) both}
+.sync-progress-run[data-sync-state="done"] .sync-progress-emblem:after{content:'';position:absolute;left:10px;top:10px;width:3px;height:3px;background:#ffdf65;animation:sync-sparks .9s steps(6,end) both}
+.sync-progress-run[data-sync-state="warning"] .sync-progress-bar{border-color:#c8973f}
+.sync-progress-run[data-sync-state="failed"] .sync-progress-bar{border-color:#d34a3c}
+@keyframes sync-level-up{0%{transform:translateY(10px) scale(.5);opacity:0}55%{transform:translateY(-4px) scale(1.2);opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
+@keyframes sync-gold-flash{0%,40%{box-shadow:0 0 0 1px #000,inset 0 0 0 2px #ffdf65}70%{box-shadow:0 0 0 1px #000,inset 0 0 0 1px #c5a14d}100%{box-shadow:0 0 0 1px #000}}
+@keyframes sync-sparks{0%{opacity:0;box-shadow:0 0 #ffdf65,0 0 #ffdf65,0 0 #fff2ac,0 0 #fff2ac}30%{opacity:1;box-shadow:-10px -11px #ffdf65,12px -8px #ffdf65,-11px 10px #fff2ac,11px 12px #fff2ac}100%{opacity:0;box-shadow:-19px -21px #ffdf65,22px -15px #ffdf65,-21px 18px #fff2ac,20px 22px #fff2ac}}
 html body main .sync-progress-label{padding:7px 8px;text-align:center;font:400 23px/1.15 RuneScape,'Trebuchet MS',sans-serif;color:#fff;text-shadow:1px 1px #000;overflow-wrap:anywhere}
 html body main .sync-progress-run:not([data-sync-state="running"]) .sync-progress-label{padding-inline:36px}
 html body main .sync-progress-run .sync-progress-close{position:absolute;inset:0 0 0 auto;display:grid;place-items:center;width:36px;min-width:0!important;min-height:0!important;margin:0;padding:0!important;border:0!important;border-radius:0;background:transparent!important;box-shadow:none!important;color:#fff!important;font:20px/1 Arial,sans-serif!important;cursor:pointer;text-decoration:none!important}
 html body main .sync-progress-close:hover{background:#ffffff18!important}
 .sync-progress-close[hidden]{display:none!important}
 @media(max-width:480px){html body main .sync-progress-label{font-size:21px}}
-@media(prefers-reduced-motion:reduce){.sync-progress-fill{transition:none}}
+@media(prefers-reduced-motion:reduce){.sync-progress-fill{transition:none}.sync-progress-run[data-sync-state="done"] .sync-progress-emblem,.sync-progress-run[data-sync-state="done"] .sync-progress-bar{animation:none}.sync-progress-run[data-sync-state="done"] .sync-progress-emblem:after{display:none}}
 @media print{.sync-progress{display:none}}

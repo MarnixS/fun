@@ -102,7 +102,7 @@ function edit(player,preset){
 }
 document.addEventListener('click',e=>{const b=e.target.closest?.('[data-pick-goal]');if(!b||b.disabled)return;const player=b.closest('[data-goal-player]')?.dataset.goalPlayer;if(U.ALL_KEYS.includes(player))edit(player,{kind:b.dataset.goalKind,metric:b.dataset.goalMetric,targetValue:Number(b.dataset.goalTarget),text:b.dataset.goalText})});
 window.addEventListener('ug:goal-pick',e=>{const p=e.detail;if(U.ALL_KEYS.includes(p?.player))edit(p.player,p)});
-window.addEventListener('ug:data-updated',e=>{if([U.WKEY,U.TKEY].includes(e.detail?.key))stats()});
+U.onDataUpdate(e=>{if([U.WKEY,U.TKEY].includes(e.detail?.key))return stats()});
 window.addEventListener('ug:members-changed',render);
 window.addEventListener('ug:page-rendered',render);
 async function init(){try{const r=await fetch('data/goals.json',{cache:'no-store'});if(r.ok)doc=await r.json()}catch{}await stats();await reload()}

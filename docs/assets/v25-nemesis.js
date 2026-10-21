@@ -539,7 +539,7 @@ async function init(){
  bindPicker();bindProgressControls();populateProgressSelectors();
  form?.addEventListener('submit',e=>{e.preventDefault();addAccount()});
  window.addEventListener('ug:members-changed',()=>{selection=U.loadMemberSelection();bindPicker();render()});
- window.addEventListener('ug:data-updated',async e=>{
+ U.onDataUpdate(async e=>{
   if(e.detail?.key===U.WKEY){ownWom=await U.loadWom();render()}
   else if(e.detail?.key===U.TKEY){ownClog=await U.loadClog();render()}
  });

@@ -15,6 +15,19 @@ assert.equal(M.value(snapshot(0,0,{kills:0,rank:-1}),'boss:vorkath'),null,'unran
 assert.equal(M.value(snapshot(0,0,{kills:3,rank:-1}),'boss:vorkath'),3,'a positive saved low KC remains usable');
 assert.equal(M.best([snapshot(0,0,{level:100}),snapshot(1,999,{level:105})],'level:overall',1).record.gain,5);
 assert.throws(()=>M.best(rows,'xp:overall',0),RangeError);
+// The reported six-month total contains an earlier, larger three-month run.
+// Apply the historical-window requirement to XP, levels and boss counters.
+const example=[['2026-05-01',0,50,100],['2026-07-29',4623816,80,500],['2026-10-20',6664780,99,600]].map(([date,xp,level,kills])=>({...snapshot(0,xp,{level,kills}),createdAt:date+'T12:00:00Z'}));
+for(const [metric,expected]of [['xp:agility',4623816],['xp:overall',4623816],['level:agility',30],['level:overall',30],['boss:vorkath',400]]){
+ const record=M.best(example,metric,90).record;
+ assert.equal(record.gain,expected,metric+' searches the earlier window');
+ assert.equal(new Date(record.start).toISOString().slice(0,10),'2026-05-01');
+ assert.equal(new Date(record.end).toISOString().slice(0,10),'2026-07-29');
+}
+const summaries={snapshots:{a:[snapshot(0,0),snapshot(10,7000000)]},gains:{week:{a:{startsAt:new Date(origin+2*M.DAY).toISOString(),endsAt:new Date(origin+2.5*M.DAY).toISOString(),data:{skills:{agility:{experience:{start:0,end:7000000,gained:999999999}}}}}}}};
+assert.equal(M.build(summaries,['a']).records('xp:agility',1)[0].record.gain,7000000,'dated summary counters can prove a record absent from full snapshots; gained is never trusted');
+summaries.snapshots.a.push(snapshot(2.5,-1));
+assert.equal(M.build(summaries,['a']).records('xp:agility',1)[0].record,null,'an unknown full snapshot overrides a conflicting summary endpoint');
 const doc={profiles:{a:{latestSnapshot:snapshot(1,80)}},snapshots:{a:[snapshot(1,50),snapshot(0,10),{createdAt:'invalid',data:{}},snapshot(1,60)]}};
 assert.deepEqual(M.snapshots(doc,'a').map(s=>s.data.skills.overall.experience),[10,80],'timestamps are sorted/deduplicated; latest snapshot wins');
 const ranked=M.rank([{key:'z',record:null},{key:'b',record:{gain:20}},{key:'a',record:{gain:20}},{key:'c',record:{gain:0}}]);
@@ -39,7 +52,7 @@ for(let trial=0;trial<80;trial++){
 const saved=JSON.parse(fs.readFileSync('docs/data/wom-cache.json')),keys=Object.keys(saved.profiles),model=M.build(saved,keys);
 assert(model.metrics.skills.includes('agility')&&model.metrics.skills.includes('sailing'));assert(model.metrics.bosses.length>60);
 let checked=0;
-for(const metric of ['xp:overall','level:overall',...model.metrics.skills.map(k=>'xp:'+k),...model.metrics.bosses.map(k=>'boss:'+k)])for(const p of M.PERIODS){
+for(const metric of ['xp:overall','level:overall',...model.metrics.skills.flatMap(k=>['xp:'+k,'level:'+k]),...model.metrics.bosses.map(k=>'boss:'+k)])for(const p of M.PERIODS){
  for(const row of model.records(metric,p.days))if(row.record){assert(row.record.span<=p.days*M.DAY);assert.equal(row.record.gain,row.record.endValue-row.record.startValue);assert(row.record.observations>=2);assert(Number.isFinite(row.record.gain));checked++}
 }
 console.log(`XP Records model passed: irregular windows, exact boundaries, missing/unranked counters, corrections, ties, deduplication, exhaustive comparisons and ${checked} saved-history records.`);

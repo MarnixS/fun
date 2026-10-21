@@ -22,6 +22,38 @@ function destination(value){
 }
 function href(value){return enabled?destination(value)?.path||value:value}
 window.UGRoutes={enabled,file,href};
+// Privacy-friendly visitor analytics. Activate by setting the Cloudflare Web Analytics
+// site token obtained from Cloudflare > Web Analytics > ugimps.com > Manage site.
+// Do not count local previews, the old github.io mirror, or developer maintenance.
+// No token means disabled: never pretend that statistics are being collected.
+const analyticsToken='';
+const isPublicDomain=['ugimps.com','www.ugimps.com'].includes(location.hostname);
+if(isPublicDomain && analyticsToken && !['developer.html'].includes(file(location.pathname))){
+  const beacon=document.createElement('script');
+  beacon.defer=true;
+  beacon.src='https://static.cloudflareinsights.com/beacon.min.js';
+  beacon.setAttribute('data-cf-beacon',JSON.stringify({token:analyticsToken}));
+  document.head.appendChild(beacon);
+}
+window.UGAnalytics={configured:!!analyticsToken,active:isPublicDomain&&!!analyticsToken,provider:'Cloudflare Web Analytics'};
+function showAnalyticsPanel(){
+ if(document.body?.dataset.page!=='developer'||document.getElementById('ug-analytics-panel'))return;
+ const section=document.createElement('section');
+ section.className='section';
+ section.id='ug-analytics-panel';
+ section.innerHTML='<div class="section-head"><div><div class="eyebrow">SITE MAINTENANCE</div><h2>Visitor analytics</h2></div></div>'
+   +'<div class="card card-pad"><h3 id="ug-analytics-state"></h3><p id="ug-analytics-details"></p>'
+   +'<p>Track actual ugimps.com visits and page views across the site using privacy-friendly Cloudflare Web Analytics. The dashboard is private to the site owner. No historical data can be recreated before activation.</p>'
+   +'<p><a class="btn" target="_blank" rel="noopener noreferrer" href="https://dash.cloudflare.com/?to=/:account/web-analytics">Open visitor dashboard ↗</a> '
+   +'<a class="btn" target="_blank" rel="noopener noreferrer" href="https://github.com/MarnixS/fun/blob/main/docs/TRAFFIC-ANALYTICS.md">Setup instructions ↗</a></p></div>';
+ const main=document.querySelector('main');
+ if(main)main.appendChild(section);else document.body.appendChild(section);
+ section.querySelector('#ug-analytics-state').textContent=analyticsToken?'Configured in repository':'Setup required: Cloudflare site token';
+ section.querySelector('#ug-analytics-details').textContent=analyticsToken?'Tracking runs on ugimps.com pages. Check the Cloudflare dashboard for processed figures.':'The site is ready, but no visitor tracking is running yet. Add the Cloudflare Web Analytics token to docs/assets/site-routes.js.';
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',showAnalyticsPanel,{once:true});else showAnalyticsPanel();
+
+
 if(!enabled)return;
 function remember(target){try{sessionStorage.setItem(scrollKey,JSON.stringify({...target,at:Date.now()}))}catch{}}
 function normalize(link){

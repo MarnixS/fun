@@ -10,11 +10,13 @@ fixture.snapshots.dikste=[first,last];fixture.profiles.dikste.latestSnapshot=las
 async function run(){
  const {dom,errors}=await openPage('chronicle.html',{selection:['dikste'],womDocument:fixture,sharedDocs:{wom:fixture,temple}});
  const w=dom.window,d=w.document;
+ const known=keys.filter(key=>w.UGBossIcons.keys.includes(key)),unknown=keys.filter(key=>!w.UGBossIcons.keys.includes(key));
  try{
   d.querySelector('[data-chrono-size="all"]').click();
   const event=key=>[...d.querySelectorAll(`[data-v21-boss="${key}"]`)].map(button=>button.closest('.chronicle-event')).find(article=>article.querySelector('h4').textContent.includes('50 ')&&article.querySelector('.chronicle-date').textContent.includes('2099'));
-  await waitFor(()=>keys.every(key=>event(key)?.querySelector('.chronicle-boss-icon')),'NPC icons on every tracked KC crossing',30000);
-  for(const key of keys){
+  await waitFor(()=>known.every(key=>event(key)?.querySelector('.chronicle-boss-icon')),'NPC icons on every mapped KC crossing',30000);
+  for(const key of unknown){assert(event(key),key+' retains its milestone');assert(!event(key).querySelector('.chronicle-boss-icon'),key+' uses the unknown-boss text fallback')}
+  for(const key of known){
    const article=event(key),frames=article.querySelectorAll('.chronicle-boss-icon');
    assert.equal(frames.length,1,key+' has one NPC frame');assert.equal(frames[0].dataset.bossKey,key);
    for(const image of frames[0].querySelectorAll('img')){
@@ -31,7 +33,7 @@ async function run(){
   assert.deepEqual(npc('the_royal_titans'),['Eldric the Ice King','Branda the Fire Queen']);
   assert.notEqual(event('the_gauntlet').querySelector('img').getAttribute('src'),event('the_corrupted_gauntlet').querySelector('img').getAttribute('src'));
   assert(event('future_unknown_boss'));assert(!event('future_unknown_boss').querySelector('.chronicle-boss-icon'),'Unknown future bosses retain text without another NPC');
-  for(const theme of ['modern','osrs']){await w.UGExperimentalTheme.setEnabled(theme==='osrs');assert.equal(w.UGExperimentalTheme.enabled,theme==='osrs');assert(keys.every(key=>event(key).querySelectorAll('.chronicle-boss-icon').length===1))}
+  for(const theme of ['modern','osrs']){await w.UGExperimentalTheme.setEnabled(theme==='osrs');assert.equal(w.UGExperimentalTheme.enabled,theme==='osrs');assert(known.every(key=>event(key).querySelectorAll('.chronicle-boss-icon').length===1))}
   w.UGV21.saveMemberSelection(new Set(['lijpste']));await waitFor(()=>!event('zulrah')||event('zulrah').hidden,'player filter');
   w.UGV21.saveMemberSelection(new Set(['dikste']));await waitFor(()=>event('zulrah')&&!event('zulrah').hidden,'restored player filter');
   d.querySelector('[data-chrono-filter="drops"]').click();await waitFor(()=>!d.querySelector('[data-v21-boss]'),'item filter');assert(!d.querySelector('.chronicle-boss-icon'));

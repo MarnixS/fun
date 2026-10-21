@@ -18,7 +18,12 @@ async function simultaneous(){
  {
   assert(!d.querySelector('#syncProgress'),'ordinary page loads show no sync progress');
   assert(!requests.some(request=>request.method==='POST'),'ordinary page loads do not request a refresh');
-  const memberGates=keys.map(pause),templeGate=pause(),readGates={wom:pause(),temple:pause()},applyGates={wom:pause(),temple:pause()};
+  const memberGates=keys.map(pause),templeGate=pause(),readGates={wom:pause(),temple:pause()},applyGates={wom:pause(),temple:pause()},viewGates={wom:pause(),temple:pause()},viewUpdates=new Set();
+  w.addEventListener('ug:data-updated',event=>{
+   if(event.detail?.source!=='app')return;
+   const source=event.detail.key===w.UGV21.WKEY?'wom':'temple';
+   viewUpdates.add(source);event.detail.waitUntil(viewGates[source].promise);
+  });
   const originalRefresh=w.UGSharedData.refresh,originalRead=w.UGSharedData.read;
   let active=0,refreshes=0;
   w.UGSharedData.refresh=async(source,key)=>{
@@ -65,11 +70,18 @@ async function simultaneous(){
   await waitFor(()=>label(panel(d,'temple')).includes('Updating site'),'Temple applying');
   assert.equal(percent(panel(d,'temple')),90);
   applyGates.wom.release();applyGates.temple.release();
+  await waitFor(()=>viewUpdates.size===2,'both persisted documents notified their views');
+  assert.equal(panel(d,'wom').dataset.syncState,'running','a stored document does not finish before its views');
+  assert.equal(panel(d,'temple').dataset.syncState,'running');
+  assert.equal(bar(panel(d,'wom')).getAttribute('aria-busy'),'true');
+  viewGates.wom.release();viewGates.temple.release();
   await waitFor(()=>panel(d,'wom').dataset.syncState==='done'&&panel(d,'temple').dataset.syncState==='done','both completed');
   assert.equal(percent(panel(d,'wom')),100);assert.equal(percent(panel(d,'temple')),100);
   assert.equal(label(panel(d,'wom')),'WOM: Done 5/5 · 100%');
   assert(bar(panel(d,'wom')).getAttribute('aria-valuetext').includes('7/7 steps processed'));
   assert.equal(label(panel(d,'temple')),'Temple: Done 5/5 · 100%');
+  assert.equal(bar(panel(d,'temple')).getAttribute('aria-busy'),'false');
+  assert(panel(d,'temple').querySelector('.sync-progress-emblem svg'),'successful syncs have a pixel completion emblem');
   assert(bar(panel(d,'temple')).getAttribute('aria-valuetext').includes('3/3 steps processed'));
   assert.equal(d.querySelector('#pageNotice').textContent,'','sync results do not add text below the bars');
   await waitFor(()=>!d.querySelector('[data-refresh-wom]').disabled&&!d.querySelector('[data-refresh-temple]').disabled,'controls ready');
@@ -81,7 +93,34 @@ async function simultaneous(){
   assert.equal(d.querySelectorAll('[data-sync-source="wom"]').length,1);
   assert.equal(errors.length,0,errors.join('; '));
  }
- console.log('Progress: confirmed steps, simultaneous sources, delays, deduplication and retry passed');
+ console.log('Progress: confirmed steps, simultaneous sources, storage and view delays, completion emblems, deduplication and retry passed');
+}
+
+async function completionEdges(){
+ const {dom,errors}=await openPage('time-records.html',{womResponse:wom,templeResponse:temple});const w=dom.window,d=w.document;
+ const run=w.UGSyncProgress.start('wom',[{id:'saved',label:'Saved'},{id:'optional',label:'Optional check'}]);
+ run.step('saved','done');run.finish('done','Shared data and page are ready.','5/5');
+ assert.equal(percent(run.element),100,'a terminal success settles skipped checks at 100%, never a permanent partial bar');
+ assert.equal(bar(run.element).getAttribute('aria-busy'),'false');
+ run.finish('failed','late callback');assert.equal(run.element.dataset.syncState,'done','late callbacks cannot undo a terminal result');
+ let rejected=false;const failView=event=>{if(event.detail?.source==='app'){rejected=true;event.detail.waitUntil(Promise.reject(new Error('Simulated view failure')))}};
+ w.addEventListener('ug:data-updated',failView);
+ d.querySelector('[data-refresh-temple]').click();
+ await waitFor(()=>rejected&&panel(d,'temple')?.dataset.syncState==='failed','a failed final page update resolves as an explicit failure');
+ assert(bar(panel(d,'temple')).title.includes('Simulated view failure'));
+ assert(!d.querySelector('[data-refresh-temple]').disabled);
+ w.removeEventListener('ug:data-updated',failView);
+ const timer=w.setTimeout.bind(w);w.setTimeout=(callback,ms,...args)=>timer(callback,ms===15000?100:ms,...args);
+ const stalledView=event=>{if(event.detail?.source==='app')event.detail.waitUntil(new Promise(()=>{}))};
+ w.addEventListener('ug:data-updated',stalledView);
+ d.querySelector('[data-refresh-temple]').click();
+ await waitFor(()=>panel(d,'temple')?.dataset.syncState==='failed'&&bar(panel(d,'temple')).title.includes('page did not finish updating'),'a stalled final check times out with a saved-data recovery message');
+ assert(!d.querySelector('[data-refresh-temple]').disabled,'a stalled check releases the refresh control');
+ w.removeEventListener('ug:data-updated',stalledView);
+ d.querySelector('[data-refresh-temple]').click();
+ await waitFor(()=>panel(d,'temple')?.dataset.syncState==='done','retry completes after final-check failure');
+ assert.equal(errors.length,0,errors.join('; '));dom.window.close();
+ console.log('Progress: terminal percentages, late callbacks, failed and stalled final checks, control recovery and retry passed');
 }
 
 async function failures(){
@@ -145,4 +184,4 @@ async function diagnostics(){
  console.log('Progress: fallback diagnostics and shared controls on secondary pages passed');
 }
 
-(async()=>{await simultaneous();await failures();await diagnostics();console.log('SYNC PROGRESS AUDIT PASSED')})().then(()=>process.exit(0)).catch(error=>{console.error(error);process.exit(1)});
+(async()=>{await simultaneous();await failures();await diagnostics();await completionEdges();console.log('SYNC PROGRESS AUDIT PASSED')})().then(()=>process.exit(0)).catch(error=>{console.error(error);process.exit(1)});
