@@ -8,7 +8,7 @@ Defaults for future screenshots:
 - XP: the **minimum XP required for the base skill level**, using the shared OSRS level table. Never generate random XP.
 - Date: the owner's date takes precedence over the screenshot overlay. A date without a time has day precision; midnight is only its storage key.
 - Read the base level below the slash, not a temporarily boosted or drained current value.
-- An obscured skill can retain its preceding supplied value when instructed. Mark it as assumed, retain the independently visible total level, and expose any levels that cannot be assigned to individual skills.
+- An obscured skill can retain its closest earlier known value from either a screenshot or a WOM snapshot when instructed. Record the source date and mark it as assumed; retain the independently visible total level, and expose any levels that cannot be assigned to individual skills.
 - Do not invent boss kills, activity scores, ranks, Sailing levels before release, or efficiency hours.
 
 Edit `docs/data/historical-snapshots.json`, then run:

@@ -65,6 +65,36 @@
       }
     },
     {
+      "date": "2023-04-25",
+      "alias": "zak-ket",
+      "totalLevel": 1605,
+      "levels": {
+        "attack": 93,
+        "hitpoints": 95,
+        "mining": 60,
+        "strength": 94,
+        "agility": 71,
+        "smithing": 48,
+        "defence": 89,
+        "herblore": 78,
+        "fishing": 55,
+        "ranged": 89,
+        "thieving": 55,
+        "cooking": 70,
+        "prayer": 74,
+        "crafting": 83,
+        "firemaking": 88,
+        "magic": 84,
+        "fletching": 66,
+        "woodcutting": 66,
+        "runecrafting": 21,
+        "slayer": 69,
+        "farming": 30,
+        "construction": 64,
+        "hunter": 63
+      }
+    },
+    {
       "date": "2023-05-04",
       "alias": "what oh yeah",
       "totalLevel": 1617,
