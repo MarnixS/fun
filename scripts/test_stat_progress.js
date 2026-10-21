@@ -32,4 +32,22 @@ assert.equal(M.value({computed:{ehp:{value:1.25}}},'computed','ehp'),1.25);
 assert.equal(M.value({skills:{attack:{level:0}}},'level','attack'),null);
 assert.equal(M.build({},['a']).compare('xp','overall',7).rows[0].gain,null);
 assert.throws(()=>model.compare('xp','overall',2),RangeError);
+const fs=require('node:fs'),R=require('../docs/assets/xp-records-model'),saved=JSON.parse(fs.readFileSync('docs/data/wom-cache.json')),players=Object.keys(saved.profiles),progress=M.build(saved,players),records=R.build(saved,players);
+const recent=progress.compare('xp','agility',90).rows.find(row=>row.key==='lijpste');
+const historic=progress.compare('xp','agility',90,players,'records').rows.find(row=>row.key==='lijpste');
+assert(historic.gain>=6406522&&historic.gain>recent.gain,'Lijpste’s earlier Agility run must outrank his recent three months');
+assert.equal(new Date(historic.start).toISOString().slice(0,10),'2026-05-07');
+let comparisons=0;
+for(const [kind,metric]of [['xp','overall'],['level','overall'],...progress.metrics.skills.flatMap(key=>[['xp',key],['level',key]]),...progress.metrics.bosses.map(key=>['boss',key]),['computed','ehp'],['computed','ehb']])for(const period of M.PERIODS){
+ const expected=records.records(kind+':'+metric,period.days),best=progress.compare(kind,metric,period.days,players,'records').rows,latest=progress.compare(kind,metric,period.days).rows;
+ assert.deepEqual(best.map(row=>[row.key,row.gain,row.rank]),expected.map(row=>[row.key,row.record?.gain??null,row.rank]),'both pages rank the same records');
+ for(const row of best){
+  const current=latest.find(current=>current.key===row.key);
+  if(current.gain!==null)assert(row.gain>=current.gain,'a personal best cannot be lower than an observed recent run');
+  if(row.gain!==null){assert.equal(row.gain,row.points.at(-1).value-row.points[0].value);assert(row.span<=period.days*M.DAY)}
+  comparisons++;
+ }
+}
+assert.throws(()=>model.compare('xp','overall',7,keys,'invalid'),RangeError);
+console.log(`Historical records agree across both pages for ${comparisons} player/metric/window comparisons; every observed recent gain is bounded by its personal best.`);
 console.log('Stat Progress model passed: common windows, matching graph/rank endpoints, summary dates, ties, missing data, zero gains, corrections and invalid counters.');

@@ -24,6 +24,6 @@ function render(){
 }
 async function init(){try{wom=await U.loadWom();const params=new URLSearchParams(location.search),boss=params.get('boss'),player=params.get('player');if(U.ALL_KEYS.includes(player))selected=new Set([player]);if(M.build(wom,U.PLAYERS,U.PLAYERS).some(x=>x.key===boss)){linkedBoss=boss;$('#kcSearch').value=nice(boss);$('#kcScope').value='all'}picker();for(const id of ['kcSearch','kcSort','kcScope'])$('#'+id).addEventListener(id==='kcSearch'?'input':'change',()=>{if(id==='kcSearch')linkedBoss='';limit=12;render()});$('#kcMore').onclick=()=>{const next=limit;limit+=12;render();requestAnimationFrame(()=>$('#kc-boss-'+next+' h3')?.focus())};render()}catch(e){$('#kcCards').innerHTML='<div class="notice">Saved boss data could not be loaded. Reload to retry.</div>';console.warn('KC comparison unavailable',e)}}
 window.addEventListener('ug:members-changed',e=>{const next=U.cleanSelection(e.detail?.keys,U.ALL_KEYS);if(U.sameSelection(next,selected))return;selected=next;limit=12;picker();render()});
-window.addEventListener('ug:data-updated',async e=>{if(e.detail?.key!==U.WKEY)return;wom=await U.loadWom();render()});
+U.onDataUpdate(async e=>{if(e.detail?.key!==U.WKEY)return;wom=await U.loadWom();render()});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

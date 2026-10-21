@@ -18,8 +18,26 @@ function value(snapshot,metric){
   // WOM uses zero for some unranked bosses: that is not a known zero-KC baseline.
   return valid(node?.kills)&&!(node.kills===0&&node.rank===-1)?node.kills:null;
  }
- const node=data?.skills?.[key],number=kind==='xp'?node?.experience:kind==='level'?node?.level:null;
+ const node=data?.[kind==='computed'?'computed':'skills']?.[key],number=kind==='xp'?node?.experience:kind==='level'?node?.level:kind==='computed'?node?.value:null;
  return valid(number)&&(kind!=='level'||number>=1)?number:null;
+}
+// Both period gains and records use the same dated observations. WOM gain
+// summaries can contain real endpoint counters absent from the snapshot list.
+function observations(doc,player,metric,rows=snapshots(doc,player)){
+ const [kind,key]=metric.split(':'),observed=new Map();
+ for(const period of Object.values(doc?.gains||{})){
+  const run=period?.[player],node=run?.data?.[kind==='boss'?'bosses':kind==='computed'?'computed':'skills']?.[key];
+  const counter=node?.[{xp:'experience',level:'level',boss:'kills',computed:'value'}[kind]];
+  const start=Date.parse(run?.startsAt),end=Date.parse(run?.endsAt);
+  if(!Number.isFinite(start)||!Number.isFinite(end)||start>=end)continue;
+  for(const [time,endpoint]of [[start,'start'],[end,'end']]){
+   const n=counter?.[endpoint];
+   if(valid(n)&&!(kind==='level'&&n<1)&&!(kind==='boss'&&n===0&&node.rank?.[endpoint]===-1))observed.set(time,n);
+  }
+ }
+ // Full snapshots are authoritative, including an explicitly unknown counter.
+ for(const row of rows){const time=Date.parse(row.createdAt),n=value(row,metric);if(n===null)observed.delete(time);else observed.set(time,n)}
+ return [...observed].map(([time,value])=>({time,date:new Date(time).toISOString(),value})).sort((a,b)=>a.time-b.time);
 }
 function catalogue(index){
  const skills=new Set(),bosses=new Set();
@@ -30,8 +48,11 @@ function catalogue(index){
  return {skills:[...skills].sort(),bosses:[...bosses].sort()};
 }
 function best(rows,metric,days){
- if(!Number.isFinite(days)||days<=0)throw new RangeError('A positive record window is required');
  const points=rows.map(s=>({time:Date.parse(s.createdAt),value:value(s,metric)})).filter(p=>Number.isFinite(p.time)&&p.value!==null);
+ return bestPoints(points,days,rows.length-points.length);
+}
+function bestPoints(points,days,missing=0){
+ if(!Number.isFinite(days)||days<=0)throw new RangeError('A positive record window is required');
  let left=0,winner=null,corrections=0;
  for(let end=0;end<points.length;end++){
   if(end&&points[end].value<points[end-1].value){left=end;corrections++}
@@ -44,7 +65,7 @@ function best(rows,metric,days){
    winner={gain,span,start:a.time,end:b.time,startValue:a.value,endValue:b.value,first:left,last:end};
   }
  }
- const coverage={count:points.length,start:points[0]?.time??null,end:points.at(-1)?.time??null,missing:rows.length-points.length,corrections};
+ const coverage={count:points.length,start:points[0]?.time??null,end:points.at(-1)?.time??null,missing,corrections};
  if(!winner)return {record:null,coverage};
  let maxGap=0;for(let i=winner.first+1;i<=winner.last;i++)maxGap=Math.max(maxGap,points[i].time-points[i-1].time);
  const {first,last,...record}=winner;
@@ -60,16 +81,21 @@ function rank(entries){
  });
 }
 function build(doc,keys){
- const index=new Map(keys.map(key=>[key,snapshots(doc,key)])),metrics=catalogue(index),cache=new Map();
+ const index=new Map(keys.map(key=>[key,snapshots(doc,key)])),metrics=catalogue(index),cache=new Map(),observed=new Map();
+ function points(player,metric){
+  const id=player+'|'+metric;
+  if(!observed.has(id))observed.set(id,observations(doc,player,metric,index.get(player)||[]));
+  return observed.get(id);
+ }
  function records(metric,days,selected=keys){
   return rank(selected.map(key=>{
    const id=key+'|'+metric+'|'+days;
-   if(!cache.has(id))cache.set(id,best(index.get(key)||[],metric,days));
+   if(!cache.has(id))cache.set(id,bestPoints(points(key,metric),days));
    return {key,...cache.get(id)};
   }));
  }
- return {index,metrics,records};
+ return {index,metrics,records,points};
 }
-const api={DAY,PERIODS,snapshots,value,best,rank,build};
+const api={DAY,PERIODS,snapshots,value,observations,best,bestPoints,rank,build};
 if(typeof module==='object'&&module.exports)module.exports=api;else root.UGXPRecords=api;
 })(typeof window==='object'?window:globalThis);

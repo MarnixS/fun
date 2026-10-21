@@ -12,7 +12,7 @@ function render(){
  }
 }
 window.addEventListener('ug:page-rendered',render);
-window.addEventListener('ug:data-updated',async e=>{if(![U.WKEY,U.TKEY].includes(e.detail?.key))return;[wom,temple]=await Promise.all([U.loadWom(),U.loadClog()]);render()});
+U.onDataUpdate(async e=>{if(![U.WKEY,U.TKEY].includes(e.detail?.key))return;[wom,temple]=await Promise.all([U.loadWom(),U.loadClog()]);render()});
 async function init(){render();try{const r=await fetch('data/goals.json',{cache:'no-store',headers:{Accept:'application/json'}});if(!r.ok)throw new Error('Goal HTTP '+r.status);doc=await r.json()}catch(e){failed=true;console.warn('Saved player goals unavailable',e)}[wom,temple]=await Promise.all([U.loadWom(),U.loadClog()]);render()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

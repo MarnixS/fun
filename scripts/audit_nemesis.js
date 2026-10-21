@@ -28,7 +28,7 @@ for(const needle of [
   "compareMode='gain'",
   "compareView='timeline'",
   "comparePeriod=365",
-  "window.addEventListener('ug:data-updated'"
+  "U.onDataUpdate"
 ])assert(js.includes(needle),`Nemesis implementation missing: ${needle}`);
 
 console.log('Nemesis comparison audit passed: multi-account WOM history, periods, bars, timelines, share pies and Collection Log composition.');

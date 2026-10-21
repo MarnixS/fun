@@ -25,6 +25,6 @@ function render(){
 }
 async function init(){try{doc=await U.loadWom();skills=new Set(M.skillKeys(doc));picker();skillPicker();$('#cumulativeAllSkills').onclick=()=>{skills=new Set(M.skillKeys(doc));skillPicker();render()};$('#cumulativeClearSkills').onclick=()=>{skills.clear();skillPicker();render()};render()}catch(e){$('#cumulativeSummary').innerHTML='<div class="notice">Saved XP could not load. Refresh this page to retry.</div>';console.error(e)}}
 window.addEventListener('ug:members-changed',e=>{const next=U.cleanSelection(e.detail?.keys);if(U.sameSelection(selected,next))return;selected=next;picker();render()});
-window.addEventListener('ug:data-updated',async e=>{if(e.detail?.key!==U.WKEY)return;doc=await U.loadWom();skillPicker();render()});
+U.onDataUpdate(async e=>{if(e.detail?.key!==U.WKEY)return;doc=await U.loadWom();skillPicker();render()});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
