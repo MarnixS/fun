@@ -69,3 +69,4 @@ html[data-theme=osrs] body main .progress-views button{background:#302a20;color:
 
 .progress-modes{margin:8px 0}.progress-modes+p{max-width:780px;margin:8px 0 18px}
 @media(max-width:700px){.progress-modes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.progress-player-table[data-comparison=records] .progress-rank-col{width:55px}.progress-player-table[data-comparison=records] .progress-rank{font-size:13px;white-space:nowrap}.progress-views button[hidden]{display:none}

@@ -1,4 +1,4 @@
-/* Personal bests supported by saved WOM observations, without interpolation. */
+/* Rolling record bounds proved by saved counters, without inventing samples. */
 (function(root){
 'use strict';
 const DAY=86400000;
@@ -71,13 +71,49 @@ function bestPoints(points,days,missing=0){
  const {first,last,...record}=winner;
  return {record:{...record,days,observations:last-first+1,maxGap},coverage};
 }
+// An observed gain G over T can be partitioned into ceil(T / W) runs of
+// at most W. At least one gained >= G / ceil(T / W). Inspect EVERY interval,
+// including ones longer than the largest displayed window. Endpoint-only
+// records miss this evidence whenever the sampling gap exceeds W.
+function boundedPoints(points,days,integer=true){
+ const {record:observedRecord,coverage}=bestPoints(points,days);
+ const limit=days*DAY;
+ let proof=observedRecord?{...observedRecord,parts:1}:null,gain=observedRecord?.gain??null,upper=0,left=0;
+ for(let end=1,segment=0;end<points.length;end++){
+  if(points[end].value<points[end-1].value){segment=end;left=end;continue}
+  // A W-long run can intersect the first and last of these sampling gaps.
+  // Their entire gains could lie inside it. This bounds the possible maximum
+  // without assigning any gain to a made-up timestamp (boundary is inclusive
+  // deliberately, so the bound remains conservative).
+  while(left+1<end&&points[end-1].time-points[left+1].time>limit)left++;
+  upper=Math.max(upper,points[end].value-points[left].value);
+  for(let start=segment;start<end;start++){
+   const a=points[start],b=points[end],span=b.time-a.time,parts=Math.ceil(span/limit),total=b.value-a.value;
+   const minimum=integer?Math.ceil(total/parts):total/parts;
+   if(gain!==null&&minimum<=gain)continue;
+   gain=minimum;proof={gain:total,span,start:a.time,end:b.time,startValue:a.value,endValue:b.value,parts,first:start,last:end};
+  }
+ }
+ if(!proof)return {record:null,observedRecord,coverage};
+ if(proof.first!==undefined){
+  let maxGap=0;for(let i=proof.first+1;i<=proof.last;i++)maxGap=Math.max(maxGap,points[i].time-points[i-1].time);
+  const {first,last,...rest}=proof;proof={...rest,observations:last-first+1,maxGap};
+ }
+ const inferred=proof.parts>1;
+ // A reset makes the gain across that gap unknowable, hence no finite upper
+ // bound. Both bounds concern the saved history, not time before tracking.
+ return {record:{...(inferred?{start:null,end:null,span:null,startValue:null,endValue:null,observations:0,maxGap:null}:observedRecord),days,gain,inferred,proof,upperBound:coverage.corrections?null:upper},observedRecord,coverage};
+}
 function rank(entries){
  const sorted=entries.slice().sort((a,b)=>a.record===null?b.record===null?a.key.localeCompare(b.key):1:b.record===null?-1:b.record.gain-a.record.gain||a.key.localeCompare(b.key));
  let previous=null,position=0;
  return sorted.map((entry,i)=>{
   if(!entry.record)return {...entry,rank:null};
   if(previous!==entry.record.gain)position=i+1;
-  previous=entry.record.gain;return {...entry,rank:position};
+  previous=entry.record.gain;
+  const upper=entry.record.upperBound??Infinity,others=sorted.filter(other=>other.key!==entry.key&&other.record);
+  const rankRange={best:1+others.filter(other=>other.record.gain>upper).length,worst:1+others.filter(other=>(other.record.upperBound??Infinity)>entry.record.gain).length};
+  return {...entry,rank:position,rankRange};
  });
 }
 function build(doc,keys){
@@ -90,12 +126,12 @@ function build(doc,keys){
  function records(metric,days,selected=keys){
   return rank(selected.map(key=>{
    const id=key+'|'+metric+'|'+days;
-   if(!cache.has(id))cache.set(id,bestPoints(points(key,metric),days));
+   if(!cache.has(id))cache.set(id,boundedPoints(points(key,metric),days,!metric.startsWith('computed:')));
    return {key,...cache.get(id)};
   }));
  }
  return {index,metrics,records,points};
 }
-const api={DAY,PERIODS,snapshots,value,observations,best,bestPoints,rank,build};
+const api={DAY,PERIODS,snapshots,value,observations,best,bestPoints,boundedPoints,rank,build};
 if(typeof module==='object'&&module.exports)module.exports=api;else root.UGXPRecords=api;
 })(typeof window==='object'?window:globalThis);
