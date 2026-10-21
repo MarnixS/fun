@@ -160,3 +160,4 @@ button,select,input,.link-button,.btn{min-height:38px}.metric-link{min-height:34
 .v22-clog-quick>a:focus-visible{outline:2px solid #e4c587;outline-offset:2px}
 .clog-column-sort{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:inherit;font:inherit;padding:4px 0;cursor:pointer;white-space:nowrap}
 .clog-column-sort:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.historical-source-note{font-size:12px;line-height:1.5;margin:10px 0 0;color:var(--muted);border-bottom:1px solid var(--edge);padding:0 0 10px}.historical-source-note summary{cursor:pointer;min-height:32px;display:list-item}.historical-source-note p{max-width:85ch}.historical-source-note li{margin:5px 0}.historical-source-note ul{padding-left:22px}

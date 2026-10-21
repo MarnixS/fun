@@ -46,7 +46,7 @@ for(const [kind,metric]of [['xp','overall'],['level','overall'],...progress.metr
   if(current.gain!==null)assert(row.gain>=current.gain,'a personal best cannot be lower than an observed recent run');
   if(row.gain!==null){
    if(row.inferred){assert.equal(row.start,null);assert.equal(row.end,null);assert.equal(row.points.length,0,'an inferred minimum cannot fabricate a timeline');assert(row.proof.span>period.days*M.DAY)}
-   else{assert.equal(row.gain,row.points.at(-1).value-row.points[0].value);assert(row.span<=period.days*M.DAY)}
+   else{assert.equal(row.gain,Math.max(0,row.proof.endValue-row.proof.startMaximum));assert(row.span<=period.days*M.DAY);if(row.proof.uncertain)assert.equal(row.points.length,0);else assert.equal(row.gain,row.points.at(-1).value-row.points[0].value)}
    assert.deepEqual(row.proof,expected.find(other=>other.key===row.key).record.proof);
   }
   comparisons++;

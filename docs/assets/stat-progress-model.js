@@ -20,7 +20,7 @@ function build(doc,keys){
     key:player,rank,gain:record?.gain??null,start:record?.start??null,end:record?.end??null,
     span:record?.span??null,maxGap:record?.maxGap??null,corrections:coverage.corrections,
     inferred:record?.inferred??false,proof:record?.proof??null,upperBound:record?.upperBound??null,rankRange,observedRecord,
-    points:record&&!record.inferred?history.points(player,kind+':'+key).filter(p=>p.time>=record.start&&p.time<=record.end):[]
+    points:record&&!record.inferred&&!record.proof.uncertain?history.points(player,kind+':'+key).filter(p=>p.time>=record.start&&p.time<=record.end):[]
    }));
    const known=rows.filter(row=>row.start!==null);
    const domain=known.length?{start:Math.min(...known.map(row=>row.start)),end:Math.max(...known.map(row=>row.end))}:null;
