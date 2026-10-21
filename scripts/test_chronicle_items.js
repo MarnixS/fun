@@ -52,4 +52,41 @@ prices={};
 assert(events().every(e=>e.newPlayerUnlock),'unavailable prices keep personal unlocks but cannot qualify duplicates');
 prices[5]=500001;
 assert(events().some(e=>e.itemId===5),'a loaded unit price restores qualifying duplicate broadcasts');
+
+// Full logs also contain valuable copies never returned by the recent feed.
+coverage=PLAYERS.map(p=>p.key);recent=[];prices={11834:12000000,20:500000,21:499999};
+logs=Object.fromEntries(coverage.map(key=>[key,[]]));
+logs.lijpste=[{id:11834,name:'Bandos tassets',count:3,date:200},{id:11834,name:'Bandos tassets',count:1,date:200},{id:20,name:'Boundary item',count:50},{id:21,name:'Cheap stack',count:100}];
+logs['big dog aura']=[{id:11834,name:'Bandos tassets',count:2,date:200}];
+let restored=events();
+assert.equal(restored.length,2,'one historical entry per player/item, regardless of duplicate categories');
+assert(restored.every(e=>e.historicalLog&&e.date===0&&!e.newPlayerUnlock&&!e.newGroupUnlock),'bulk-import dates cannot become drop dates or first-group claims');
+assert.deepEqual(restored.map(e=>[e.key,e.recordedCount,e.unrecordedCount,e.groupRecordedCount]),[['big dog aura',2,2,5],['lijpste',3,3,5]]);
+assert(restored.every(e=>e.previousCount==null&&e.currentCount==null),'current totals cannot invent historical count transitions');
+recent=[row(11834,{date:300,previousCount:2,currentCount:3,repeatDrop:true}),row(11834,{date:300})];
+restored=events().find(e=>e.historicalLog&&e.key==='lijpste');
+assert.equal(restored.unrecordedCount,2,'a count transition and matching raw feed row cover one copy, not two');
+recent.push(row(11834,{date:250,previousCount:0,currentCount:2}),row(11834,{date:200,previousCount:0,currentCount:1}));
+assert(!events().some(e=>e.historicalLog&&e.key==='lijpste'),'overlapping transitions cover all three copies without creating an extra history entry');
+recent=[row(11834,{date:200}),row(11834,{date:200}),row(11834,{date:250})];
+assert.equal(events().find(e=>e.historicalLog&&e.key==='lijpste').unrecordedCount,1,'duplicate raw rows are counted once; separate dated events remain distinct');
+coverage=coverage.filter(key=>key!=='lompste');
+assert(events().filter(e=>e.historicalLog).every(e=>e.groupRecordedCount==null),'partial logs cannot supply a complete group count');
+prices={};assert(!events().some(e=>e.historicalLog),'missing prices cannot admit valuable-history summaries');
+
+// Regression against the actual saved tassets, chestplates and raid duplicates.
+const real=JSON.parse(fs.readFileSync('docs/data/temple-clog.json')),ge=JSON.parse(fs.readFileSync('docs/data/ge-prices.json')).data;
+coverage=PLAYERS.map(p=>p.key);logs=Object.fromEntries(coverage.map(key=>[key,[]]));
+function collect(node,out){if(Array.isArray(node))node.forEach(value=>collect(value,out));else if(node&&typeof node==='object'){if(node.id)out.push(node);else Object.values(node).forEach(value=>collect(value,out))}}
+for(const key of coverage)collect(real.players[key].data.items,logs[key]);
+prices=Object.fromEntries(Object.entries(ge).map(([id,p])=>[id,p.high>0&&p.low>0?(p.high+p.low)/2:p.high>0?p.high:p.low||0]));
+recent=real.recent.filter(r=>![11834,11832,27277].includes(r.id)).map(r=>({id:r.id,name:r.name,player:r.player.toLowerCase(),date:r.date_unix*1000,previousCount:r.previous_count??null,currentCount:r.current_count??null,repeatDrop:!!r.repeat_drop}));
+restored=events().filter(e=>e.historicalLog);
+const tassets=restored.filter(e=>e.itemId===11834);
+const savedCount=(key,id)=>Math.max(0,...logs[key].filter(item=>item.id===id).map(item=>item.count));
+const groupTassets=coverage.reduce((n,key)=>n+savedCount(key,11834),0);
+assert.deepEqual(tassets.map(e=>[e.key,e.recordedCount,e.groupRecordedCount]),coverage.filter(key=>savedCount(key,11834)>0).map(key=>[key,savedCount(key,11834),groupTassets]),'all real tassets owners reappear with their saved counts');
+assert(restored.some(e=>e.itemId===11832&&e.key==='big dog aura'&&e.recordedCount===savedCount('big dog aura',11832)),'saved Bandos chestplate duplicates reappear');
+assert(restored.some(e=>e.itemId===27277&&e.key==='lijpste'&&e.recordedCount===savedCount('lijpste',27277)),'saved Tumeken shadow duplicates reappear');
+console.log(`Chronicle full-log recovery: ${restored.length} missing valuable histories, both tassets owners, expensive duplicates, category/event deduplication, partial coverage and unknown dates passed.`);
 console.log('Chronicle items: all personal unlocks, strict 500k unit threshold, duplicate metadata, all-member group history, later owners, tied/unknown dates and missing prices passed.');

@@ -46,7 +46,34 @@ server.listen(0,'127.0.0.1',async()=>{
   assert.equal(d.querySelector('[data-mast-drop]').textContent,'No recent item activity');
   assert.equal(d.querySelector('[data-mast-drop-icon]').hidden,true);assert.equal(d.querySelector('[data-mast-drop-avatar]').hidden,true);
   assert.equal(result.errors.length,0,result.errors.join('; '));
+  // The real full logs contain two tassets owners absent from the recent feed.
+  const real=JSON.parse(fs.readFileSync('docs/data/temple-clog.json'));
+  real.recent=real.recent.filter(row=>![11834,11832].includes(row.id));
+  const count=(key,id)=>{let n=0;const walk=node=>{if(Array.isArray(node))node.forEach(walk);else if(node&&typeof node==='object'){if(node.id===id)n=Math.max(n,node.count);else Object.values(node).forEach(walk)}};walk(real.players[key].data.items);return n};
+  const owners=Object.keys(real.players).filter(key=>count(key,11834)>0),groupCount=owners.reduce((n,key)=>n+count(key,11834),0);
+  const history=await openPage('chronicle.html',{templeDocument:real,savedTemple:real,priceData:JSON.parse(fs.readFileSync('docs/data/ge-prices.json')).data});
+  const hw=history.dom.window,hd=hw.document;
+  const latest=hd.querySelector('[data-mast-drop]').textContent;
+  hd.querySelector('[data-chrono-filter="drops"]').click();
+  hd.querySelector('#chroniclePagerTop [data-chrono-size="all"]').click();
+  const tassets=()=>[...hd.querySelectorAll('#chronicle .item-link[data-item-id="11834"]')].map(x=>x.closest('article'));
+  await waitFor(()=>tassets().length===owners.length,'all tassets owners recovered on the rendered page');
+  assert(tassets().every(el=>el.querySelector('.chronicle-date').textContent==='Date unknown · recorded in Collection Log'));
+  assert(tassets().every(el=>el.querySelector('.chronicle-counts').textContent===`Recorded Collection Log counts: Individual ${count(el.dataset.playerKey,11834)}, Group ${groupCount}`));
+  assert(tassets().every(el=>!el.dataset.groupUnlock&&!el.textContent.includes('New Collection Log unlock')),'historical summaries do not claim new unlocks');
+  assert(!hd.querySelector('#chronicle').textContent.includes('1970'));
+  assert.equal(hd.querySelector('[data-mast-drop]').textContent,latest,'restoring old copies does not change the latest item');
+  const chestplate=[...hd.querySelectorAll('#chronicle .item-link[data-item-id="11832"]')].find(x=>x.closest('article').dataset.playerKey==='big dog aura').closest('article');
+  assert(chestplate.querySelector('h4').textContent.includes(`Bandos chestplate · ${count('big dog aura',11832)} logged`));
+  assert.match(chestplate.textContent,/copies have no individual drop date/);
+  hw.UGV21.saveMemberSelection(new Set(['big dog aura']));
+  await waitFor(()=>tassets().length===1,'history respects the selected member');
+  assert.equal(tassets()[0].dataset.playerKey,'big dog aura');
+  assert(tassets()[0].querySelector('.chronicle-counts').textContent.endsWith(`Group ${groupCount}`),'group count retains all five members while filtering');
+  assert.equal(history.errors.length,0,history.errors.join('; '));
+  history.dom.window.close();
   console.log('Latest item matches Chronicle eligibility and repeat labels: personal unlocks, strict 500k unit threshold, cheap stacks, price updates, unknown players, all-member scope and empty states passed.');
+  console.log('Rendered full-log history passed: both tassets owners, four chestplates, unknown dates, recorded group counts, member filters and unchanged latest item.');
   dom.window.close();server.close();process.exit(0);
  }catch(e){console.error(e);dom?.window.close();server.close();process.exit(1)}
 });

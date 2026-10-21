@@ -51,7 +51,8 @@ async function run(){
  const id=itemPage.dom.window.document;id.querySelector('[data-chrono-filter="drops"]').click();
  await waitFor(()=>id.querySelector('#chronicle .item-link[data-item-id="700305"]'),'priced duplicate');
  const article=item=>id.querySelector('#chronicle .item-link[data-item-id="'+item+'"]')?.closest('.chronicle-event');
- assert.equal(id.querySelectorAll('.chronicle-event[data-event-type="drop"]').length,3,'retroactive filtering removes 300 newer cheap repeats and retains the older personal unlocks and expensive duplicate');
+ assert.equal(id.querySelectorAll('.chronicle-event[data-event-type="drop"]:not([data-log-history])').length,3,'retroactive filtering removes 300 newer cheap repeats and retains the older personal unlocks and expensive duplicate');
+ assert.equal(id.querySelectorAll('[data-log-history]').length,1,'the unrecorded first copy of the valuable duplicate is restored separately');
  assert.equal(article(700301).dataset.groupUnlock,'true');assert.match(article(700301).querySelector('.chronicle-group-unlock').textContent,/New group Collection Log unlock/);
  assert.match(article(700302).textContent,/New Collection Log unlock for this player/);assert(!article(700302).querySelector('.chronicle-group-unlock'),'hidden earlier owner prevents a group-first label');
  assert(!article(700303),'a 40-million-gp stack of cheap duplicates stays out');assert(!article(700304),'exactly 500k stays out');
