@@ -89,10 +89,10 @@ let checked=0,inequalities=0;
 for(const metric of ['xp:overall','level:overall',...model.metrics.skills.flatMap(k=>['xp:'+k,'level:'+k]),...model.metrics.bosses.map(k=>'boss:'+k)]){
  const windows=M.PERIODS.map(p=>({days:p.days,rows:model.records(metric,p.days)}));
  for(const {days,rows}of windows)for(const row of rows)if(row.record){
-  const r=row.record,p=r.proof;assert.equal(p.gain,p.endValue-p.startValue);assert(p.observations>=2);assert(Number.isFinite(r.gain));
+  const r=row.record,p=r.proof;assert.equal(p.gain,Math.max(0,p.endValue-p.startMaximum));assert(p.observations>=2);assert(Number.isFinite(r.gain));
   assert.equal(r.gain,Math.ceil(p.gain/Math.ceil(p.span/(days*M.DAY))));
   if(r.inferred){assert.equal(r.start,null);assert.equal(r.end,null);assert(p.span>days*M.DAY)}
-  else{assert(r.span<=days*M.DAY);assert.equal(r.gain,r.endValue-r.startValue)}
+  else{assert(r.span<=days*M.DAY);assert.equal(r.gain,Math.max(0,r.endValue-r.startMaximum))}
   if(r.upperBound!==null)assert(r.gain<=r.upperBound);
   assert(row.rankRange.best<=row.rankRange.worst);checked++;
   for(const larger of windows.filter(w=>w.days>days)){

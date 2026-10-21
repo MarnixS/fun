@@ -32,12 +32,17 @@ function observations(doc,player,metric,rows=snapshots(doc,player)){
   if(!Number.isFinite(start)||!Number.isFinite(end)||start>=end)continue;
   for(const [time,endpoint]of [[start,'start'],[end,'end']]){
    const n=counter?.[endpoint];
-   if(valid(n)&&!(kind==='level'&&n<1)&&!(kind==='boss'&&n===0&&node.rank?.[endpoint]===-1))observed.set(time,n);
+   if(valid(n)&&!(kind==='level'&&n<1)&&!(kind==='boss'&&n===0&&node.rank?.[endpoint]===-1))observed.set(time,{value:n,maximum:n});
   }
  }
  // Full snapshots are authoritative, including an explicitly unknown counter.
- for(const row of rows){const time=Date.parse(row.createdAt),n=value(row,metric);if(n===null)observed.delete(time);else observed.set(time,n)}
- return [...observed].map(([time,value])=>({time,date:new Date(time).toISOString(),value})).sort((a,b)=>a.time-b.time);
+ for(const row of rows){
+  const time=Date.parse(row.createdAt),n=value(row,metric);if(n===null){observed.delete(time);continue}
+  const node=row.data?.skills?.[key],range=kind==='xp'?node?.experienceRange:kind==='level'?node?.levelRange:null;
+  const maximum=range&&valid(range.max)&&range.max>=n?range.max:n;
+  observed.set(time,{value:n,maximum,estimated:maximum!==n,source:row.provenance?.kind||null,latestTime:row.provenance?.datePrecision==='day'?time+DAY-1:time});
+ }
+ return [...observed].map(([time,point])=>({time,date:new Date(time).toISOString(),...point})).sort((a,b)=>a.time-b.time);
 }
 function catalogue(index){
  const skills=new Set(),bosses=new Set();
@@ -75,35 +80,49 @@ function bestPoints(points,days,missing=0){
 // at most W. At least one gained >= G / ceil(T / W). Inspect EVERY interval,
 // including ones longer than the largest displayed window. Endpoint-only
 // records miss this evidence whenever the sampling gap exceeds W.
-function boundedPoints(points,days,integer=true){
- const {record:observedRecord,coverage}=bestPoints(points,days);
- const limit=days*DAY;
- let proof=observedRecord?{...observedRecord,parts:1}:null,gain=observedRecord?.gain??null,upper=0,left=0;
+// Tighten uncertain screenshot counters using earlier/later observations. A
+// genuine decrease splits segments; an overlapping XP range is not a reset.
+function boundedHistory(input){
+ const points=input.map(p=>({...p,maximum:p.maximum??p.value,latestTime:p.latestTime??p.time}));let start=0,floor=-Infinity;
+ function finish(end){let ceiling=Infinity;for(let i=end;i>=start;i--){ceiling=Math.min(ceiling,points[i].maximum);points[i].maximum=ceiling}}
+ for(let i=0;i<points.length;i++){
+  if(points[i].maximum<floor){finish(i-1);start=i;floor=-Infinity}
+  points[i].value=Math.max(points[i].value,floor);floor=points[i].value;
+ }
+ finish(points.length-1);return points;
+}
+function boundedPoints(input,days,integer=true){
+ const points=boundedHistory(input),{coverage}=bestPoints(points,days),limit=days*DAY;
+ let proof=null,gain=null,observed=null,upper=0,left=0;
  for(let end=1,segment=0;end<points.length;end++){
   if(points[end].value<points[end-1].value){segment=end;left=end;continue}
-  // A W-long run can intersect the first and last of these sampling gaps.
-  // Their entire gains could lie inside it. This bounds the possible maximum
-  // without assigning any gain to a made-up timestamp (boundary is inclusive
-  // deliberately, so the bound remains conservative).
-  while(left+1<end&&points[end-1].time-points[left+1].time>limit)left++;
-  upper=Math.max(upper,points[end].value-points[left].value);
+  while(left+1<end&&points[end-1].time-points[left+1].latestTime>limit)left++;
+  upper=Math.max(upper,points[end].maximum-points[left].value);
   for(let start=segment;start<end;start++){
-   const a=points[start],b=points[end],span=b.time-a.time,parts=Math.ceil(span/limit),total=b.value-a.value;
-   const minimum=integer?Math.ceil(total/parts):total/parts;
-   if(gain!==null&&minimum<=gain)continue;
-   gain=minimum;proof={gain:total,span,start:a.time,end:b.time,startValue:a.value,endValue:b.value,parts,first:start,last:end};
+   const a=points[start],b=points[end],span=b.latestTime-a.time,parts=Math.ceil(span/limit);
+   if(!parts)continue;
+   // For a level-derived starting point, subtract its largest possible XP,
+   // not its assigned minimum. Otherwise a fictitious gain becomes a record.
+   const total=Math.max(0,b.value-a.maximum),minimum=integer?Math.ceil(total/parts):total/parts;
+   const observedBetter=parts===1&&(!observed||total>observed.gain||total===observed.gain&&(span>observed.span||span===observed.span&&b.time>observed.end));
+   const minimumBetter=gain===null||minimum>gain||minimum===gain&&(parts===1&&proof.parts>1||parts===proof.parts&&(total>proof.gain||total===proof.gain&&(span>proof.span||span===proof.span&&b.time>proof.end)));
+   if(!observedBetter&&!minimumBetter)continue;
+   const candidate={gain:total,span,start:a.time,end:b.time,startValue:a.value,endValue:b.value,startMaximum:a.maximum,endMaximum:b.maximum,startLatest:a.latestTime,endLatest:b.latestTime,timeUncertain:a.latestTime!==a.time||b.latestTime!==b.time,uncertain:!!(a.estimated||b.estimated),historical:!!(a.source||b.source),parts,first:start,last:end};
+   if(observedBetter)observed=candidate;
+   if(minimumBetter){gain=minimum;proof=candidate}
   }
  }
- if(!proof)return {record:null,observedRecord,coverage};
- if(proof.first!==undefined){
-  let maxGap=0;for(let i=proof.first+1;i<=proof.last;i++)maxGap=Math.max(maxGap,points[i].time-points[i-1].time);
-  const {first,last,...rest}=proof;proof={...rest,observations:last-first+1,maxGap};
+ function details(run){
+  if(!run)return null;
+  let maxGap=0;for(let i=run.first+1;i<=run.last;i++)maxGap=Math.max(maxGap,points[i].latestTime-points[i-1].time);
+  const {first,last,...rest}=run;return {...rest,days,observations:last-first+1,maxGap};
  }
+ const observedRecord=details(observed);proof=details(proof);
+ if(!proof)return {record:null,observedRecord,coverage};
  const inferred=proof.parts>1;
- // A reset makes the gain across that gap unknowable, hence no finite upper
- // bound. Both bounds concern the saved history, not time before tracking.
- return {record:{...(inferred?{start:null,end:null,span:null,startValue:null,endValue:null,observations:0,maxGap:null}:observedRecord),days,gain,inferred,proof,upperBound:coverage.corrections?null:upper},observedRecord,coverage};
+ return {record:{...(inferred?{start:null,end:null,span:null,startValue:null,endValue:null,observations:0,maxGap:null}:proof),days,gain,inferred,proof,upperBound:coverage.corrections?null:upper},observedRecord,coverage};
 }
+
 function rank(entries){
  const sorted=entries.slice().sort((a,b)=>a.record===null?b.record===null?a.key.localeCompare(b.key):1:b.record===null?-1:b.record.gain-a.record.gain||a.key.localeCompare(b.key));
  let previous=null,position=0;
@@ -132,6 +151,6 @@ function build(doc,keys){
  }
  return {index,metrics,records,points};
 }
-const api={DAY,PERIODS,snapshots,value,observations,best,bestPoints,boundedPoints,rank,build};
+const api={DAY,PERIODS,snapshots,value,observations,best,bestPoints,boundedHistory,boundedPoints,rank,build};
 if(typeof module==='object'&&module.exports)module.exports=api;else root.UGXPRecords=api;
 })(typeof window==='object'?window:globalThis);

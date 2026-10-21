@@ -23,6 +23,9 @@ jobs:
           for file in docs/assets/*.js; do node --check "$file"; done
           python scripts/build_site.py --check
           node scripts/test_clean_routes.js
+          node scripts/import_historical_snapshots.js --check
+          node scripts/test_historical_snapshots.js
+          node scripts/audit_historical_sources.js
           node scripts/test_xp_records.js
           node scripts/audit_xp_records.js
           node scripts/test_stat_progress.js

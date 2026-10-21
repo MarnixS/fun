@@ -54,7 +54,16 @@ function onDataUpdate(listener){
   update.catch(error=>console.error('Updated data could not be displayed',error));
  });
 }
-async function loadWom(){return loadDocument(WKEY,'data/wom-cache.json','profiles')}
+function historicalSources(doc){
+ const rows=Object.entries(doc?.snapshots||{}).flatMap(([key,list])=>(list||[]).filter(row=>row.provenance?.kind==='historical-screenshot').map(row=>({key,...row}))).sort((a,b)=>Date.parse(a.createdAt)-Date.parse(b.createdAt));
+ let host=document.querySelector('#historicalSourceNote');
+ if(!rows.length){host?.remove();return}
+ const signature=rows.map(row=>row.key+row.createdAt).join('|');if(host?.dataset.sources===signature)return;
+ if(!host){host=document.createElement('details');host.id='historicalSourceNote';host.className='historical-source-note';const strip=document.querySelector('main .data-strip');if(!strip)return;strip.after(host)}
+ host.dataset.sources=signature;
+ host.innerHTML='<summary>Historical skill entries included · '+rows.length+' dates</summary><p>These screenshot-derived entries are part of the shared history throughout the site. Skill XP uses the minimum required for each base level; exact XP and the time of day are unknown. Boss kills, activities and efficiency hours remain unknown.</p><ul>'+rows.map(row=>'<li>'+escapeHtml(player(row.key).name)+' · '+escapeHtml(row.createdAt.slice(0,10))+' · '+fmt(row.data.skills.overall.level)+' total level'+(row.provenance.assumedSkills?.length?' · carried forward: '+row.provenance.assumedSkills.map(nice).join(', '):'')+(row.provenance.unallocatedLevels?' · '+row.provenance.unallocatedLevels+' levels in the visible total cannot be assigned to individual skills.':'')+'</li>').join('')+'</ul>';
+}
+async function loadWom(){const doc=await loadDocument(WKEY,'data/wom-cache.json','profiles');historicalSources(doc);return doc}
 async function loadClog(){return loadDocument(TKEY,'data/temple-clog.json','players')}
 function snapData(w,key){return w?.profiles?.[key]?.latestSnapshot?.data||w?.profiles?.[key]?.latest_snapshot?.data||null}
 function player(key){return PLAYERS.find(p=>p.key===key)}
