@@ -17,6 +17,20 @@ server.listen(0,'127.0.0.1',async()=>{let dom;try{
   assert.equal(d.querySelectorAll('#timeBosses tbody tr').length,0,'no boss kills were imported from the screenshots');
  }
  assert.equal(page.errors.length,0,page.errors.join('; '));assert(!requests.some(row=>row.method==='POST'||row.url.includes('api.wiseoldman.net')),'historical browsing uses the saved shared baseline');
- console.log('Historical UI passed: all six dates in Time Machine, common source disclosure, exact total levels, inherited-skill uncertainty, day precision, unknown EHP/KC and no upstream updates.');
+ dom.window.close();
+ // Hidden skill panels must neither erase later level-ups nor move their
+ // earliest possible date to an assumed, rather than observed, level.
+ const fixture=structuredClone(doc),key='big dog aura',firstReal=fixture.snapshots[key].find(row=>!row.provenance&&Date.parse(row.createdAt)>Date.parse('2024-07-16'));
+ fixture.snapshots[key]=[...photos.slice(3),firstReal];fixture.profiles[key].latestSnapshot=firstReal;fixture.achievements[key]=[];
+ const chronicle=await openPage('chronicle.html',{selection:[key],deployedDocs:{wom:fixture}});dom=chronicle.dom;
+ const c=dom.window.document;c.querySelector('[data-chrono-size="all"]').click();
+ await waitFor(()=>c.querySelector('[data-event-type="level"][data-metric="prayer"][data-level="75"]'),'level-ups across obscured screenshots');
+ for(const [skill,level] of [['prayer',75],['fletching',67],['woodcutting',67]]){
+  const event=c.querySelector(`[data-event-type="level"][data-metric="${skill}"][data-level="${level}"]`);
+  assert(event,'known level crossing retained for '+skill);assert.match(event.querySelector('.chronicle-date').textContent,/05 May 2023 →/,'last observed level anchors the full possible interval');
+  assert(event.textContent.includes('exact time unknown'));assert(event.textContent.includes('historical observations'));assert(!event.textContent.includes('via WOM'));
+ }
+ assert.equal(chronicle.errors.length,0,chronicle.errors.join('; '));
+ console.log('Historical UI passed: all six Time Machine dates, source disclosure, known totals, inherited uncertainty, no invented EHP/KC or upstream updates, and Chronicle level-ups across obscured screenshots with honest date intervals.');
  dom.window.close();server.close();process.exit(0);
 }catch(error){console.error(error);dom?.window.close();server.close();process.exit(1)}});
