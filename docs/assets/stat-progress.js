@@ -41,7 +41,8 @@ function readURL(){
  const params=new URL(location.href).searchParams,type=params.get('type'),legacy=params.get('kind');
  family=type==='boss'||legacy==='boss'?'boss':['skill-level','total-level'].includes(type)||legacy==='level'?'level':['ehp','ehb'].includes(type)||legacy==='computed'?'computed':'xp';
  metric=params.get('metric')||(['total-xp','total-level'].includes(type)?'overall':['ehp','ehb'].includes(type)?type:params.has('period')&&!type&&!legacy||location.hash==='#gainCards'?'overall':'');
- days=M.PERIODS.some(period=>period.days===Number(params.get('period')))?Number(params.get('period')):7;
+ const period=params.get('period')==='max'?'max':Number(params.get('period'));
+ days=M.PERIODS.some(item=>item.days===period)?period:7;
  view=['bars','share'].includes(params.get('view'))?params.get('view'):'timeline';
  const members=params.get('members')?.split(',').filter(key=>U.ALL_KEYS.includes(key)),owner=params.get('player');
  if(members?.length)selected=new Set(members);else if(U.ALL_KEYS.includes(owner))selected=new Set([owner]);
@@ -71,7 +72,7 @@ function gainList(){
  }).filter(row=>includeUnchanged||row.gain>0);
  all.sort((a,b)=>sort==='name'?metricName(a.key).localeCompare(metricName(b.key)):(b.gain??-Infinity)-(a.gain??-Infinity)||metricName(a.key).localeCompare(metricName(b.key)));
  $('#progressTableLabel').textContent=family==='boss'?'Gains across bosses':family==='computed'?'Efficiency gains':'Gains across all skills';
- $('#progressTableNote').textContent='Combined '+unit()+' gained by the selected players in the latest '+days+' days. Choose a row to compare that metric.';
+ $('#progressTableNote').textContent='Combined '+unit()+' gained by the selected players '+(days==='max'?'across all saved history':'in the latest '+days+' days')+'. Choose a row to compare that metric.';
  $('#skillGainTable').innerHTML='<colgroup><col><col class="progress-value-col"></colgroup><thead><tr><th scope="col">'+(family==='boss'?'Boss':family==='computed'?'Measure':'Skill')+'</th><th scope="col">'+unit()+' gained</th></tr></thead><tbody>'+all.map(row=>`<tr class="${row.key===metric?'progress-selected-metric':''}"><th scope="row"><button type="button" class="metric-link" data-progress-metric="${esc(row.key)}" aria-pressed="${row.key===metric}">${icon(row.key)}<span>${esc(metricName(row.key))}</span></button></th><td class="${row.gain>0?'progress-positive':''}">${row.gain===null?'—':'+'+number(row.gain)}</td></tr>`).join('')+(all.length?'':'<tr><td colspan="2" class="progress-no-gains">No confirmed positive gains in this period. Include unchanged or unknown metrics to see every row.</td></tr>')+'</tbody>';
 }
 function periods(){
@@ -85,21 +86,21 @@ function render(){
  $('#progressResults').hidden=!metric;$('#progressSupplement').hidden=!metric;$('#progressEmpty').hidden=!!metric;
  searchMetrics();
  if(!metric){$('#progressStatus').textContent='Choose what to compare above. Results will use the selected players and period.';$('#gainCards').innerHTML='';$('#skillGainTable').innerHTML='';$('#xpChart').innerHTML='';return}
- const {domain,rows}=compare(metric),known=rows.filter(row=>row.gain!==null),total=known.reduce((sum,row)=>sum+row.gain,0),period=M.PERIODS.find(item=>item.days===days);
- $('#progressHeading').innerHTML=icon(metric)+`<span>${esc(label())} gained · latest ${period.label}</span>`;
+ const {domain,rows}=compare(metric),known=rows.filter(row=>row.gain!==null),total=known.reduce((sum,row)=>sum+row.gain,0),period=M.PERIODS.find(item=>item.days===days),full=days==='max';
+ $('#progressHeading').innerHTML=icon(metric)+`<span>${esc(label())} gained · ${full?'full history':'latest '+period.label}</span>`;
  $('#progressRange').textContent=domain?date(domain.start)+' → '+date(domain.end):'No saved observations.';
  $('#progressTotal').textContent=known.length?'+'+number(total)+' '+unit():'—';
- $('#progressTotalNote').textContent=known.length?'combined recent gain · '+known.length+' of '+rows.length+' players with observations':'Insufficient history for this comparison';
- $('#progressStatus').textContent='Showing '+label()+' gained in the latest '+period.label+'; these are recent gains.';
+ $('#progressTotalNote').textContent=known.length?(full?'combined gain across saved history':'combined recent gain')+' · '+known.length+' of '+rows.length+' players with observations':'Insufficient history for this comparison';
+ $('#progressStatus').textContent=full?'Showing '+label()+' gained across all saved history, from each player’s earliest available observation.':'Showing '+label()+' gained in the latest '+period.label+'; these are recent gains.';
  $('#gainCards').innerHTML='<colgroup><col class="progress-rank-col"><col><col class="progress-value-col"></colgroup><thead><tr><th scope="col" aria-label="Rank">#</th><th scope="col">Player</th><th scope="col">'+unit()+' gained</th></tr></thead><tbody>'+rows.map(row=>{
   const player=U.player(row.key);
   return `<tr data-progress-player="${esc(row.key)}" data-progress-rank="${row.rank??''}" style="--pc:${player.color}"><td class="progress-rank" title="Rank">${row.rank??'—'}</td><th scope="row"><span class="progress-player-name">${esc(player.name)}</span><span class="progress-observed" title="${row.start===null?'':esc(stamp(row.start)+' → '+stamp(row.end))}">${row.gain===null?'Insufficient history':date(row.start)+' → '+date(row.end)+(row.corrections?' · after correction':'')}</span></th><td class="records-gain ${row.gain>0?'progress-positive':''}"><b>${row.gain===null?'—':'+'+number(row.gain)}</b></td></tr>`;
  }).join('')+'</tbody>';
- $('#progressChartTitle').textContent=label()+' · recent gains';
+ $('#progressChartTitle').textContent=label()+(full?' · full history':' · recent gains');
  $('#progressAxis').textContent=view==='share'?'Share of '+unit()+' gained':unit()+' gained · zero baseline';
  $$('[data-progress-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.progressView===view)));
  const entries=rows.map(row=>({name:U.player(row.key).name,color:U.player(row.key).color,value:row.gain})),format=family==='computed'?'hours':'compact';
- if(!known.length)$('#xpChart').innerHTML='<div class="chart-empty" role="status">At least two valid observations in this period are needed to measure gains. Try a longer period.</div>';
+ if(!known.length)$('#xpChart').innerHTML='<div class="chart-empty" role="status">At least two valid observations '+(full?'are needed to measure gains.':'in this period are needed to measure gains. Try a longer period.')+'</div>';
  else if(view==='bars')C.drawBars('#xpChart',entries,{format,note:'Observed gains for the selected players.'});
  else if(view==='share')C.drawPie('#xpChart',entries,{format,note:'Share of the selected players’ '+unit()+' gained in this period.'});
  else C.drawLine('#xpChart',rows.map(row=>({name:U.player(row.key).name,color:U.player(row.key).color,data:row.gain===null?[]:row.points})),{format,gainMode:true,bars:entries,domain});
@@ -107,7 +108,7 @@ function render(){
  const goal=$('#progressGoal');goal.hidden=family==='computed';
  if(!goal.hidden){const params=new URLSearchParams({kind:family,metric});if(selected.size===1)params.set('player',keys()[0]);goal.href='goals.html?'+params+'#new-goal'}
  const type=family==='xp'?(metric==='overall'?'total-xp':'skill-xp'):family==='level'?(metric==='overall'?'total-level':'skill-level'):'boss';
- const params=new URLSearchParams({type:family==='computed'?'total-xp':type,period:days});
+ const params=new URLSearchParams({type:family==='computed'?'total-xp':type});if(!full)params.set('period',days);
  if(!['overall','ehp','ehb'].includes(metric))params.set('metric',metric);
  if(selected.size!==U.ALL_KEYS.length)params.set('members',keys().join(','));$('#progressRecords').href='time-records.html?'+params;$('#progressRecords').hidden=family==='computed';
  gainList();
@@ -135,7 +136,7 @@ async function init(){
   $('#progressAll').onclick=()=>{selected=new Set(U.ALL_KEYS);U.saveMemberSelection(selected);render();writeURL()};
   document.addEventListener('click',event=>{
    const choice=event.target.closest('[data-progress-metric]');if(choice){choose(choice.dataset.progressMetric);return}
-   const period=event.target.closest('[data-progress-window]');if(period){days=Number(period.dataset.progressWindow);render();writeURL();return}
+   const period=event.target.closest('[data-progress-window]');if(period){days=period.dataset.progressWindow==='max'?'max':Number(period.dataset.progressWindow);render();writeURL();return}
    const graph=event.target.closest('[data-progress-view]');if(graph){view=graph.dataset.progressView;render();writeURL()}
   });
  }catch(error){$('#progressStatus').textContent='Saved history could not load. Reload to try again.';console.error(error)}

@@ -11,6 +11,14 @@ assert.deepEqual(result.rows.map(r=>[r.key,r.gain,r.rank]),[['a',300,1],['b',300
 assert.equal(result.rows[0].start,time-6*M.DAY,'an older boundary snapshot must not inflate the gain');
 assert.equal(model.compare('xp','overall',7,['b']).domain.end,time,'player selection does not move the time window');
 assert.equal(model.compare('xp','overall',1).rows.find(r=>r.key==='a').gain,null,'one point is not a confirmed zero');
+const maximum=model.compare('xp','overall','max');
+assert.deepEqual(maximum.domain,{start:time-8*M.DAY,end:time});
+assert.deepEqual(maximum.rows.map(r=>[r.key,r.gain,r.rank]),[['a',390,1],['b',300,2],['zero',0,3],['missing',null,null]],'Max uses every saved observation and preserves unknowns');
+const long=M.build({snapshots:{a:[snap(-1000,10),snap(-500,100),snap(0,400)]}},['a']);
+assert.equal(long.compare('xp','overall','max').rows[0].gain,390,'Max includes history older than a year');
+assert.equal(long.compare('xp','overall','max').domain.start,time-1000*M.DAY);
+assert.equal(long.compare('xp','overall',365).rows[0].gain,null,'the finite window remains bounded');
+assert.equal(model.compare('xp','overall','max',['b']).domain.start,time-5*M.DAY,'Max fits the earliest available observation among selected players');
 for(const row of result.rows)if(row.gain!==null)assert.equal(row.gain,row.points.at(-1).value-row.points[0].value,'rank and timeline use identical endpoints');
 const summary=structuredClone(doc);summary.gains={week:{a:{startsAt:at(-7),endsAt:at(0),data:{skills:{overall:{experience:{start:50,end:400,gained:999999}}}}}}};
 result=M.build(summary,keys).compare('xp','overall',7);
@@ -23,6 +31,7 @@ assert.equal(M.build(summary,keys).compare('xp','overall',7).rows.find(r=>r.key=
 const correction={snapshots:{a:[snap(-6,100),snap(-4,500),snap(-2,200),snap(0,250)]}};
 const corrected=M.build(correction,['a']).compare('xp','overall',7).rows[0];
 assert.equal(corrected.gain,50);assert.equal(corrected.corrections,1);assert.equal(corrected.start,time-2*M.DAY);
+assert.equal(M.build(correction,['a']).compare('xp','overall','max').rows[0].gain,50,'Max still restarts after a counter correction');
 correction.snapshots.a.push(snap(.1,100));
 assert.equal(M.build(correction,['a']).compare('xp','overall',7).rows[0].gain,null,'a reset with no subsequent observation remains unknown');
 for(const value of [null,undefined,NaN,-1,Infinity,'100'])assert.equal(M.value({skills:{attack:{experience:value}}},'xp','attack'),null);
@@ -31,6 +40,9 @@ assert.equal(M.value({bosses:{zulrah:{kills:0,rank:100}}},'boss','zulrah'),0);
 assert.equal(M.value({computed:{ehp:{value:1.25}}},'computed','ehp'),1.25);
 assert.equal(M.value({skills:{attack:{level:0}}},'level','attack'),null);
 assert.equal(M.build({},['a']).compare('xp','overall',7).rows[0].gain,null);
+assert.deepEqual(M.build({},['a']).compare('xp','overall','max').domain,null);
+assert.equal(model.compare('boss','unknown','max').domain,null,'an unavailable metric has no invented full-history date range');
+assert.throws(()=>model.compare('xp','overall','max',keys,'records'),RangeError,'Max does not add a personal-best mode');
 assert.throws(()=>model.compare('xp','overall',2),RangeError);
 const fs=require('node:fs'),R=require('../docs/assets/xp-records-model'),saved=JSON.parse(fs.readFileSync('docs/data/wom-cache.json')),players=Object.keys(saved.profiles),progress=M.build(saved,players),records=R.build(saved,players);
 const recent=progress.compare('xp','agility',90).rows.find(row=>row.key==='lijpste');
@@ -38,7 +50,7 @@ const historic=progress.compare('xp','agility',90,players,'records').rows.find(r
 assert(historic.gain>=6406522&&historic.gain>recent.gain,'Lijpste’s earlier Agility run must outrank his recent three months');
 assert.equal(new Date(historic.start).toISOString().slice(0,10),'2026-05-07');
 let comparisons=0;
-for(const [kind,metric]of [['xp','overall'],['level','overall'],...progress.metrics.skills.flatMap(key=>[['xp',key],['level',key]]),...progress.metrics.bosses.map(key=>['boss',key]),['computed','ehp'],['computed','ehb']])for(const period of M.PERIODS){
+for(const [kind,metric]of [['xp','overall'],['level','overall'],...progress.metrics.skills.flatMap(key=>[['xp',key],['level',key]]),...progress.metrics.bosses.map(key=>['boss',key]),['computed','ehp'],['computed','ehb']])for(const period of R.PERIODS){
  const expected=records.records(kind+':'+metric,period.days),best=progress.compare(kind,metric,period.days,players,'records').rows,latest=progress.compare(kind,metric,period.days).rows;
  assert.deepEqual(best.map(row=>[row.key,row.gain,row.rank]),expected.map(row=>[row.key,row.record?.gain??null,row.rank]),'both pages rank the same records');
  for(const row of best){

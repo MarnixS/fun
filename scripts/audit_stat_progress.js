@@ -36,6 +36,16 @@ server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
   assert.equal(d.querySelector('#progressPeriods [aria-pressed=true]').dataset.progressWindow,String(period.days));
   assert.equal(d.querySelector('#progressGraphPeriods [aria-pressed=true]').dataset.progressWindow,String(period.days));
  }
+ assert.equal(new URL(w.location.href).searchParams.get('period'),'max');
+ assert(d.querySelector('#progressHeading').textContent.includes('full history'));
+ assert(!d.querySelector('#progressTableNote').textContent.includes('max days'));
+ assert(!new URL(d.querySelector('#progressRecords').href).searchParams.has('period'),'the separate Time Records page receives no unsupported Max window');
+ for(const graph of ['bars','share','timeline']){d.querySelector(`[data-progress-view="${graph}"]`).click();check('xp','agility','max')}
+ const maxReload=await openPage('progress.html'+w.location.search);doms.push(maxReload.dom);
+ assert.equal(maxReload.dom.window.document.querySelector('#progressPeriods [aria-pressed=true]').dataset.progressWindow,'max','Max survives a shared/reloaded URL');
+ assert.equal(maxReload.dom.window.document.querySelector('#progressGraphPeriods [aria-pressed=true]').dataset.progressWindow,'max');
+ assert.equal(maxReload.errors.length,0,maxReload.errors.join('; '));
+ d.querySelector('#progressPeriods [data-progress-window="365"]').click();
  for(const [family,metric]of [['xp','overall'],['xp','attack'],['level','overall'],['level','agility'],['boss','zulrah'],['computed','ehp'],['computed','ehb']]){
   change('#progressType',family);assert(d.querySelector('#progressResults').hidden,'a new measure waits for its metric');change('#progressMetric',metric);check(family,metric,365);
  }
@@ -70,6 +80,6 @@ server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
  assert.equal(result.errors.length,0,result.errors.join('; '));assert(!requests.some(request=>request.method==='POST'||request.url.includes('api.wiseoldman.net')||request.url.includes('/api/temple-collection-log')),'browsing gains does not refresh upstream data');
  const linked=await openPage('progress.html?kind=skill&metric=attack&player=dikste&period=7');doms.push(linked.dom);assert.equal(linked.dom.window.document.querySelectorAll('[data-progress-player]').length,1);assert.equal(linked.dom.window.document.querySelector('#progressMetric').value,'attack');
  const weekly=await openPage('progress.html?period=7');doms.push(weekly.dom);assert.equal(weekly.dom.window.document.querySelector('#progressMetric').value,'overall','the existing weekly overview shortcut retains its explicit intent');
- console.log('Stat Progress passed: visible selection before results; gains-only views; all retained metrics; six synchronized graph periods; clean three/two-column tables; sort/filter/search; shared selection; legacy links; updates and unknown history.');
+ console.log('Stat Progress passed: visible selection before results; gains-only views; all retained metrics; seven synchronized graph periods including Max; full-history graphs and shared URLs; clean three/two-column tables; sort/filter/search; shared selection; legacy links; updates and unknown history.');
  doms.forEach(dom=>dom.window.close());server.close();process.exit(0);
 }catch(error){console.error(error);doms.forEach(dom=>dom.window.close());server.close();process.exit(1)}});
