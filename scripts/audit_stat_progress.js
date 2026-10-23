@@ -28,6 +28,7 @@ server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
   assert.equal(d.querySelectorAll('#gainCards thead th').length,3);
   for(const row of rows){const actual=d.querySelector(`[data-progress-player="${row.key}"] .records-gain b`).textContent;assert.equal(actual,row.gain===null?'—':'+'+(kind==='computed'?row.gain.toLocaleString('en-GB',{maximumFractionDigits:1}):Math.round(row.gain).toLocaleString('en-GB')))}
   const svg=d.querySelector('#xpChart svg');if(svg&&d.querySelector('[data-progress-view="timeline"]').getAttribute('aria-pressed')==='true'){
+   assert(svg.getAttribute('aria-label').includes(new Date(domain.end).toLocaleDateString('en-GB',{timeZone:'UTC'})),'graph dates agree with the UTC comparison even in another browser timezone');
    assert.equal(Number(svg.dataset.rangeEnd)-Number(svg.dataset.rangeStart),domain.end-domain.start);assert.equal(Number(svg.dataset.rangeEnd),domain.end);assert.equal(Number(svg.dataset.yMin),0);
    for(const point of svg.querySelectorAll('circle'))assert(Number(point.getAttribute('cx'))>=61.9&&Number(point.getAttribute('cx'))<=882.1);
   }

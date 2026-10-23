@@ -88,7 +88,7 @@ function render(){
  if(!dialog.open)dialog.showModal();
  const {domain,rows}=compare(metric),known=rows.filter(row=>row.gain!==null),total=known.reduce((sum,row)=>sum+row.gain,0),period=M.PERIODS.find(item=>item.days===days),full=days==='max';
  $('#progressHeading').innerHTML=icon(metric)+`<span>${esc(label())} gained · ${full?'full history':'latest '+period.label}</span>`;
- $('#progressRange').textContent=domain?date(domain.start)+' → '+date(domain.end):'No saved observations.';
+ $('#progressRange').textContent=domain?date(domain.start)+' → '+date(domain.end)+' · UTC':'No saved observations.';
  $('#progressTotal').textContent=known.length?'+'+number(total)+' '+unit():'—';
  $('#progressTotalNote').textContent=known.length?(full?'combined gain across saved history':'combined recent gain')+' · '+known.length+' of '+rows.length+' players with observations':'Insufficient history for this comparison';
  $('#gainCards').innerHTML='<colgroup><col class="progress-rank-col"><col><col class="progress-value-col"></colgroup><thead><tr><th scope="col" aria-label="Rank">#</th><th scope="col">Player</th><th scope="col">'+unit()+' gained</th></tr></thead><tbody>'+rows.map(row=>{
@@ -102,7 +102,7 @@ function render(){
  if(!known.length)$('#xpChart').innerHTML='<div class="chart-empty" role="status">At least two valid observations '+(full?'are needed to measure gains.':'in this period are needed to measure gains. Try a longer period.')+'</div>';
  else if(view==='bars')C.drawBars('#xpChart',entries,{format,note:'Observed gains for the selected players.'});
  else if(view==='share')C.drawPie('#xpChart',entries,{format,note:'Share of the selected players’ '+unit()+' gained in this period.'});
- else C.drawLine('#xpChart',rows.map(row=>({name:U.player(row.key).name,color:U.player(row.key).color,data:row.gain===null?[]:row.points})),{format,gainMode:true,bars:entries,domain});
+ else C.drawLine('#xpChart',rows.map(row=>({name:U.player(row.key).name,color:U.player(row.key).color,data:row.gain===null?[]:row.points})),{format,gainMode:true,bars:entries,domain,timeZone:'UTC'});
  $('#progressChartNote').textContent=view==='timeline'?'Tap the graph or use arrow keys to inspect gains at saved dates. Each line starts at zero at that player’s first displayed observation.':view==='share'?'Only positive gains contribute to the share.':'The bars and player comparison show the same gains.';
  const goal=$('#progressGoal');goal.hidden=family==='computed';
  if(!goal.hidden){const params=new URLSearchParams({kind:family,metric});if(selected.size===1)params.set('player',keys()[0]);goal.href='goals.html?'+params+'#new-goal'}
