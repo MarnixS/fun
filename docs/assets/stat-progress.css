@@ -1,70 +1,112 @@
-body[data-page=progress] .mast-status.mast-status-six{display:none!important}
-body[data-page=progress] main [hidden]{display:none!important}
-body[data-page=progress] .progress-intro h2{display:flex;align-items:center;gap:12px}
-.progress-controls{display:grid;grid-template-columns:minmax(170px,220px) minmax(240px,420px);gap:14px;margin:20px 0 8px}
-.progress-controls label,.progress-list-controls>label:first-child{display:grid;gap:6px;font-weight:700;min-width:0}
-.progress-controls select,.progress-search input,.progress-list-controls select{width:100%;min-height:44px}
-.progress-skill-help{margin:0 0 8px}
-.progress-skill-picker{margin:0 0 16px}
-.progress-skill-picker summary{min-height:40px;cursor:pointer;padding:8px 0;font-weight:700}
-.progress-search{display:grid;gap:6px;margin:6px 0 12px;max-width:520px}
-.progress-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px;margin:0 0 14px}
-.progress-metrics button{display:flex;align-items:center;gap:9px;min-height:44px;padding:9px 12px;border:1px solid var(--edge);background:var(--panel2);color:var(--text);text-align:left;cursor:pointer}
-.progress-metrics button[aria-pressed=true]{border-color:var(--gold2);box-shadow:inset 3px 0 var(--gold2);font-weight:700}
-.progress-metrics .skill-icon,.progress-table .skill-icon{width:21px;height:21px;object-fit:contain;image-rendering:pixelated;flex:0 0 21px}
-.progress-period-label{font-weight:700;margin-top:12px}
-.progress-intro .records-periods{margin:8px 0 18px}
-.progress-summary{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:16px 0}
-.progress-summary>b{font-size:28px;font-variant-numeric:tabular-nums}
-.progress-summary>span{color:var(--muted);font-size:var(--type-ui)}
-.progress-results h3{display:flex;align-items:center;gap:9px}
-.progress-empty{margin-top:16px}
-.progress-table-wrap{width:100%;min-width:0;border:1px solid var(--edge);margin-bottom:20px}
+/* This page trades the full artwork header for room to compare every stat. */
+html body[data-page=progress] .site-top{padding:4px 0;background:transparent;border:0}
+html body[data-page=progress] .site-top>.wrap{position:relative;width:min(1190px,calc(100% - 28px))!important;display:flex;align-items:center;justify-content:space-between;min-height:44px}
+html body[data-page=progress] .mast{order:-1;display:block;min-width:0}
+html body[data-page=progress] .mast-wordmark{display:flex;justify-content:flex-start;min-height:0;padding:0;gap:8px;border:0;background:none}
+html body[data-page=progress] .mast-wordmark h1{font:22px/1 RuneScape,Georgia,serif;letter-spacing:.03em;color:#e6c26a}
+html body[data-page=progress] .mast-wordmark :is(p,.mast-the,.mast-subtitle,.mast-crest-right){display:none}
+html body[data-page=progress] .mast-wordmark img{width:30px;height:34px;object-fit:contain}
+html body[data-page=progress] :is(.banner-frame,.osrs-banner,.mast-status-six,.osrs-navigation){display:none!important}
+html body[data-page=progress] .theme-toolbar{padding:0}
+html body[data-page=progress] .theme-toggle{min-height:36px;font-size:11px}
+html body[data-page=progress] .main-nav{margin:0 0 12px;background:#17130d;border-block:1px solid #5b4b30}
+html body[data-page=progress] .main-nav>.nav-inner{display:flex!important;min-height:40px}
+html body[data-page=progress] :is(.nav-trigger,.nav-inner>.nav-link){min-height:40px;padding-block:4px;color:#e4d6b4;font-size:13px}
+html body[data-page=progress] .nav-brand{display:none}
+html body[data-page=progress] main.wrap{margin-top:22px;margin-bottom:25px;padding:16px 22px 14px;min-height:0}
+html body[data-page=progress] main [hidden]{display:none!important}
+html body[data-page=progress] main :is(button,input,select){font-family:Arial,sans-serif}
+html body[data-page=progress] main .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.progress-page-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 12px}
+html body[data-page=progress] main .progress-page-head h2{display:flex;align-items:center;gap:10px;margin:0;font-size:26px!important}
+.progress-page-head .records-logo{width:28px;height:28px}
+html body[data-page=progress] main .progress-page-head p{margin:3px 0 0;font-size:12px!important}
+.progress-snapshots{position:relative;align-self:start;font-size:12px}
+.progress-snapshots>summary{cursor:pointer;padding:8px 0;white-space:nowrap;min-height:36px}
+.progress-snapshots .data-strip{position:absolute;right:0;top:100%;z-index:8;width:380px;max-width:85vw;box-shadow:0 4px 16px #0005;background:var(--panel);border:1px solid var(--edge)}
+.progress-types{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-bottom:10px}
+html body[data-page=progress] main .progress-type-card{display:flex;align-items:center;gap:10px;min-width:0;min-height:52px;padding:7px 12px;text-align:left;border:1px solid var(--edge);background:var(--panel2);color:var(--text);cursor:pointer;white-space:normal}
+.progress-type-card>img{width:27px;height:27px;object-fit:contain;image-rendering:pixelated}
+.progress-type-card>span{display:grid;gap:2px}.progress-type-card b{font-size:14px}.progress-type-card small{font-size:11px;color:var(--muted)}
+html body[data-page=progress] main .progress-type-card[aria-pressed=true]{background:var(--panel);border-color:var(--gold2);box-shadow:inset 0 -3px var(--gold2)}
+.progress-window-row{display:flex;align-items:center;gap:15px;margin-bottom:5px}.progress-window-row>span{font-size:12px;font-weight:700;white-space:nowrap}
+html body[data-page=progress] main .records-periods{display:flex;flex-wrap:wrap;gap:5px;margin:0}
+html body[data-page=progress] main .records-periods button{min-height:36px;min-width:60px;padding:5px 10px;font-size:12px;border:1px solid var(--edge);background:var(--panel2);color:var(--text);cursor:pointer}
+html body[data-page=progress] main .records-periods button[aria-pressed=true]{background:var(--text);color:var(--panel);font-weight:700;border-color:var(--text)}
+.progress-members{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+html body[data-page=progress] main #statsMemberPicker{margin:0;flex:1}
+html body[data-page=progress] main #statsMemberPicker .v21-member-fieldset{padding:0;border:0;background:transparent;margin:0}
+html body[data-page=progress] main #statsMemberPicker legend{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%)}
+html body[data-page=progress] main #statsMemberPicker .v21-member-list{display:flex;gap:5px;flex-wrap:wrap;margin:0}
+html body[data-page=progress] main #statsMemberPicker .v21-member-list label{min-height:36px;padding:4px 9px!important;font-size:12px;white-space:nowrap}
+html body[data-page=progress] main #progressAll{min-height:36px;padding:4px 9px;font-size:12px;white-space:nowrap}
+.progress-grid-head{display:flex;gap:8px;align-items:center;margin-bottom:7px}
+html body[data-page=progress] main #progressGridHeading{font-size:15px!important;margin:0;flex:1}
+.progress-search input,.progress-sort select{width:100%;min-height:36px;padding:6px 9px;border:1px solid var(--edge);background:var(--panel2);color:var(--text);font-size:12px}
+.progress-search{width:190px}.progress-sort{width:135px}
+.progress-metrics{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:5px;max-height:none;overflow:visible}
+html body[data-page=progress] main .progress-metric-card{display:grid;grid-template-columns:25px minmax(0,1fr);grid-template-rows:1fr auto;column-gap:6px;row-gap:2px;min-width:0;min-height:57px;padding:5px 6px;border:1px solid var(--edge);background:var(--panel2);color:var(--text);text-align:left;cursor:pointer;white-space:normal;line-height:1.15}
+.progress-metric-icon{grid-row:1/3;display:flex;align-items:center;justify-content:center;width:25px;height:32px;align-self:center}
+.progress-metric-icon img{max-width:25px;max-height:30px;width:auto;height:auto;object-fit:contain;image-rendering:pixelated}
+.progress-metric-icon .chronicle-boss-icon{display:flex;align-items:center;justify-content:center;max-width:25px}.progress-metric-icon .chronicle-boss-group img{max-width:11px;max-height:28px}
+.progress-metric-name{font-size:11px;align-self:center;overflow-wrap:normal;hyphens:auto}
+.progress-metric-gain{font-size:13px;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap}
+html body[data-page=progress] main .progress-positive{color:#477e25}
+.progress-metric-card:hover{filter:brightness(1.07);border-color:var(--gold2)!important}
+html body[data-page=progress] main .progress-status{margin:8px 0 0;font-size:11px!important;line-height:1.4}
+.progress-no-matches{grid-column:1/-1;padding:18px}
+.progress-dialog{width:min(1120px,calc(100% - 32px));max-width:none;max-height:calc(100dvh - 40px);padding:0;border:1px solid var(--edge);background:var(--panel);color:var(--text);box-shadow:0 12px 70px #0009;overflow:auto;overscroll-behavior:contain}
+.progress-dialog:not([open]){display:none}.progress-dialog::backdrop{background:#000b}
+.progress-dialog-shell{padding:20px}
+.progress-detail-head{display:flex;align-items:start;justify-content:space-between;gap:15px;margin-bottom:10px}
+html body[data-page=progress] main .progress-detail-head h3{display:flex;align-items:center;gap:8px;font-size:20px!important;margin:0}
+.progress-detail-head .skill-icon{width:24px;height:24px;object-fit:contain;image-rendering:pixelated}
+html body[data-page=progress] main .progress-detail-head p{font-size:12px;margin:5px 0 0;color:var(--muted)}
+html body[data-page=progress] main :is(.progress-close,.progress-views button){min-height:40px;padding:6px 12px;border:1px solid var(--edge);background:var(--panel2);color:var(--text);font-size:12px;cursor:pointer;white-space:nowrap}
+.progress-close>span{font-size:18px;margin-left:8px}
+.progress-detail-grid{display:grid;grid-template-columns:minmax(290px,.85fr) minmax(0,1.15fr);gap:22px;margin-top:12px;align-items:start}
+.progress-summary{display:grid;gap:3px;margin-bottom:12px}.progress-summary>b{font-size:27px;font-variant-numeric:tabular-nums}.progress-summary>span{font-size:11px;color:var(--muted)}
 body[data-page=progress] main table.progress-table{width:100%;min-width:0;table-layout:fixed;border-collapse:collapse;margin:0}
-body[data-page=progress] main .progress-table th,body[data-page=progress] main .progress-table td{padding:12px 14px;vertical-align:middle;text-align:left;white-space:normal;overflow-wrap:normal;border-bottom:1px solid var(--edge);background:transparent}
-body[data-page=progress] main .progress-table thead th{font-size:13px;font-weight:700;background:var(--panel2)}
-body[data-page=progress] main .progress-table th:last-child,body[data-page=progress] main .progress-table td:last-child{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-body[data-page=progress] main .progress-table tbody tr:last-child>*{border-bottom:0}
-.progress-rank-col{width:48px}.progress-value-col{width:190px}
-.progress-rank{text-align:center;color:var(--muted)}
-.progress-player-name{display:block;color:var(--pc);font-size:16px;font-weight:700}
-.progress-observed{display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:4px}
-.progress-player-table .records-gain b{font-size:21px;line-height:1.2;font-variant-numeric:tabular-nums}
-body[data-page=progress] main .progress-positive{font-weight:700;color:#acd481}
-.progress-selected-metric{background:#b89b5320}
-body[data-page=progress] main .progress-table .metric-link{display:inline-flex;align-items:center;gap:7px;min-height:40px;width:100%;text-align:left;background:transparent;border:0;padding:4px 0;white-space:normal}
-.progress-table .metric-link[aria-pressed=true]{font-weight:700;text-decoration:underline}
-.progress-table .metric-link>span{min-width:0;white-space:normal;overflow-wrap:normal}
-.progress-chart-card{padding:20px;margin:20px 0;min-width:0}
-.progress-chart-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}
-.progress-chart-head h3{margin:0}
-.progress-views{display:flex;gap:6px;flex-wrap:wrap}
-.progress-views button{min-height:44px;padding:8px 14px;background:var(--panel2);color:var(--text);border:1px solid var(--edge);cursor:pointer}
-.progress-views [aria-pressed=true]{background:var(--text);color:var(--panel);font-weight:700}
-.progress-graph-periods{margin:0 0 14px;gap:6px}
-.progress-chart-axis{display:block;font-size:var(--type-meta);color:var(--muted);margin-bottom:4px}
-#xpChart{min-height:260px}
-.progress-links{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0 0;font-size:var(--type-ui)}
-.progress-details{padding:16px 20px;margin-bottom:18px}
-.progress-details>summary{font-weight:700;min-height:36px;cursor:pointer}
-.progress-details p{font-size:var(--type-ui);max-width:850px}
-.progress-list-controls{display:flex;align-items:end;gap:16px;flex-wrap:wrap;margin:14px 0}
-.progress-list-controls>label:first-child{width:200px}
-.progress-unchanged{display:flex;align-items:center;gap:8px;min-height:44px;font-size:var(--type-ui)}
-.progress-coverage-list{list-style:none;padding:0;margin:18px 0;display:grid;gap:12px}
-.progress-coverage-list li{display:grid;gap:3px;font-size:var(--type-ui)}
-.progress-coverage-list li span{font-size:var(--type-meta);color:var(--muted)}
-.progress-no-gains{white-space:normal!important;text-align:left!important;color:var(--muted)}
-.progress-metrics button:focus-visible,.progress-views button:focus-visible,.progress-table .metric-link:focus-visible{outline:2px solid var(--text);outline-offset:2px}
-html[data-theme=osrs] body[data-page=progress] main .progress-player-name{color:color-mix(in srgb,var(--pc) 55%,#241b10)!important}
-html[data-theme=osrs] body[data-page=progress] main .progress-positive{color:#326213!important;background:#60843812}
-html[data-theme=osrs] body[data-page=progress] main .progress-table thead th{background:#bda779}
-html[data-theme=osrs] body[data-page=progress] main .progress-table .metric-link{background:transparent;color:#263713;border:0}
-html[data-theme=osrs] body[data-page=progress] main .progress-table .metric-link[aria-pressed=true]{background:transparent;color:#263713}
-html[data-theme=osrs] body main .progress-metrics button{background:#302a20;color:#eee2c7;border-color:#82704e}
-html[data-theme=osrs] body main .progress-metrics button[aria-pressed=true]{border-color:#d0ad61;background:#4a3a24}
-html[data-theme=osrs] body main .progress-views button{background:#302a20;color:#eee2c7;border:1px solid #82704e}
-@media(max-width:700px){.progress-controls{grid-template-columns:minmax(0,1fr);gap:12px}.progress-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.progress-chart-card{padding:14px 10px}.progress-chart-head{display:grid}.progress-views{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));justify-self:stretch}.progress-summary>b{font-size:24px}.progress-details{padding:14px 12px}.progress-value-col{width:125px}.progress-rank-col{width:30px}body[data-page=progress] main .progress-table th,body[data-page=progress] main .progress-table td{padding:10px 7px}.progress-player-name{font-size:14px}.progress-player-table .records-gain b{font-size:16px}.progress-observed{font-size:10px;line-height:1.4}.progress-rank{font-size:13px}.progress-list-controls{gap:10px}.progress-list-controls>label:first-child{width:100%}.progress-intro .v21-member-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:360px){.progress-value-col{width:118px}.progress-player-table .records-gain b{font-size:14px}.progress-player-name{font-size:13px}.progress-skill-table .skill-icon{display:none}.progress-metrics button{padding:8px;gap:6px;font-size:13px}}
-
-.progress-views button[hidden]{display:none}
+body[data-page=progress] main .progress-table :is(th,td){padding:10px 7px;text-align:left;vertical-align:middle;white-space:normal;border-bottom:1px solid var(--edge);background:transparent}
+body[data-page=progress] main .progress-table thead th{font-size:11px;background:var(--panel2)}
+body[data-page=progress] main .progress-table :is(th,td):last-child{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.progress-rank-col{width:28px}.progress-value-col{width:115px}.progress-rank{color:var(--muted);font-size:12px}
+.progress-player-name{display:block;color:var(--pc);font-size:14px;font-weight:700}.progress-observed{display:block;color:var(--muted);font-size:10px;font-weight:400;margin-top:3px}
+.progress-player-table .records-gain b{font-size:17px}
+.progress-chart-card{min-width:0}.progress-chart-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between}
+html body[data-page=progress] main .progress-chart-head h4{margin:0;font-size:15px!important}
+.progress-views{display:flex;gap:4px}
+html body[data-page=progress] main .progress-views [aria-pressed=true]{background:var(--text);color:var(--panel)}
+.progress-chart-axis{display:block;font-size:11px;color:var(--muted);margin:8px 0}
+.progress-chart-card .chart{min-height:225px;padding:0;border:0;background:transparent;box-shadow:none;overflow:hidden}
+.progress-chart-card svg{width:100%;height:auto;display:block}
+html body[data-page=progress] main #progressChartNote{font-size:11px;color:var(--muted);margin:7px 0 0}
+.progress-links{display:flex;flex-wrap:wrap;gap:20px;margin:14px 0 8px;font-size:13px}
+.progress-coverage{border-top:1px solid var(--edge);padding-top:6px}.progress-coverage>summary{min-height:36px;padding:7px 0;cursor:pointer;font-size:12px;font-weight:700}
+html body[data-page=progress] main .progress-coverage :is(p,li){font-size:12px;line-height:1.5}
+.progress-coverage-list{list-style:none;padding:0;display:grid;gap:5px}.progress-coverage-list li{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px}
+html body[data-page=progress] :is(button,input,select,summary):focus-visible{outline:2px solid var(--text);outline-offset:2px}
+html[data-theme=osrs] body[data-page=progress] main .progress-type-card{background:#30291e;color:#f2e6ca;border-color:#80704e;box-shadow:inset 0 0 0 2px #17130e}
+html[data-theme=osrs] body[data-page=progress] main .progress-type-card small{color:#d0c4a7}
+html[data-theme=osrs] body[data-page=progress] main .progress-type-card[aria-pressed=true]{background:#463a25;border-color:#b39552;box-shadow:inset 0 0 0 2px #17130e,inset 0 -3px #c6a14d}
+html[data-theme=osrs] body[data-page=progress] main .progress-metric-card{background:#dcc998;color:#302311;border-color:#9e8551;box-shadow:inset 0 1px #f4e3bc}
+html[data-theme=osrs] body[data-page=progress] main .progress-positive{color:#315b16}
+html[data-theme=osrs] body[data-page=progress] main .progress-player-name{color:#3e3020;border-left:3px solid var(--pc);padding-left:6px}
+html[data-theme=osrs] body[data-page=progress] main .progress-dialog{background:#c7b17d url('../img/osrs-theme/backdrop_745.gif') center/100% auto}
+@media(max-width:1150px){.progress-metrics{grid-template-columns:repeat(8,minmax(0,1fr))}.progress-metric-name{font-size:11px}html body[data-page=progress] main .progress-metric-card{grid-template-columns:21px minmax(0,1fr);column-gap:4px;padding-inline:5px}.progress-metric-icon{width:21px}.progress-metric-icon img{max-width:21px}}
+@media(max-width:900px){.progress-metrics{grid-template-columns:repeat(6,minmax(0,1fr))}.progress-detail-grid{grid-template-columns:1fr}.progress-chart-card .chart{min-height:0}.progress-type-card small{display:none}}
+@media(max-width:700px){
+ html body[data-page=progress] .site-top>.wrap{width:calc(100% - 24px)!important}.mast-wordmark h1{max-width:150px}html body[data-page=progress] .mast-wordmark h1{font-size:18px}
+ html body[data-page=progress] .main-nav>.nav-inner{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-areas:"overview overview overview overview" "logs levels records other";gap:5px;padding:5px 0}
+ html body[data-page=progress] .nav-inner>.nav-link{grid-area:overview;min-height:32px;padding:3px 8px}html body[data-page=progress] .nav-trigger{min-height:44px;padding:4px;font-size:11px;gap:2px;flex-direction:row}.nav-trigger .nav-rune{display:none}
+ html body[data-page=progress] main.wrap{padding:14px 12px;margin-top:20px}.progress-page-head{gap:8px}.progress-snapshots summary{font-size:11px}
+ html body[data-page=progress] main .progress-page-head h2{font-size:23px!important}.progress-page-head .records-logo{width:24px;height:24px}.progress-page-head p{max-width:210px}
+ .progress-types{gap:5px}html body[data-page=progress] main .progress-type-card{padding:7px 5px;gap:5px;flex-direction:column;justify-content:center;min-height:58px}.progress-type-card>img{width:23px;height:23px}.progress-type-card b{font-size:11px;white-space:nowrap}
+ .progress-window-row{align-items:start;gap:7px;flex-direction:column}.progress-window-row>span{display:none}html body[data-page=progress] main .records-periods{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));width:100%;gap:4px}html body[data-page=progress] main .records-periods button{padding:5px 2px;min-width:0;min-height:44px;font-size:10px}
+ html body[data-page=progress] main #statsMemberPicker .v21-member-list label{min-height:40px;padding:5px 7px!important;font-size:11px}
+ .progress-members{align-items:start}.progress-grid-head{flex-wrap:wrap}html body[data-page=progress] main #progressGridHeading{flex-basis:100%;margin-top:2px}.progress-search{flex:1;width:auto}.progress-sort{width:125px}.progress-search input,.progress-sort select{min-height:44px;font-size:13px}
+ .progress-metrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}html body[data-page=progress] main .progress-metric-card{min-height:63px;padding:6px;grid-template-columns:22px minmax(0,1fr);column-gap:5px}.progress-metric-name{font-size:11px}.progress-metric-gain{font-size:13px}
+ .progress-dialog{width:calc(100% - 16px);max-height:calc(100dvh - 20px)}.progress-dialog-shell{padding:14px}.progress-detail-head{gap:6px}html body[data-page=progress] main .progress-detail-head h3{font-size:17px!important}.progress-detail-head .skill-icon{display:none}
+ .progress-detail-grid{gap:18px}.progress-value-col{width:105px}.progress-summary>b{font-size:24px}.progress-player-table .records-gain b{font-size:16px}.progress-observed{font-size:9px}.progress-links{gap:14px}
+}
+@media(prefers-reduced-motion:reduce){.progress-metric-card:hover{filter:none}}

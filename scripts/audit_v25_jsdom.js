@@ -49,6 +49,9 @@ async function openPage(path, { selection, templeResponse, templeDocument, womRe
     pretendToBeVisual: true,
     virtualConsole,
     beforeParse(window) {
+      // jsdom does not implement the browser's native dialog lifecycle.
+      if(!window.HTMLDialogElement.prototype.showModal)window.HTMLDialogElement.prototype.showModal=function(){this.open=true;this.querySelector('[autofocus]')?.focus()};
+      if(!window.HTMLDialogElement.prototype.close)window.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new window.Event('close'))};
       for(const [key,value] of Object.entries(localState))window.localStorage.setItem(key,typeof value==='string'?value:JSON.stringify(value));
       // Real deferred scripts execute while readyState is interactive, before DOMContentLoaded.
       if(deferredReadyState){const get=Object.getOwnPropertyDescriptor(window.Document.prototype,'readyState').get;Object.defineProperty(window.document,'readyState',{get(){const value=get.call(this);return value==='loading'?'interactive':value}})}
@@ -258,8 +261,7 @@ async function testSharedSelectionEverywhere() {
     if (page === 'index.html') {
       await waitFor(() => document.querySelectorAll('#standingTable thead th').length === 3, 'selected overview table');
     } else if (page === 'progress.html') {
-      document.querySelector('#progressMetric').value='overall';
-      document.querySelector('#progressMetric').dispatchEvent(new dom.window.Event('change'));
+      document.querySelector('[data-progress-metric="overall"]').click();
       await waitFor(() => document.querySelectorAll('[data-progress-player]').length === selection.length, 'selected progress comparison');
     } else if (page === 'history.html') {
       await waitFor(() => document.querySelectorAll('#historyCoverage .kpi').length === 2, 'selected history coverage');

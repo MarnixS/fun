@@ -38,7 +38,7 @@ function assertLinks(d,selector,label){const cells=[...d.querySelectorAll(select
   if(page==='history.html'){for(const el of d.querySelectorAll('.era-details details'))el.open=true;assert(d.querySelector('.era-details [data-v21-skill]'));assert(d.querySelector('.era-details [data-v21-boss]'))}
   if(page==='chronicle.html'){assertLinks(d,'.chronicle-event[data-event-type="drop"]','Chronicle drops');assert(d.querySelector('.chronicle-event[data-event-type="level"] [data-v21-skill]'));for(const kind of ['drops','milestones','all']){d.querySelector(`[data-chrono-filter="${kind}"]`).click();assert(d.querySelectorAll('.chronicle-event').length>0);assert([...d.querySelectorAll('.chronicle-event')].every(e=>kind==='drops'?e.dataset.eventType==='drop':kind==='milestones'?e.dataset.eventType!=='drop':true))}}
   if(page==='progress.html'){
-   d.querySelector('#progressMetric').value='attack';d.querySelector('#progressMetric').dispatchEvent(new w.Event('change'));assert.equal(d.querySelector('#progressMetric').value,'attack');assert(d.querySelector('#progressHeading').textContent.includes('Attack XP gained'));
+   d.querySelector('[data-progress-metric="attack"]').click();assert(d.querySelector('#progressDetail').open);assert(d.querySelector('#progressHeading').textContent.includes('Attack XP gained'));
    d.querySelector('[data-progress-view="bars"]').click();assert(d.querySelector('#xpChart svg rect'));d.querySelector('[data-progress-view="timeline"]').click();assert(d.querySelector('#xpChart svg[data-y-min="0"]'));
   }
   const seen=new Set();for(const button of [...d.querySelectorAll(graphSelector)].filter(visible)){

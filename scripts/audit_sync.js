@@ -24,7 +24,7 @@ async function run(){
  for(const page of ['index.html','hiscores.html','progress.html','gim.html','history.html','time-machine.html','chronicle.html']){
   console.log('sync regression',page);
   const {dom,errors}=await openPage(page);const win=dom.window,d=win.document;
-  if(page==='progress.html'){d.querySelector('#progressMetric').value='overall';d.querySelector('#progressMetric').dispatchEvent(new win.Event('change'));}
+  if(page==='progress.html'){d.querySelector('[data-progress-metric="overall"]').click();}
   if(page==='time-machine.html'){d.querySelector('#timeDate').value=w.profiles.dikste.latestSnapshot.createdAt.slice(0,10);click(win,d.querySelector('#timeGo'));await waitFor(()=>d.querySelector('#timeStanding tbody'),'time initial');}
   if(page==='hiscores.html'){click(win,d.querySelector('[data-v21-skill="attack"]'));await waitFor(()=>d.querySelector('#v21ModalChart svg'),'modal');click(win,d.querySelector('[data-v21-modal-view="bars"]'));}
   send(win,W,structuredClone(w));send(win,T,structuredClone(t));

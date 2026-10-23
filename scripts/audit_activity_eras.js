@@ -20,17 +20,17 @@ const assert=require('node:assert/strict'),{openPage,waitFor}=require('./audit_v
  for(const page of ['progress.html','hiscores.html']){
  const {dom,errors}=await openPage(page,{fetchLog:requests}),w=dom.window,d=w.document;
  if(page==='progress.html'){
-  const select=d.querySelector('#progressMetric');assert.equal(select.value,'');assert(d.querySelector('#progressResults').hidden);
+  assert(!d.querySelector('#progressDetail').open);
   d.querySelector('#progressPeriods [data-progress-window="365"]').click();
-  select.value='attack';select.dispatchEvent(new w.Event('change'));d.querySelector('[data-progress-view="share"]').click();
+  d.querySelector('[data-progress-metric="attack"]').click();d.querySelector('[data-progress-view="share"]').click();
   const model=w.UGStatProgress.build(await w.UGV21.loadWom(),Array.from(w.UGV21.ALL_KEYS));
-  for(const option of [...select.options].filter(option=>option.value)){
-   select.value=option.value;select.dispatchEvent(new w.Event('change'));
-   const rows=model.compare('xp',option.value,365).rows.filter(row=>row.gain>0),total=rows.reduce((sum,row)=>sum+row.gain,0),svg=d.querySelector('#xpChart svg');
+  for(const metric of [...d.querySelectorAll('[data-progress-metric]')].map(button=>button.dataset.progressMetric)){
+   d.querySelector('#progressClose').click();d.querySelector(`[data-progress-metric="${metric}"]`).click();
+   const rows=model.compare('xp',metric,365).rows.filter(row=>row.gain>0),total=rows.reduce((sum,row)=>sum+row.gain,0),svg=d.querySelector('#xpChart svg');
    assert.equal(d.querySelectorAll('#gainCards [data-progress-player]').length,5);assert(!d.querySelector('#xpChart').innerHTML.includes('NaN'));
    if(total){assert(svg);for(const row of rows)assert(svg.getAttribute('aria-label').includes(w.UGV21.player(row.key).name+': '+(100*row.gain/total).toFixed(1)+' percent'))}else assert(!svg);
   }
-  select.value='overall';select.dispatchEvent(new w.Event('change'));
+  d.querySelector('#progressClose').click();d.querySelector('[data-progress-metric="overall"]').click();
   const picker=d.querySelector('#statsMemberPicker');for(const key of ['big dog aura','lijpste','poep aura','lompste'])picker.querySelector(`input[value="${key}"]`).click();
   assert.equal(d.querySelectorAll('#gainCards [data-progress-player]').length,1);assert(d.querySelector('#xpChart svg').getAttribute('aria-label').includes('Dikste: 100.0 percent'));
   d.querySelector('[data-progress-view="timeline"]').click();assert(d.querySelector('#xpChart svg[data-y-min="0"]'));assert.equal(errors.length,0,errors.join('; '));continue;

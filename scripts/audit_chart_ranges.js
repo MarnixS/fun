@@ -2,8 +2,8 @@ const assert=require('node:assert/strict');
 const {openPage,waitFor}=require('./audit_v25_jsdom');
 async function run(){
  const {dom,errors}=await openPage('progress.html');const w=dom.window,d=w.document,C=w.UGV21Charts;
- d.querySelector('#progressMetric').value='overall';d.querySelector('#progressMetric').dispatchEvent(new w.Event('change'));
- await waitFor(()=>d.querySelector('#skillGainTable tbody tr'),'skill gains');
+ d.querySelector('[data-progress-metric="overall"]').click();
+ await waitFor(()=>d.querySelector('#gainCards tbody tr'),'player gains');
  const fixture={profiles:{p:{latestSnapshot:{createdAt:'2026-09-14T12:00:00Z',data:{}}}},snapshots:{p:[{createdAt:'2025-01-01T12:00:00Z',data:{}},{createdAt:'2026-09-13T12:00:00Z',data:{}}]}};
  assert.equal(C.windowSnaps(fixture,'p',7).length,2,'older boundary snapshot is excluded');
  for(const days of [7,30,90,180,365]){

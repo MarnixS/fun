@@ -5,6 +5,7 @@ const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
 const audit=process.argv[2];if(!audit||!/^audit_[\w]+\.js$/.test(audit))throw Error('Pass an audit_*.js filename');
 const root=path.resolve('docs');
 const server=http.createServer((req,res)=>{
+ res.setHeader('Connection','close');
  const filename=path.resolve(root,'.'+new URL(req.url,'http://localhost').pathname);
  if(!filename.startsWith(root+path.sep)){res.statusCode=403;res.end();return}
  try{res.setHeader('Content-Type',({'.js':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp'})[path.extname(filename)]||'text/html');res.end(fs.readFileSync(filename))}catch{res.statusCode=404;res.end()}
