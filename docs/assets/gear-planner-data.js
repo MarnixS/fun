@@ -39,7 +39,7 @@ recipe('Burning claws',{'Burning claw':2},{requirements:{attack:60}});
 recipe('Venator bow',{'Venator shard':5},{twoHanded:true,requirements:{ranged:80},note:'Ancient essence charges required.'});
 recipe('Voidwaker',{'Voidwaker blade':1,'Voidwaker gem':1,'Voidwaker hilt':1},{requirements:{attack:75}});
 for(const god of ['Bandos','Armadyl','Saradomin','Zamorak','Ancient'])recipe(god+' godsword',{[god+' hilt']:1,'Godsword shard 1':1,'Godsword shard 2':1,'Godsword shard 3':1},{twoHanded:true,requirements:{attack:75}});
-recipe('Zaryte crossbow',{'Armadyl crossbow':1,'Nihil horn':1},{requirements:{ranged:80},note:'95 Fletching and 250 nihil shards also required.'});
+recipe('Zaryte crossbow',{'Armadyl crossbow':1,'Nihil horn':1},{requirements:{ranged:80},note:'250 nihil shards also required; attachment has no skill requirement.'});
 for(const [name,base] of [['Spectral spirit shield','Spectral sigil'],['Arcane spirit shield','Arcane sigil'],['Elysian spirit shield','Elysian sigil']])recipe(name,{[base]:1,'Blessed spirit shield':1});
 recipe('Elidinis\' ward (f)',{'Elidinis\' ward':1,'Arcane spirit shield':1},{personal:true,note:'90 Prayer, 90 Smithing and 10,000 soul runes required.'});
 recipe('Dragonfire shield',{'Draconic visage':1});recipe('Dragonfire ward',{'Skeletal visage':1});recipe('Ancient wyvern shield',{'Wyvern visage':1});
@@ -69,9 +69,9 @@ for(const name of ['Soulreaper axe','Osmumten\'s fang','Scythe of vitur','Abyssa
  if(!items[name])add(name);
  if(['Soulreaper axe','Abyssal bludgeon','Dual macuahuitl','Dragon claws','Burning claws','Elder maul','Eclipse atlatl'].includes(name))items[name].twoHanded=true;
 }
-for(const [part,source] of [['head','Executioner\'s axe head'],['icon','Duke\'s sacred icon'],['blood','Blood quartz'],['lure','Leviathan\'s lure']]){if(part!=='blood')add(source,{personal:true})}
+for(const [part,source] of [['head','Executioner\'s axe head'],['icon','Eye of the Duke'],['blood','Blood quartz'],['lure','Leviathan\'s lure']]){if(part!=='blood')add(source,{personal:true})}
 add('Siren\'s staff',{personal:true});
-recipe('Soulreaper axe',{'Executioner\'s axe head':1,'Duke\'s sacred icon':1,'Siren\'s staff':1,'Leviathan\'s lure':1},{personal:true,twoHanded:true,requirements:{attack:80}});
+recipe('Soulreaper axe',{'Executioner\'s axe head':1,'Eye of the Duke':1,'Siren\'s staff':1,'Leviathan\'s lure':1},{personal:true,twoHanded:true,requirements:{attack:80}});
 const requirements={"Tumeken's shadow":{magic:85},'Scythe of vitur':{attack:90,strength:90},"Osmumten's fang":{attack:82},'Ghrazi rapier':{attack:80},'Sanguinesti staff':{magic:82},'Trident of the seas':{magic:75},'Eye of Ayak':{magic:83},'Armadyl crossbow':{ranged:70},'Dragon hunter crossbow':{ranged:70},'Dragon crossbow':{ranged:64},'Rune crossbow':{ranged:61},'Abyssal whip':{attack:70},'Dragon scimitar':{attack:60},'Dragon warhammer':{strength:60},'Elder maul':{attack:75,strength:75},'Dragon claws':{attack:60},'Zaryte vambraces':{ranged:80,defence:45},'Avernic treads':{attack:80,defence:80},'Confliction gauntlets':{magic:80,defence:80},'Sanguinesti staff':{magic:82}};
 for(const [name,value] of Object.entries(requirements))items[name].requirements=value;
 for(const item of Object.values(items)){
@@ -197,6 +197,9 @@ for(const item of Object.values(items)){
  else if(/Webweaver|Craw|Ursine|Viggora|Accursed|Thammaron/.test(item.name))item.supplies='Revenant ether; Wilderness passive only applies inside the Wilderness.';
 }
 for(const encounter of encounters)for(const role of [...encounter.roles,...encounter.switches||[]])for(const route of role.routes)for(const name of route.weapons)if(!items[name])add(name);
+for(const name of ['Zamorakian spear','Dragon spear','Magic shortbow','Magic shortbow (i)','Bone shortbow']){if(!items[name])add(name);items[name].twoHanded=true;}
+items['Purging staff'].personal=true;items['Purging staff'].requirements={magic:77,attack:50};items['Purging staff'].note='74 Crafting, 55 Smithing, an iron bar and While Guthix Sleeps/Duradel’s notes required. Use demonbane with Mark of Darkness.';
+items['Soulreaper axe'].personal=false;items['Soulreaper axe'].sameCrafter=true;items['Soulreaper axe'].requirements={attack:80,strength:80};items['Soulreaper axe'].note='All four personal pieces must belong to the same crafter; 75 Magic and 2,000 blood runes also required. The finished axe can be shared.';
 // Every recipe ingredient and every selectable gear item is a first-class stock row.
 for(const item of Object.values(items))for(const name of Object.keys(item.recipe||{}))if(!items[name])add(name);
 return{reviewed,wiki,items,gear,weapons,encounters,aliases,normalise:s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,'')};

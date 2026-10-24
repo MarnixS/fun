@@ -44,7 +44,10 @@ function spend(s,name,count,owner,player,stack=new Set(),existing=false,otherPer
   s.events.push({type:'convert',name,count:plan[0],player,donors:plan[1].take});return true;
  }
  if(!item.recipe||!s.settings.craft&&!existing)return false;
- for(const [ingredient,amount] of Object.entries(item.recipe))if(!spend(s,ingredient,amount*missing,D.items[ingredient]?.personal?owner:null,player,next,existing,!personal&&!!D.items[ingredient]?.personal))return false;
+ if(item.sameCrafter){
+  let crafted=false;for(const crafter of s.players){const trial=clone(s);let valid=true;for(const [ingredient,amount] of Object.entries(item.recipe))if(!spend(trial,ingredient,amount*missing,D.items[ingredient]?.personal?crafter.key:null,player,next,existing,false)){valid=false;break}if(valid){adopt(s,trial);crafted=true;break}}
+  if(!crafted)return false;
+ }else for(const [ingredient,amount] of Object.entries(item.recipe))if(!spend(s,ingredient,amount*missing,D.items[ingredient]?.personal?owner:null,player,next,existing,!personal&&!!D.items[ingredient]?.personal))return false;
  s.events.push({type:'craft',name,count:missing,player});return true;
 }
 function stock(model,players,settings={}){
