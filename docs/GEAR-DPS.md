@@ -51,15 +51,23 @@ Inquisitor's plateskirt's +2 Strength, +12 crush and +2 Prayer therefore remain
 visible to allocation; a regression test verifies that it can equip the stronger
 account while Blood Moon tassets pass down to a weaker account.
 
-Players receive stock in the displayed priority. Main setups precede phase
-switches and specials. A held item may be reused by the same player across
+Logged owners get first use of their gear and crafting materials, including
+phase switches. Spare copies and unused owned items can then be borrowed in the
+displayed order. The initial owner pass reserves one wearable copy per selected
+owner and protects ingredient stock; personal components cannot be assembled
+for a teammate before their selected owner has first refusal. Loan improvements
+rebuild a complete player’s reservations while retaining all other accounts’
+physical equipment. Raid party scaling stays fixed during this pass. A held item may be reused by the same player across
 phases; different simultaneous players need separate physical copies. Recipes
 and dismantles use the same stock engine as the supply ledger. Each candidate
 rebuilds its reservations, so replacing armour releases its previous ingredients.
 
 ## Slot editor
 
-All eleven OSRS equipment slots are selectable and searchable. The picker uses
+All eleven OSRS equipment slots are selectable and searchable. The compact
+icon panel uses the supplied OSRS equipment image and its slot coordinates,
+without exposing unrelated game tabs. Slot names and availability remain in
+accessible labels, tooltips and the equipment details list. The picker uses
 the complete upstream equipment catalogue and shows explicit availability text:
 
 - **Green:** available after reserving other players' gear, including a possible
@@ -78,6 +86,26 @@ Manual choices are stored by encounter, player, phase and slot. A slot, player,
 or encounter can return to DPS defaults without clearing bank corrections.
 The member filter uses the website's existing shared selection and banner state.
 Deselected members still contribute tradeable stock.
+
+## Non-log rewards
+
+Add non-log gear opens account-specific stock confirmation. MA2 and Mage Arena
+II aliases resolve to the same imbued god cape row; its Saradomin, Guthix and
+Zamorak variants do not create extra copies. The cape requires 75 Magic. An
+explicit personal quantity makes it available only to that account. Shortcuts
+also cover Barrows gloves, dragon defender and Ava’s assembler. Blank restores
+the unknown log estimate and zero excludes the reward. Optional baseline gear
+is still a separate, visible assumption.
+
+## DPS evidence
+
+DPS is expected damage per attack divided by expected ticks × 0.6 seconds.
+Expected damage includes accuracy and the full hit distribution; a maximum hit
+alone is insufficient. Results expose this mean, the actual expected interval,
+maximum attack damage and accuracy. Blood Moon’s speed proc changes the expected
+interval, rather than always showing the weapon’s base speed. Equipment-name
+comparisons are case-insensitive so capitalisation changes in the Wiki data do
+not silently disable supported set effects.
 
 ## Verification and maintenance
 

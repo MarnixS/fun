@@ -72,6 +72,10 @@ export default class BaseCalc {
   // Array of the names of all equipped items (for quick checks)
   protected allEquippedItems: string[] = [];
 
+  // United Gimps compatibility patch: Wiki display-name capitalisation can
+  // change independently of calculator checks (for example Blood Moon armour).
+  private allEquippedItemKeys = new Set<string>();
+
   userIssues: UserIssue[] = [];
 
   constructor(player: Player, monster: Monster, opts: CalcOpts = {}) {
@@ -91,6 +95,7 @@ export default class BaseCalc {
     if (!this.opts.noInit) {
       this.canonicalizeEquipment();
       this.allEquippedItems = Object.values(this.player.equipment).filter((v) => v !== null).flat(1).map((eq: EquipmentPiece | null) => eq?.name || '');
+      this.allEquippedItemKeys = new Set(this.allEquippedItems.map((name) => name.toLowerCase()));
       this.sanitizeInputs();
     }
   }
@@ -213,9 +218,9 @@ export default class BaseCalc {
    */
   protected wearing(item: string | string[]): boolean {
     if (Array.isArray(item)) {
-      return (item as string[]).some((i) => this.allEquippedItems.includes(i));
+      return (item as string[]).some((i) => this.allEquippedItemKeys.has(i.toLowerCase()));
     }
-    return this.allEquippedItems.includes(item);
+    return this.allEquippedItemKeys.has(item.toLowerCase());
   }
 
   /**
@@ -223,7 +228,7 @@ export default class BaseCalc {
    * @param items - array of item names
    */
   protected wearingAll(items: string[]) {
-    return items.every((i) => this.allEquippedItems.includes(i));
+    return items.every((i) => this.allEquippedItemKeys.has(i.toLowerCase()));
   }
 
   /**

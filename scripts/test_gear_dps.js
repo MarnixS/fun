@@ -6,6 +6,9 @@ function calc(weapon,style='melee',id='general_graardor',extra={}){return E.calc
 // Reference basic rolls: upstream src/tests/calc/BasicRolls.test.ts.
 let r=calc('Bow of faerdhinen','ranged');assert.equal(r.status,'ok');assert.equal(r.maxHit,28);assert.equal(r.maxAttackRoll,20544);assert.equal(r.attackTicks,4);assert.equal(r.ammo,'','crystal bow does not invent external arrows');
 r=calc('Trident of the seas','magic');assert.equal(r.maxHit,28);assert.equal(r.maxAttackRoll,8690);assert.equal(r.spell,null,'powered staves use their built-in attack');
+assert(Math.abs(r.dps-r.expectedDamage/(r.attackTicks*.6))<1e-12,'reported mean attack damage and interval reproduce displayed DPS');
+const moon=E.calculateSet({encounter:encounter('general_graardor'),row:{player:{name:'Blood Moon'},sets:[{label:'Main setup',style:'melee',slots:Object.fromEntries(Object.entries({weapon:'Dual macuahuitl',head:'Blood moon helm',body:'Blood moon chestplate',legs:'Blood moon tassets'}).map(([slot,name])=>[slot,{name}]))}]},levels});
+assert(moon.attackTicks<moon.baseAttackTicks,'Blood Moon speed procs change the expected attack interval');assert(Math.abs(moon.attackTicks-(moon.baseAttackTicks-moon.accuracy/3-2*moon.accuracy**2/9))<1e-12);
 assert.equal(calc('Trident of the seas','magic','general_graardor',{levels:{...levels,magic:75}}).maxHit,20);
 const bare=calc('Abyssal whip');const buffed=calc('Abyssal whip','melee','general_graardor',{modifiers:{potion:'super',prayer:'best'}});assert(buffed.dps>bare.dps);assert(buffed.prayers.includes('Piety'));assert.equal(buffed.boosts.atk,19);assert.equal(buffed.boosts.str,19);
 r=calc('Abyssal whip','melee','general_graardor',{levels:{...levels,prayer:1},modifiers:{prayer:'piety'}});assert.deepEqual(r.prayers,[]);assert(r.notes.some(n=>n.includes('requires higher')));

@@ -20,6 +20,8 @@ const norm = (s: string) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 export const monsterKey = (m: any) => `${m.id}:${m.version || ''}:${m.name}`;
 const monsters = getMonsters();
+const monsterByKey = new Map(monsters.map(m=>[monsterKey(m),m]));
+const targetCache = new Map<string,any[]>();
 const groupNames: Record<string, string[]> = {
   barrows_chests: ['Ahrim the Blighted', 'Dharok the Wretched', 'Guthan the Infested', 'Karil the Tainted', 'Torag the Corrupted', 'Verac the Defiled'],
   dagannoth_kings: ['Dagannoth Supreme', 'Dagannoth Prime', 'Dagannoth Rex'],
@@ -80,16 +82,20 @@ export function raidRooms(e: any) { return raidRoomData[raid(e)] || []; }
 export function raidRoom(e: any, key: string) { return raidRooms(e).find(r=>r.key===key); }
 export function targets(e: any) {
   if (e.kind) return [];
+  if(targetCache.has(e.id))return targetCache.get(e.id)!;
   const names = raid(e) ? raidRooms(e).flatMap(r=>r.names) : groupNames[e.id] || [e.name];
-  return monsters.filter(m => names.some(n => norm(n) === norm(m.name))).filter(m => {
+  const keys=new Set(names.map(norm));
+  const result=monsters.filter(m => keys.has(norm(m.name))).filter(m => {
     if (raid(e) !== 'tob') return true;
     const version=m.version||'';
     if (/entry/i.test(version)||m.name==='Nylocas Prinkipas'&&!e.id.endsWith('hard_mode')) return false;
     return e.id.endsWith('hard_mode') ? !/normal|health/i.test(version) : !/hard/i.test(version);
   }).map(m => ({ key: monsterKey(m), id: m.id, name: m.name, version: m.version || '', label: m.name + (m.version ? ' · ' + m.version : '') }));
+  targetCache.set(e.id,result);return result;
 }
 export function roomTargets(e: any, key: string) {
   const room=raidRoom(e,key);
+  if(!room)return targets(e);
   return targets(e).filter(t=>!room||room.names.includes(t.name)).filter(t=>{
     if(!room||!t.name.startsWith('Nylocas')||t.name==='Nylocas Vasilias'||t.name==='Nylocas Prinkipas')return true;
     return room.key==='maiden'?/Maiden/i.test(t.version):room.key==='verzik'?/Verzik/i.test(t.version)||t.name==='Nylocas Athanatos':!/Verzik/i.test(t.version);
@@ -134,14 +140,21 @@ export function automaticTarget(e: any, set: any, choices = targets(e), roomKey=
 }
 
 const equipmentNames = new Map<string, EquipmentPiece[]>();
+const equipmentCache = new Map<string,EquipmentPiece|null>();
 for (const piece of availableEquipment) equipmentNames.set(norm(piece.name), [...(equipmentNames.get(norm(piece.name)) || []), piece]);
 export function equipment(name: string, id?: number) {
+  const cacheKey=name+'|'+(id||'');
+  if(equipmentCache.has(cacheKey))return copyPiece(equipmentCache.get(cacheKey));
   const key = norm((name === 'Imbued god cape' ? 'Imbued Saradomin cape' : name).replace(/ \(u\)$/, ''));
   const matches = equipmentNames.get(key) || [];
   const scored = matches.map(p => ({ p, score: (/Uncharged|Empty|Broken|Inactive|Degraded|^0$/i.test(p.version) ? -100 : 0) + (/Charged|Fully charged|Normal|New/i.test(p.version) ? 10 : /^\d+$/.test(p.version)?Number(p.version)/10:0) + (p.id === id ? 2 : 0) }));
   const found=scored.sort((a,b) => b.score-a.score)[0]?.p || availableEquipment.find(p => p.id === id);
-  return found?clone(getCanonicalItem(found)):null;
+  const canonical=found?getCanonicalItem(found):null;equipmentCache.set(cacheKey,canonical);return copyPiece(canonical);
 }
+// Calculator instances receive their own writable item variables and stats;
+// immutable catalogue data is looked up once, without JSON round-tripping.
+function copyPiece(piece:EquipmentPiece|null|undefined):EquipmentPiece|null{return piece?{...piece,bonuses:{...piece.bonuses},offensive:{...piece.offensive},defensive:{...piece.defensive},...(piece.itemVars?{itemVars:{...piece.itemVars}}:{})}:null;}
+function copyPlayer(p:Player,style:any):Player{return{...p,skills:{...p.skills},boosts:{...p.boosts},equipment:Object.fromEntries(Object.entries(p.equipment).map(([slot,piece])=>[slot,piece?{...piece,...(piece.itemVars?{itemVars:{...piece.itemVars}}:{})}:null])) as any,buffs:{...p.buffs,potions:[...p.buffs.potions]},prayers:[...p.prayers],bonuses:{...p.bonuses},offensive:{...p.offensive},defensive:{...p.defensive},spell:p.spell?{...p.spell}:null,style};}
 
 export const potionOptions = [
   ['none','No boosts'],['regular','Combat + ranging + magic'],['super','Super combat + ranging + magic'],
@@ -224,7 +237,7 @@ export function calculateSet(input: any): any {
   const choices = roomTargets(e,context.raidRoom), choice = context.target && context.target !== 'auto' ? choices.find(m=>m.key===context.target) : automaticTarget(e,set,choices,context.raidRoom);
   if (!choice) return {status:'unavailable',reason:'No verified monster data for this phase. Select a target phase above.'};
   if (choice.name==='Phantom Muspah'&&choice.version==='Shielded')return {status:'unavailable',reason:'Muspah’s prayer shield needs prayer damage. Normal HP DPS does not model sapphire bolts or Smite; use the crossbow switch.'};
-  const base = monsters.find(m=>monsterKey(m)===choice.key)!;
+  const base = monsterByKey.get(choice.key)!;
   const notes: string[] = [], skillValues = skillsFromLevels(levels);
   const party = context.partyLevels?.length ? context.partyLevels.map(skillsFromLevels) : [skillValues];
   const monster: Monster = { ...clone(base), inputs:{...clone(INITIAL_MONSTER_INPUTS),isFromCoxCm:e.id.endsWith('challenge_mode'),toaInvocationLevel:bounded(context.invocation,e.id.endsWith('expert')?350:150,0,600),toaPathLevel:bounded(context.pathLevel,0,0,6),partySize:bounded(context.partySize,row.partySize||1,1,100),partyMaxCombatLevel:Math.max(...party.map(calculateCombatLevel)),partyMaxHpLevel:Math.max(...party.map((s:any)=>s.hp)),partySumMiningLevel:party.reduce((n:number,s:any)=>n+s.mining,0),monsterCurrentHp:base.skills.hp,defenceReductions:{...clone(INITIAL_MONSTER_INPUTS.defenceReductions),...cleanReductions(context.reductions)}}};
@@ -265,7 +278,7 @@ export function calculateSet(input: any): any {
   if (set.style==='melee' && modifiers.style && modifiers.style!=='auto') styles=styles.filter(s=>s.type===modifiers.style);
   if (!styles.length) return {status:'unavailable',reason:'This weapon cannot use the selected attack style.'};
   const results = styles.map(style=>{
-    const player=clone(p);player.style=style;Object.assign(player,calculateEquipmentBonusesFromGear(player,monster));player.attackSpeed=calculateAttackSpeed(player,monster);
+    const player=copyPlayer(p,style);Object.assign(player,calculateEquipmentBonusesFromGear(player,monster));player.attackSpeed=calculateAttackSpeed(player,monster);
     const calc=new PlayerVsNPCCalc(player,monster,{loadoutName:row.player.name});
     return {calc,player,dps:calc.getDps()};
   }).sort((a,b)=>b.dps-a.dps);
@@ -277,7 +290,7 @@ export function calculateSet(input: any): any {
   if (ammo) notes.push('Ammo assumed: '+ammo+'.');
   if (p.spell) notes.push('Spell: '+p.spell.name+'.');
   if (!Number.isFinite(dps)) return {status:'unavailable',reason:'This combination is not supported by the combat engine.'};
-  return {status:'ok',dps,maxAttackRoll:calc.getMaxAttackRoll(),maxHit:calc.getDistribution().getMax(),accuracy:calc.getDisplayHitChance(),attackTicks:player.attackSpeed,target:choice.label,targetKey:choice.key,targetId:monster.id,hp:current.skills.hp,currentHp:monster.inputs.monsterCurrentHp,defence:current.skills.def,magic:current.skills.magic,defenceFloor:getDefenceFloor(undrained),baseDefence:undrained.skills.def,skills:player.skills,boosts:player.boosts,bonuses:player.bonuses,offensive:player.offensive,defensive:player.defensive,style:player.style,prayers:player.prayers.map(n=>PrayerMap[n].name),potions:p.buffs.potions.map(n=>PotionMap[n].name),spell:p.spell?.name||null,ammo,notes:[...new Set(notes)]};
+  return {status:'ok',dps,maxAttackRoll:calc.getMaxAttackRoll(),maxHit:calc.getDistribution().getMax(),accuracy:calc.getDisplayHitChance(),attackTicks:calc.getExpectedAttackSpeed(),baseAttackTicks:player.attackSpeed,expectedDamage:calc.getExpectedDamage(),target:choice.label,targetKey:choice.key,targetId:monster.id,hp:current.skills.hp,currentHp:monster.inputs.monsterCurrentHp,defence:current.skills.def,magic:current.skills.magic,defenceFloor:getDefenceFloor(undrained),baseDefence:undrained.skills.def,skills:player.skills,boosts:player.boosts,bonuses:player.bonuses,offensive:player.offensive,defensive:player.defensive,style:player.style,prayers:player.prayers.map(n=>PrayerMap[n].name),potions:p.buffs.potions.map(n=>PotionMap[n].name),spell:p.spell?.name||null,ammo,notes:[...new Set(notes)]};
 }
 function bounded(v:any,fallback:number,min:number,max:number) { return Number.isFinite(Number(v)) && v!==null && v!=='' ? Math.max(min,Math.min(max,Math.trunc(Number(v)))) : fallback; }
 export function cleanReductions(r:any={}) { return {vulnerability:r.curse==='vulnerability',accursed:r.curse==='accursed',elderMaul:bounded(r.elderMaul,0,0,20),dwh:bounded(r.dwh,0,0,20),arclight:bounded(r.arclight,0,0,20),emberlight:bounded(r.emberlight,0,0,20),bgs:bounded(r.bgs,0,0,2000),tonalztic:0,seercull:0,ayak:bounded(r.ayak,0,0,200)}; }

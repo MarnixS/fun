@@ -2,21 +2,24 @@
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require('./gear-planner-data'),require('./gear-planner-model'),require('./gear-dps-engine'));else root.UGGearLoadouts=factory(root.UGGearData,root.UGGearModel,root.UGWikiDps)})(typeof window==='object'?window:this,function(D,M,E){
 'use strict';
 const catalogue=E.catalog(D),slots=['head','cape','neck','ammo','weapon','body','offhand','legs','hands','feet','ring'],armour=['head','body','legs','neck','cape','hands','feet','ring','offhand'];
+const materialNames=new Set(Object.values(D.items).flatMap(item=>[...Object.keys(item.recipe||{}),...(item.conversions||[]).map(donor=>donor.item)]));
+for(const name of materialNames)if(D.items[name])D.items[name].craftingMaterial=true;
+for(const item of catalogue)D.items[item.name].equipmentSlot=item.slot;
 const bySlot=new Map(slots.map(slot=>[slot,catalogue.filter(item=>item.slot===slot)]));
 const empty=()=>({name:null,source:'missing',options:[]});
 function modifiers(settings,key){const c=settings.combat||{};return{potion:'none',prayer:'none',ammo:'auto',spell:'auto',style:'auto',...c.defaults,...Object.fromEntries(Object.entries(c.players?.[key]||{}).filter(([,v])=>v!=='inherit'))}}
-function context(settings){return{...settings.combat?.context,partySize:settings.combat?.context?.partySize||settings.selected?.length||1,partyLevels:(settings.selected||[]).map(key=>settings.levels?.[key]||{}),onTask:settings.onTask}}
+function context(settings){return{...settings.combat?.context,partySize:settings.combat?.context?.partySize||settings.selected?.length||1,partyLevels:settings.combat?.context?.partyLevels||(settings.selected||[]).map(key=>settings.levels?.[key]||{}),onTask:settings.onTask}}
 function scoreSettings(settings){return JSON.stringify([settings.levels,settings.combat,settings.onTask])}
 function available(s,name,key){return s.held.get(key)?.has(name)||((D.items[name]?.personal?s.personal.get(key)?.get(name):s.shared.get(name))||0)>0||s.assumed.has(key+'|'+name)||D.items[name]?.recipe}
 function options(s,slot,key,style,preset=[]){
  const names=[...new Set([...preset,...(bySlot.get(slot)||[]).map(i=>i.name)])];
- return names.filter(name=>D.items[name]&&available(s,name,key)&&M.eligible(s,name,key)&&(slot!=='weapon'||E.weaponStyle(name)===style)).filter(name=>!!M.equip(M.clone(s),name,key));
+ return names.filter(name=>D.items[name]&&available(s,name,key)&&M.eligible(s,name,key)&&(slot!=='weapon'||E.weaponStyle(name)===style)).filter(name=>!!M.probe(s,name,key));
 }
 function inventoryStatus(s,initial,name,key){
  if(!name)return{status:'empty',label:'Empty slot'};
- if(M.equip(M.clone(s),name,key))return{status:'stock',label:'In stock'};
+ if(M.probe(s,name,key))return{status:'stock',label:'In stock'};
  const owned=(s.totals.get(name)||0)>0||s.held.get(key)?.has(name)||initial?.shared.get(name)>0||initial?.personal.get(key)?.get(name)>0;
- if(owned||initial&&M.equip(M.clone({...initial,settings:{...initial.settings,respectLevels:false}}),name,key))return{status:'allocated',label:M.eligible(s,name,key)?'Acquired · out of stock':'Acquired · level/owner restriction'};
+ if(owned||initial&&M.probe({...initial,settings:{...initial.settings,respectLevels:false}},name,key))return{status:'allocated',label:M.eligible(s,name,key)?'Acquired · out of stock':'Acquired · level/owner restriction'};
  return{status:'unavailable',label:'Not available'};
 }
 function build(base,key,names,locked={}){
@@ -127,7 +130,7 @@ function optimise(base,key,player,e,role,main,settings,locked,cache){
   }
   if(better(currentResult,best))best=currentResult;
  }
- if(!best){const set={label:role.label,style:styles[0]||'melee',slots:Object.fromEntries(slots.map(k=>[k,empty()]))};return{state:base,set,dps:{status:'unavailable',reason:'No compatible equipment is available.'}}}
+ if(!best){const set={label:role.label,style:styles[0]||'melee',slots:Object.fromEntries(slots.map(k=>[k,empty()])),dps:{status:'unavailable',reason:'No compatible equipment is available.'}};return{state:base,set,dps:set.dps}}
  best.set.dps=best.dps;
  const ammoName=best.dps.ammo||(best.set.style==='ranged'&&best.set.slots.weapon?.name?E.ammunitionFor(best.set.slots.weapon.name,modifiers(settings,key).ammo||'auto',role.label):'');
  if(ammoName&&!best.set.slots.ammo?.name)best.set.slots.ammo={name:ammoName,id:E.equipment(ammoName)?.id,source:'assumed',ammoAssumption:true,options:[]};
@@ -135,7 +138,7 @@ function optimise(base,key,player,e,role,main,settings,locked,cache){
  return best;
 }
 function ledger(s){const out=[];for(const [name,start]of s.input.shared){const used=s.spent.get('g|'+name)||0,reserved=s.reserved.get('g|'+name)||0,left=s.shared.get(name)||0;if(start||used||left)out.push({name,owner:null,start,used:used-reserved,reserved,left})}for(const p of s.players)for(const [name,start]of s.input.personal.get(p.key)||[]){const used=s.spent.get('p|'+p.key+'|'+name)||0,reserved=s.reserved.get('p|'+p.key+'|'+name)||0;if(start||used)out.push({name,owner:p.key,start,used:used-reserved,reserved,left:s.personal.get(p.key).get(name)||0,assumed:s.assumed.has(p.key+'|'+name)})}for(const [name,left]of s.shared)if(left&&!out.some(r=>r.name===name&&!r.owner))out.push({name,owner:null,start:0,used:0,reserved:0,left});return out}
-function plan(model,players,e,settings={}){
+function allocate(model,players,e,settings={},startingState=null){
  const room=E.raidRoom(e,settings.combat?.context?.raidRoom);
  if(room?.styles.length){
   let styles=room.styles;
@@ -148,7 +151,7 @@ function plan(model,players,e,settings={}){
  }
  if(e.kind){
   const result=M.plan(model,players,e,settings);if(e.kind!=='skilling')return result;
-  const state=M.stock(model,players,settings);
+  const state=startingState||M.stock(model,players,settings);
   for(const row of result.loadouts){const key=row.player.key,set=row.sets[0],locked=settings.edits?.[key]?.[set.label]||{},next={};
    for(const slot of ['weapon',...slots.filter(s=>s!=='weapon')]){
     if(slot==='offhand'&&D.items[next.weapon?.name]?.twoHanded){next[slot]={name:null,source:'two-handed'};continue}
@@ -161,7 +164,7 @@ function plan(model,players,e,settings={}){
  }
  const chosen=settings.selected||players.map(p=>p.key),order=[...new Set([...(settings.order||[]),...chosen])].filter(k=>chosen.includes(k));
  if(!order.length||order.length>5)throw new RangeError('Choose 1–5 players');
- const s=M.stock(model,players,settings),cache=new Map(),loadouts=[];
+ const s=startingState||M.stock(model,players,settings),cache=new Map(),loadouts=[];
  for(const key of order){
   const player=players.find(p=>p.key===key),row={player,sets:[],special:null},edits=settings.edits?.[key]||{};
   const first=optimise(s,key,player,e,{...e.roles[0],label:e.roles[0].label||'Main setup'},null,settings,edits[e.roles[0].label||'Main setup']||{},cache);M.adopt(s,first.state);row.sets.push(first.set);loadouts.push(row);cache.clear();
@@ -173,7 +176,49 @@ function plan(model,players,e,settings={}){
   if(settings.specials!==false){const locked=edits['Special attack'];const names=locked&&Object.hasOwn(locked,'weapon')?[locked.weapon]:e.spec||[];for(const name of names){if(!name)break;const item=M.equip(s,name,key);if(item){row.special=item;break}if(locked){const status=inventoryStatus(s,null,name,key);row.special={name,id:D.items[name]?.id,source:status.status==='allocated'?'contended':'unavailable',hypothetical:true};break}}}
  }
 
+ if(room?.reason)for(const row of loadouts)for(const set of row.sets)set.dps={status:'unavailable',reason:room.reason};
  return{encounter:e,loadouts,state:s,ledger:ledger(s),missing:loadouts.reduce((n,r)=>n+r.sets.reduce((a,t)=>a+Object.values(t.slots).filter(v=>v.source==='missing').length,0),0),optimised:true};
+}
+function replayOtherPlayers(model,players,rows,settings,exclude){
+ const state=M.stock(model,players,{...settings,reserveOwners:false});
+ for(const row of rows)if(row.player.key!==exclude){
+  for(const set of row.sets)for(const item of Object.values(set.slots))if(item.name&&!item.hypothetical&&!item.ammoAssumption&&!M.equip(state,item.name,row.player.key))return null;
+  if(row.special?.name&&!row.special.hypothetical&&!M.equip(state,row.special.name,row.player.key))return null;
+ }
+ return state;
+}
+function improvesRow(next,current){
+ for(let i=0;i<Math.max(next.sets.length,current.sets.length);i++){
+  const a=next.sets[i],b=current.sets[i];if(!a||!b)continue;
+  const value=set=>({set,dps:set.dps,value:set.dps?.status==='ok'?set.dps.dps:-1});
+  if(better(value(a),value(b)))return true;if(better(value(b),value(a)))return false;
+ }
+ const gaps=row=>row.sets.reduce((sum,set)=>sum+Object.values(set.slots).filter(item=>item.source==='missing'||item.hypothetical).length,0);
+ return gaps(next)<gaps(current);
+}
+function plan(model,players,e,settings={}){
+ const chosen=settings.selected||players.map(p=>p.key);
+ if(settings.ownerPriority===false||chosen.length<2||e.kind&&e.kind!=='skilling')return allocate(model,players,e,settings);
+ // First allocate each selected owner's logged items and ingredients. These
+ // claims cover switches as well as main gear; an earlier non-owner cannot
+ // consume the last copy or dismantle another owner's reserved armour.
+ const result=allocate(model,players,e,{...settings,reserveOwners:true});result.state.claims.clear();
+ const sharedContext=context(settings),borrowSettings={...settings,reserveOwners:false,combat:{...settings.combat,context:sharedContext}};
+ // Rebuild one complete player's reservations at a time, retaining everyone
+ // else's physical equipment. Unused owned gear and duplicate copies can now
+ // be borrowed without displacing an owner’s equipped items.
+  for(let i=0;i<result.loadouts.length;i++){
+   const row=result.loadouts[i],state=replayOtherPlayers(model,players,result.loadouts,borrowSettings,row.player.key);if(!state)continue;
+   const next=allocate(model,players,e,{...borrowSettings,selected:[row.player.key],order:[row.player.key]},state),candidate=next.loadouts[0];
+   if(improvesRow(candidate,row)){result.loadouts[i]=candidate;result.state=next.state}
+  }
+ result.state.claims.clear();
+ // Replayed crafts may choose different donor pieces. Show the concrete inputs
+ // from the final ledger rather than stale material lists from the first pass.
+ for(const row of result.loadouts){const seen=new Set();for(const set of row.sets)for(const item of Object.values(set.slots))if(item.name&&!item.hypothetical&&!item.ammoAssumption){const held=result.state.held.get(row.player.key)?.get(item.name);if(held){Object.assign(item,held,{source:seen.has(item.name)?'reused':held.source});seen.add(item.name)}}}
+ result.ledger=ledger(result.state);result.ownerPriority=true;
+ result.missing=result.loadouts.reduce((n,row)=>n+row.sets.reduce((sum,set)=>sum+Object.values(set.slots).filter(item=>item.source==='missing').length,0),0);
+ return result;
 }
 function availabilityState(model,players,result,settings,key){const s=M.stock(model,players,settings);for(const row of result.loadouts)if(row.player.key!==key){for(const set of row.sets)for(const item of Object.values(set.slots))if(item.name&&!item.hypothetical&&!item.ammoAssumption)M.equip(s,item.name,row.player.key);if(row.special?.name&&!row.special.hypothetical)M.equip(s,row.special.name,row.player.key)}return s}
 return{plan,catalogue,slots,modifiers,context,inventoryStatus,availabilityState};

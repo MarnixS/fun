@@ -2,19 +2,19 @@
 'use strict';
 const finite=n=>Number.isSafeInteger(Number(n))&&Number(n)>=0&&Number(n)<=1000000;
 const copyMap=m=>new Map([...m].map(([key,value])=>[key,value instanceof Map?new Map(value):value]));
-function clone(s){return{...s,shared:new Map(s.shared),personal:copyMap(s.personal),held:copyMap(s.held),spent:new Map(s.spent),events:[...s.events],warnings:[...s.warnings]}}
-function adopt(s,t){for(const key of ['shared','personal','held','spent','events','warnings'])s[key]=t[key]}
+function clone(s){return{...s,shared:new Map(s.shared),personal:copyMap(s.personal),held:copyMap(s.held),claims:s.claims||new Map(),spent:new Map(s.spent),events:[...s.events],warnings:[...s.warnings]}}
+function adopt(s,t){for(const key of ['shared','personal','held','claims','spent','events','warnings'])s[key]=t[key]}
 const resourceKey=(name,owner)=>owner?'p|'+owner+'|'+name:'g|'+name;
-function quantity(s,name,owner){return(owner?s.personal.get(owner):s.shared)?.get(name)||0}
-function debit(s,name,count,owner,player){const map=owner?s.personal.get(owner):s.shared;map.set(name,(map.get(name)||0)-count);const key=resourceKey(name,owner);s.spent.set(key,(s.spent.get(key)||0)+count);s.events.push({type:'consume',name,count,owner,player})}
+function quantity(s,name,owner,player){const n=(owner?s.personal.get(owner):s.shared)?.get(name)||0;if(owner||!player||!s.claims?.has(name))return n;return Math.max(0,n-[...s.claims.get(name)].reduce((sum,[key,count])=>sum+(key===player?0:count),0))}
+function debit(s,name,count,owner,player){const map=owner?s.personal.get(owner):s.shared;map.set(name,(map.get(name)||0)-count);if(!owner&&s.claims?.get(name)?.has(player)){const claims=new Map(s.claims.get(name));claims.set(player,Math.max(0,claims.get(player)-count));s.claims=new Map(s.claims);s.claims.set(name,claims)}const key=resourceKey(name,owner);s.spent.set(key,(s.spent.get(key)||0)+count);s.events.push({type:'consume',name,count,owner,player})}
 function manual(s,name,owner){return Object.hasOwn(owner?s.overrides.personal?.[owner]||{}:s.overrides.group||{},name)}
-function remainingDonors(s,item,need,existing){
+function remainingDonors(s,item,need,existing,player){
  // Bounded knapsack: minimum waste, then fewest dismantled items. Never consume
  // an allocated item, or reinterpret an explicit remaining-bank override as spent.
  const donors=item.conversions.filter(d=>!existing||!manual(s,d.item));
  const maxYield=Math.max(0,...donors.map(d=>d.yield)),limit=need+maxYield;
  let plans=new Map([[0,{count:0,take:[]}]]);
- for(const donor of donors){const next=new Map(plans),max=Math.min(quantity(s,donor.item),Math.ceil(limit/donor.yield));
+ for(const donor of donors){const next=new Map(plans),max=Math.min(quantity(s,donor.item,null,player),Math.ceil(limit/donor.yield));
   for(const [value,plan] of plans)for(let count=1;count<=max;count++){
    const total=value+count*donor.yield;if(total>limit)break;
    const candidate={count:plan.count+count,take:[...plan.take,{...donor,count}]},prior=next.get(total);
@@ -28,17 +28,20 @@ function spend(s,name,count,owner,player,stack=new Set(),existing=false,otherPer
  if(existing&&manual(s,name,owner))return true;
  const item=D.items[name]||{name},personal=!!item.personal||s.assumed.has(player+'|'+name)&&quantity(s,name,player)>0;
  if(personal&&!owner)owner=player;
+ // Personal ingredients can create a tradeable result, but a selected owner
+ // gets first refusal before somebody else assembles their pieces into gear.
+ if(personal&&owner&&owner!==player&&!existing&&s.settings.reserveOwners&&(s.settings.selected||s.players.map(p=>p.key)).includes(owner))return false;
  if(personal&&otherPersonal){
   for(const key of [player,...s.players.map(p=>p.key).filter(k=>k!==player)]){const trial=clone(s);if(spend(trial,name,count,key,player,stack,existing,false)){adopt(s,trial);return true}}
   return false;
  }
- const have=quantity(s,name,personal?owner:null),direct=Math.min(have,count);
+ const have=quantity(s,name,personal?owner:null,player),direct=Math.min(have,count);
  if(direct)debit(s,name,direct,personal?owner:null,player);
  const missing=count-direct;if(!missing)return true;
  const cycle=(personal?owner+'|':'')+name;if(stack.has(cycle))return false;
  const next=new Set(stack).add(cycle);
  if(item.conversions){
-  const plan=remainingDonors(s,item,missing,existing);if(!plan)return false;
+  const plan=remainingDonors(s,item,missing,existing,player);if(!plan)return false;
   for(const donor of plan[1].take)debit(s,donor.item,donor.count,null,player);
   s.shared.set(name,(s.shared.get(name)||0)+plan[0]-missing);
   s.events.push({type:'convert',name,count:plan[0],player,donors:plan[1].take});return true;
@@ -51,13 +54,14 @@ function spend(s,name,count,owner,player,stack=new Set(),existing=false,otherPer
  s.events.push({type:'craft',name,count:missing,player});return true;
 }
 function stock(model,players,settings={}){
- const overrides=settings.overrides||{},ids=new Map(),totals=new Map(),personal=new Map(players.map(p=>[p.key,new Map()])),shared=new Map();
+ const overrides=settings.overrides||{},ids=new Map(),totals=new Map(),logged=new Map(),personal=new Map(players.map(p=>[p.key,new Map()])),shared=new Map();
  const names=new Map();for(const [id,name] of model.names){const key=D.normalise(name);if(!names.has(key))names.set(key,[]);names.get(key).push(id)}
  for(const item of Object.values(D.items)){
   const aliases=new Set([item.name,...item.aliases||[]].map(D.normalise)),matches=[...aliases].flatMap(name=>names.get(name)||[]);
   ids.set(item.name,matches[0]||item.id||null);
-  let total=0;
-  for(const p of players){const counts=matches.map(id=>model.known.has(p.key)?model.counts.get(p.key)?.get(id)||0:0),count=item.sumAliases?counts.reduce((a,b)=>a+b,0):Math.max(0,...counts);total+=count;if(item.personal&&count)personal.get(p.key).set(item.name,count)}
+  let total=0;const owners=new Map();
+  for(const p of players){const counts=matches.map(id=>model.known.has(p.key)?model.counts.get(p.key)?.get(id)||0:0),count=item.sumAliases?counts.reduce((a,b)=>a+b,0):Math.max(0,...counts);total+=count;if(count)owners.set(p.key,count);if(item.personal&&count)personal.get(p.key).set(item.name,count)}
+  if(owners.size)logged.set(item.name,owners);
   totals.set(item.name,total);if(!item.personal&&total)shared.set(item.name,total);
  }
  for(const [name,value] of Object.entries(overrides.group||{}))if(D.items[name]&&!D.items[name].personal&&finite(value))shared.set(name,Number(value));
@@ -66,7 +70,7 @@ function stock(model,players,settings={}){
  // infer capes, raid rewards, void, endgame boots or a personal drop from a teammate.
  const assumed=new Set();
  if(settings.baseline)for(const p of players)for(const item of Object.values(D.items))if(item.baseline&&!Object.hasOwn(overrides.group||{},item.name)&&!Object.hasOwn(overrides.personal?.[p.key]||{},item.name)){const key=p.key+'|'+item.name;if(!quantity({personal},item.name,p.key)){personal.get(p.key).set(item.name,1);assumed.add(key)}}
- const state={players,settings:{craft:true,respectLevels:true,...settings},overrides,ids,totals,known:model.known,shared,personal,assumed,held:new Map(players.map(p=>[p.key,new Map()])),spent:new Map(),events:[],warnings:[],levels:settings.levels||{}};
+ const state={players,settings:{craft:true,respectLevels:true,...settings},overrides,ids,totals,logged,claims:new Map(),known:model.known,shared,personal,assumed,held:new Map(players.map(p=>[p.key,new Map()])),spent:new Map(),events:[],warnings:[],levels:settings.levels||{}};
  state.input={shared:new Map(shared),personal:copyMap(personal)};
  // A confirmed finished item reserves its inputs from inferred lifetime drops.
  // Explicit component overrides mean remaining physical stock and are not debited.
@@ -80,7 +84,18 @@ function stock(model,players,settings={}){
    }
   }
  }
- state.reserved=new Map(state.spent);state.events=[];return state;
+ state.reserved=new Map(state.spent);state.events=[];
+ if(settings.reserveOwners){
+  const selected=new Set(settings.selected||players.map(p=>p.key)),order=[...new Set([...(settings.order||[]),...players.map(p=>p.key)])].filter(key=>selected.has(key));
+  for(const [name,available] of state.shared){let left=available;const owners=logged.get(name),claims=new Map();if(!owners)continue;
+   // Give each logged owner first refusal on one copy before reserving extras
+   // and ingredients. Confirmed shortages are resolved by the displayed order.
+   for(const key of order)if(left&&owners.get(key)>0){claims.set(key,1);left--}
+   for(const key of order)if(left&&owners.get(key)>1&&(!D.items[name].equipmentSlot||D.items[name].craftingMaterial)){const count=Math.min(left,owners.get(key)-1);claims.set(key,(claims.get(key)||0)+count);left-=count}
+   if(claims.size)state.claims.set(name,claims);
+  }
+ }
+ return state;
 }
 function eligible(s,name,player){
  if(!s.settings.respectLevels)return true;
@@ -97,9 +112,12 @@ function equip(s,name,player){
  if(assumed&&quantity(trial,name,player)>0)debit(trial,name,1,player,player);
  else if(!spend(trial,name,1,personal?player:null,player))return null;
  const events=trial.events.slice(beforeEvents),crafted=events.some(e=>e.type==='craft'&&e.name===name);
- const result={name,id:s.ids.get(name),source:assumed?'assumed':crafted?'craft':manual(s,name,item.personal?player:null)?'confirmed':'log',materials:events.filter(e=>e.type==='consume').map(e=>({name:e.name,count:e.count}))};
+ const result={name,id:s.ids.get(name),source:assumed?'assumed':crafted?'craft':manual(s,name,item.personal?player:null)?'confirmed':'log',ownership:s.logged.get(name)?.get(player)>0?'logged':item.personal?'personal':crafted?'crafted':'borrowed',materials:events.filter(e=>e.type==='consume').map(e=>({name:e.name,count:e.count}))};
  trial.held.get(player).set(name,result);adopt(s,trial);return result;
 }
+// equip already creates its own atomic trial. A shallow wrapper keeps its
+// successful adopt local, avoiding a redundant full clone for read-only probes.
+function probe(s,name,player){return equip({...s},name,player)}
 function pick(s,options,player){for(let i=0;i<options.length;i++){const chosen=equip(s,options[i],player);if(chosen)return{...chosen,rank:i+1,options}}return{name:null,source:'missing',rank:null,options}}
 function emptySet(role,style){return{label:role.label,style,weaponOnly:!!role.weaponOnly,slots:{},role}}
 function makeSet(s,role,player,encounter,forced){
@@ -164,5 +182,5 @@ function encounterList(model,metricKeys=[]){
  for(const raw of keys){const key=D.aliases[raw]||raw;if(seen.has(key))continue;seen.add(key);const name=raw.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase());out.push({id:key,name,kind:'unreviewed',group:'Awaiting verified preset',roles:[],note:'No verified encounter preset is available. No generic list is presented as BIS.',source:D.wiki(name+'/Strategies')})}
  return out.sort((a,b)=>a.name.localeCompare(b.name));
 }
-return{stock,plan,encounterList,eligible,finite,clone,equip,adopt};
+return{stock,plan,encounterList,eligible,finite,clone,equip,probe,adopt};
 });

@@ -24,8 +24,10 @@ Untradeable gear remains per-account. A tradeable result can be crafted by a
 group member who owns its personal ingredient; an untradeable result must be
 crafted by its recipient.
 
-The selected priority determines scarce-item recipients. Main setups are
-reserved before phase switches and optional specs. A candidate and its crafting
+Logged owners receive first use before teammates borrow scarce equipment. The
+displayed order breaks owner ties and assigns loans. Ownership protection also
+covers phase switches, dismantles and personal assembly components. Main setups
+precede switches within each allocation pass. A candidate and its crafting
 dependencies are one atomic reservation. A failed candidate leaves no consumed
 materials. Equipment already held by a player can
 be reused in another phase; it cannot be lent to a simultaneous second player.
