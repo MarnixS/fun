@@ -1,7 +1,7 @@
 /* Finite inventory allocation and DPS-driven equipment choices. */
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory(require('./gear-planner-data'),require('./gear-planner-model'),require('./gear-dps-engine'));else root.UGGearLoadouts=factory(root.UGGearData,root.UGGearModel,root.UGWikiDps)})(typeof window==='object'?window:this,function(D,M,E){
 'use strict';
-const catalogue=E.catalog(D),slots=['head','cape','neck','ammo','weapon','body','offhand','legs','hands','feet','ring'],armour=['head','body','legs','neck','cape','hands','feet','ring','offhand'];
+const catalogue=E.catalog(D),slots=['head','cape','neck','ammo','weapon','body','offhand','legs','hands','feet','ring'],armour=['head','body','legs','neck','cape','hands','feet','ring','offhand','ammo'];
 const materialNames=new Set(Object.values(D.items).flatMap(item=>[...Object.keys(item.recipe||{}),...(item.conversions||[]).map(donor=>donor.item)]));
 for(const name of materialNames)if(D.items[name])D.items[name].craftingMaterial=true;
 for(const item of catalogue)D.items[item.name].equipmentSlot=item.slot;
@@ -13,12 +13,12 @@ function scoreSettings(settings){return JSON.stringify([settings.levels,settings
 function available(s,name,key){return s.held.get(key)?.has(name)||((D.items[name]?.personal?s.personal.get(key)?.get(name):s.shared.get(name))||0)>0||s.assumed.has(key+'|'+name)||D.items[name]?.recipe}
 function options(s,slot,key,style,preset=[]){
  const names=[...new Set([...preset,...(bySlot.get(slot)||[]).map(i=>i.name)])];
- return names.filter(name=>D.items[name]&&available(s,name,key)&&M.eligible(s,name,key)&&(slot!=='weapon'||E.weaponStyle(name)===style)).filter(name=>!!M.probe(s,name,key));
+ return names.filter(name=>D.items[name]&&available(s,name,key)&&M.eligible(s,name,key)&&(slot!=='weapon'||E.weaponStyle(name)===style)&&(slot!=='ammo'||E.isBlessing(name))).filter(name=>!!M.probe(s,name,key));
 }
 function inventoryStatus(s,initial,name,key){
  if(!name)return{status:'empty',label:'Empty slot'};
  if(M.probe(s,name,key))return{status:'stock',label:'In stock'};
- const owned=(s.totals.get(name)||0)>0||s.held.get(key)?.has(name)||initial?.shared.get(name)>0||initial?.personal.get(key)?.get(name)>0;
+ const owned=(s.totals.get(name)||0)>0||[...s.held.values()].some(items=>items.has(name))||initial?.shared.get(name)>0||initial?.personal.get(key)?.get(name)>0;
  if(owned||initial&&M.probe({...initial,settings:{...initial.settings,respectLevels:false}},name,key))return{status:'allocated',label:M.eligible(s,name,key)?'Acquired · out of stock':'Acquired · level/owner restriction'};
  return{status:'unavailable',label:'Not available'};
 }
@@ -65,7 +65,7 @@ function optimise(base,key,player,e,role,main,settings,locked,cache){
    ||style==='ranged'&&(/Dizana/i.test(name)||/faerdhinen|Crystal bow/i.test(weapon)&&/Crystal/i.test(name)||atlatl&&/Eclipse moon/i.test(name)||/Karil/i.test(weapon)&&/Karil|damned/i.test(name))
    ||style==='melee'&&(types.includes('crush')&&/Inquisitor/i.test(name)||weapon==='Dual macuahuitl'&&/Blood moon/i.test(name)||/Toktz|Tzhaar/i.test(weapon)&&/obsidian|berserker necklace/i.test(name)||/Dharok|Verac|Torag|Guthan/i.test(weapon)&&/Dharok|Verac|Torag|Guthan|damned/i.test(name));
   const gear=Object.fromEntries(armour.map(slot=>{
-   const names=rawGearCache.get(style)[slot];if(/Dinh/i.test(weapon))return[slot,names];
+   const capes=Object.hasOwn(locked,'cape')?[locked.cape]:role.weaponOnly?[main?.slots.cape?.name]:rawGearCache.get(style).cape;const names=slot==='ammo'&&!E.ammoSlotFree(weapon)&&!capes.some(cape=>E.ammoSlotFree(weapon,cape))?[]:rawGearCache.get(style)[slot];if(/Dinh/i.test(weapon))return[slot,names];
    const stats=new Map(names.map(name=>{const i=E.equipment(name),b=i?.bonuses||{},a=i?.offensive||{};return[name,style==='magic'?[a.magic||0,b.magic_str||0,b.prayer||0]:style==='ranged'?[a.ranged||0,atlatl?b.str||0:b.ranged_str||0,b.prayer||0]:[...types.map(type=>a[type]||0),b.str||0,b.prayer||0]]}));
    return[slot,names.filter(name=>relevant(name)||!names.some(other=>{if(name===other)return false;const a=stats.get(other),b=stats.get(name);return a.every((n,j)=>n>=b[j])&&a.some((n,j)=>n>b[j])}))];
   }));gearCache.set(cacheKey,gear);return gear;
@@ -77,7 +77,7 @@ function optimise(base,key,player,e,role,main,settings,locked,cache){
   const ranked=weapons.map(weapon=>{
    const style=E.weaponStyle(weapon),gear=gearFor(style,weapon),names={...(role.weaponOnly?Object.fromEntries(Object.entries(main?.slots||{}).filter(([k])=>k!=='ammo').map(([k,v])=>[k,v.name])):{}),weapon,...locked};
    let layout=build(base,key,names,locked);if(!layout)return{weapon,style,value:-1};
-   if(!role.weaponOnly)for(const slot of armour)if(!Object.hasOwn(locked,slot)&&!(slot==='offhand'&&D.items[weapon]?.twoHanded))for(const name of gear[slot]){const item=M.equip(layout.state,name,key);if(item){names[slot]=name;layout.slots[slot]=item;break}}
+   for(const slot of armour)if((!role.weaponOnly||slot==='ammo')&&!Object.hasOwn(locked,slot)&&!(slot==='offhand'&&D.items[weapon]?.twoHanded))for(const name of gear[slot]){const item=M.equip(layout.state,name,key);if(item){names[slot]=name;layout.slots[slot]=item;break}}
    const set={label:role.label,style,weaponOnly:!!role.weaponOnly,slots:layout.slots};let value=-1;
    try{const calc=E.calculateSet({encounter:e,row:{player,sets:role.weaponOnly?[main,set]:[set]},setIndex:role.weaponOnly?1:0,levels:settings.levels?.[key]||{},context:context(settings),modifiers:modifiers(settings,key)});if(calc.status==='ok')value=calc.dps}catch{}
    return{weapon,style,value};
@@ -90,7 +90,7 @@ function optimise(base,key,player,e,role,main,settings,locked,cache){
   const style=weapon?E.weaponStyle(weapon):styles[0]||'melee';
   const candidates=gearFor(style,weapon);
   const initial={...(role.weaponOnly?Object.fromEntries(Object.entries(main?.slots||{}).filter(([k])=>k!=='ammo').map(([k,v])=>[k,v.name])):{}),weapon,...locked};
-  if(!role.weaponOnly)for(const slot of armour)if(!Object.hasOwn(initial,slot))initial[slot]=candidates[slot][0]||null;
+  for(const slot of armour)if((!role.weaponOnly||slot==='ammo')&&!Object.hasOwn(initial,slot))initial[slot]=candidates[slot][0]||null;
   let current=build(base,key,initial,locked);
   // Scarce shared ingredients can make individually feasible first choices conflict.
   if(!current){for(const slot of armour)if(!Object.hasOwn(locked,slot))initial[slot]=null;current=build(base,key,initial,locked)}
@@ -133,7 +133,7 @@ function optimise(base,key,player,e,role,main,settings,locked,cache){
  if(!best){const set={label:role.label,style:styles[0]||'melee',slots:Object.fromEntries(slots.map(k=>[k,empty()])),dps:{status:'unavailable',reason:'No compatible equipment is available.'}};return{state:base,set,dps:set.dps}}
  best.set.dps=best.dps;
  const ammoName=best.dps.ammo||(best.set.style==='ranged'&&best.set.slots.weapon?.name?E.ammunitionFor(best.set.slots.weapon.name,modifiers(settings,key).ammo||'auto',role.label):'');
- if(ammoName&&!best.set.slots.ammo?.name)best.set.slots.ammo={name:ammoName,id:E.equipment(ammoName)?.id,source:'assumed',ammoAssumption:true,options:[]};
+ if(ammoName&&!E.usesDarts(best.set.slots.weapon?.name||'')&&!best.set.slots.ammo?.name)best.set.slots.ammo={name:ammoName,id:E.equipment(ammoName)?.id,source:'assumed',ammoAssumption:true,options:[]};
  best.set.hypothetical=Object.values(best.set.slots).some(v=>v.hypothetical);
  return best;
 }

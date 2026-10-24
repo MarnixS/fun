@@ -261,12 +261,23 @@ export function calculateSet(input: any): any {
   p.buffs.potions = potions(potion,set.style);
   for (const potion of p.buffs.potions) for (const [skill,boost] of Object.entries(PotionMap[potion].calculateFn(p.skills))) if (boost!==undefined) (p.boosts as any)[skill]=Math.max((p.boosts as any)[skill],boost);
   p.prayers = prayers(modifiers.prayer||'none',set.style,p.skills,notes);
-  let ammo = '';
+  let ammo = '',quiverBlessing:EquipmentPiece|null=null;
+  const wornBlessing=isBlessing(p.equipment.ammo?.name||'')?p.equipment.ammo:null;
+  const usesQuiver=!!wornBlessing&&!ammoSlotFree(p.equipment.weapon.name)&&ammoSlotFree(p.equipment.weapon.name,p.equipment.cape?.name);
   if (set.style==='ranged') {
-    if (slots.ammo?.locked) {
+    if(usesQuiver){quiverBlessing=wornBlessing;ammo=ammunition(p,modifiers.ammo||'auto',monster,set.label,notes);}
+    else if (slots.ammo?.locked) {
       ammo=slots.ammo.name||'';
-      if (BLOWPIPE_IDS.includes(p.equipment.weapon.id) && p.equipment.ammo) { p.equipment.weapon.itemVars={blowpipeDartId:p.equipment.ammo.id,blowpipeDartName:p.equipment.ammo.name};p.equipment.ammo=null; }
+      if (BLOWPIPE_IDS.includes(p.equipment.weapon.id)) {
+        if(p.equipment.ammo&&/ dart$/i.test(p.equipment.ammo.name)){p.equipment.weapon.itemVars={blowpipeDartId:p.equipment.ammo.id,blowpipeDartName:p.equipment.ammo.name};p.equipment.ammo=null;}
+        else ammo=ammunition(p,modifiers.ammo||'auto',monster,set.label,notes);
+      }
     } else ammo=ammunition(p,modifiers.ammo||'auto',monster,set.label,notes);
+  }
+  if(wornBlessing){
+    if(!ammoSlotFree(p.equipment.weapon.name,p.equipment.cape?.name))return{status:'unavailable',reason:'This weapon needs compatible ammunition in the ammo slot. Replace the blessing with the required ammo or use a quiver that can hold its arrows or bolts.'};
+    notes.push('The blessing supplies Prayer bonus; it does not directly increase damage or accuracy.');
+    if(usesQuiver)notes.push('Arrows or bolts are stored in Dizana’s quiver; the blessing stays in the normal ammo slot.');
   }
   if (set.style==='magic') {
     p.spell = selectSpell(p,monster,modifiers.spell||'auto');
@@ -278,7 +289,7 @@ export function calculateSet(input: any): any {
   if (set.style==='melee' && modifiers.style && modifiers.style!=='auto') styles=styles.filter(s=>s.type===modifiers.style);
   if (!styles.length) return {status:'unavailable',reason:'This weapon cannot use the selected attack style.'};
   const results = styles.map(style=>{
-    const player=copyPlayer(p,style);Object.assign(player,calculateEquipmentBonusesFromGear(player,monster));player.attackSpeed=calculateAttackSpeed(player,monster);
+    const player=copyPlayer(p,style);Object.assign(player,calculateEquipmentBonusesFromGear(player,monster));if(quiverBlessing)player.bonuses.prayer+=quiverBlessing.bonuses.prayer;player.attackSpeed=calculateAttackSpeed(player,monster);
     const calc=new PlayerVsNPCCalc(player,monster,{loadoutName:row.player.name});
     return {calc,player,dps:calc.getDps()};
   }).sort((a,b)=>b.dps-a.dps);
@@ -287,10 +298,10 @@ export function calculateSet(input: any): any {
   if (set.weaponOnly) notes.push('Weapon switch calculated with this player’s main armour.');
   const emptySlots=Object.entries(slots).filter(([_,v]:any)=>v.source==='missing' && !v.name).length;
   if (emptySlots) notes.push(emptySlots+' empty equipment slot'+(emptySlots===1?'':'s')+' treated as unequipped.');
-  if (ammo) notes.push('Ammo assumed: '+ammo+'.');
+  if (ammo) notes.push('Ammo assumed: '+ammo+(usesQuiver?' · stored in quiver':'')+'.');
   if (p.spell) notes.push('Spell: '+p.spell.name+'.');
   if (!Number.isFinite(dps)) return {status:'unavailable',reason:'This combination is not supported by the combat engine.'};
-  return {status:'ok',dps,maxAttackRoll:calc.getMaxAttackRoll(),maxHit:calc.getDistribution().getMax(),accuracy:calc.getDisplayHitChance(),attackTicks:calc.getExpectedAttackSpeed(),baseAttackTicks:player.attackSpeed,expectedDamage:calc.getExpectedDamage(),target:choice.label,targetKey:choice.key,targetId:monster.id,hp:current.skills.hp,currentHp:monster.inputs.monsterCurrentHp,defence:current.skills.def,magic:current.skills.magic,defenceFloor:getDefenceFloor(undrained),baseDefence:undrained.skills.def,skills:player.skills,boosts:player.boosts,bonuses:player.bonuses,offensive:player.offensive,defensive:player.defensive,style:player.style,prayers:player.prayers.map(n=>PrayerMap[n].name),potions:p.buffs.potions.map(n=>PotionMap[n].name),spell:p.spell?.name||null,ammo,notes:[...new Set(notes)]};
+  return {status:'ok',dps,maxAttackRoll:calc.getMaxAttackRoll(),maxHit:calc.getDistribution().getMax(),accuracy:calc.getDisplayHitChance(),attackTicks:calc.getExpectedAttackSpeed(),baseAttackTicks:player.attackSpeed,expectedDamage:calc.getExpectedDamage(),target:choice.label,targetKey:choice.key,targetId:monster.id,hp:current.skills.hp,currentHp:monster.inputs.monsterCurrentHp,defence:current.skills.def,magic:current.skills.magic,defenceFloor:getDefenceFloor(undrained),baseDefence:undrained.skills.def,skills:player.skills,boosts:player.boosts,bonuses:player.bonuses,offensive:player.offensive,defensive:player.defensive,style:player.style,prayers:player.prayers.map(n=>PrayerMap[n].name),potions:p.buffs.potions.map(n=>PotionMap[n].name),spell:p.spell?.name||null,ammo,ammoInQuiver:usesQuiver,notes:[...new Set(notes)]};
 }
 function bounded(v:any,fallback:number,min:number,max:number) { return Number.isFinite(Number(v)) && v!==null && v!=='' ? Math.max(min,Math.min(max,Math.trunc(Number(v)))) : fallback; }
 export function cleanReductions(r:any={}) { return {vulnerability:r.curse==='vulnerability',accursed:r.curse==='accursed',elderMaul:bounded(r.elderMaul,0,0,20),dwh:bounded(r.dwh,0,0,20),arclight:bounded(r.arclight,0,0,20),emberlight:bounded(r.emberlight,0,0,20),bgs:bounded(r.bgs,0,0,2000),tonalztic:0,seercull:0,ayak:bounded(r.ayak,0,0,200)}; }
@@ -319,5 +330,12 @@ export function weaponStyle(name:string) {
 
 export function weaponAttackTypes(name:string) {const item=equipment(name);return item?[...new Set(getCombatStylesForCategory(item.category).filter(s=>['stab','slash','crush'].includes(s.type||'')).map(s=>s.type))]:[];}
 export function usesDarts(name:string) {const item=equipment(name);return !!item&&BLOWPIPE_IDS.includes(item.id);}
+export function isBlessing(name:string) {return /\bblessing(?: \d)?$/i.test(name);}
+export function ammoSlotFree(name:string,capeName?:string) {
+  const item=name?equipment(name):null;if(!item)return false;
+  if(ammoApplicability(item.id)===AmmoApplicability.ALLOWED)return true;
+  if(!/Dizana.*(?:quiver|max cape)/i.test(capeName||''))return false;
+  const ammo=ammunitionFor(name);return /\barrows?\b|\bbolts\b/i.test(ammo);
+}
 
 export function ammunitionFor(name:string,key='auto',label='') {const weapon=equipment(name);if(!weapon)return '';return ammunition({equipment:{weapon,ammo:null}} as Player,key,{} as Monster,label,[]);}

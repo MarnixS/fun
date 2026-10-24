@@ -97,6 +97,31 @@ also cover Barrows gloves, dragon defender and Ava’s assembler. Blank restores
 the unknown log estimate and zero excludes the reward. Optional baseline gear
 is still a separate, visible assumption.
 
+## Assembler and blessing inference
+
+A personal Vorkath head supports Ava’s assembler via the coin purchase route:
+one head, 75 mithril arrows, and either an accumulator or 4,999 coins. Only the
+head is a scarce tracked input; coins and common arrows remain stated conditions.
+The head is consumed once, a confirmed existing assembler reserves its historical
+head, and the cape cannot be created for a teammate using another account’s head.
+Crafting can still be disabled and equipping requires 70 Ranged.
+
+Owned god blessings enter automatic ammo-slot selection when that slot is free,
+including melee, magic, crystal bows and blowpipes. Ordinary bows and crossbows retain required ammo unless an equipped Dizana’s
+quiver stores their arrows or bolts. The worn slot can then hold a blessing; the
+engine still receives the stored ammunition’s bonuses and the blessing’s Prayer
+bonus. Ballistae, atlatls and Karil’s bolt racks cannot use this quiver exception. Blowpipe darts are
+loaded internally and do not overwrite a worn blessing. Each blessing remains
+finite, and logged-owner priority applies. Rada’s diary blessings require explicit
+personal stock confirmation. Prayer bonus breaks equal-DPS ties; blessings do
+not create a damage or accuracy multiplier. Calculation details show total
+Equipment Prayer bonus.
+
+Sources: [Vorkath’s head](https://oldschool.runescape.wiki/w/Vorkath%27s_head),
+[Prayer equipment](https://oldschool.runescape.wiki/w/Prayer_items), and
+[Rada’s blessing](https://oldschool.runescape.wiki/w/Rada%27s_blessing), and
+[Dizana’s quiver](https://oldschool.runescape.wiki/w/Dizana%27s_quiver).
+
 ## DPS evidence
 
 DPS is expected damage per attack divided by expected ticks × 0.6 seconds.

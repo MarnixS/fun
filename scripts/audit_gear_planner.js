@@ -6,7 +6,7 @@ server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
  // Keep the integration fixture focused; the complete saved stock is exercised
  // in model tests and in the real-browser worker verification.
  const templeFixture=JSON.parse(fs.readFileSync('docs/data/temple-clog.json')),C=require('../docs/assets/clog-beta-model'),keys=['dikste','big dog aura','lijpste','poep aura','lompste'];
- const source=C.build(templeFixture,keys.map(key=>({key}))),keep=/twisted bow|tumeken|enhanced crystal weapon seed|crystal armour seed|armadyl crossbow|masori |armadyl helmet|armadyl chestplate|armadyl chainskirt|tanzanite fang|abyssal whip|trident|fire cape|dragon boots|zenyte shard|occult necklace/i;
+ const source=C.build(templeFixture,keys.map(key=>({key}))),keep=/twisted bow|tumeken|enhanced crystal weapon seed|crystal armour seed|armadyl crossbow|masori |armadyl helmet|armadyl chestplate|armadyl chainskirt|tanzanite fang|abyssal whip|trident|fire cape|dragon boots|zenyte shard|occult necklace|vorkath.s head|holy blessing|war blessing|peaceful blessing/i;
  for(const key of keys){const data=templeFixture.players[key].data||templeFixture.players[key];data.items=[...source.counts.get(key)].filter(([id,count])=>count&&keep.test(source.names.get(id)||'')).map(([id,count])=>({id,count,name:source.names.get(id)}))}
  const fixtureOptions={fetchLog:requests,deployedDocs:{temple:templeFixture}};
  const page=await openPage('gear-planner.html?boss=tombs_of_amascut',fixtureOptions);doms.push(page.dom);const w=page.dom.window,d=w.document;

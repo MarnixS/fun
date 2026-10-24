@@ -56,10 +56,12 @@ recipe('Crystal pickaxe',{'Dragon pickaxe':1,'Crystal tool seed':1},{personal:tr
 recipe('Crystal harpoon',{'Dragon harpoon':1,'Crystal tool seed':1},{personal:true,note:'Crystal shards/charges required.'});
 recipe('Infernal harpoon',{'Dragon harpoon':1,'Smouldering stone':1});
 recipe('Avernic defender',{'Dragon defender':1,'Avernic defender hilt':1},{personal:true,requirements:{attack:70,defence:70}});
-recipe('Ava\'s assembler',{'Vorkath\'s head':1,'Ava\'s accumulator':1},{personal:true,requirements:{ranged:70},note:'75 mithril arrows and Dragon Slayer II required.'});
+recipe('Ava\'s assembler',{'Vorkath\'s head':1},{personal:true,requirements:{ranged:70},note:'A logged Vorkath’s head unlocks this personal craft. Give Ava the head, 75 mithril arrows, and either an accumulator or 4,999 coins. The planner uses the coin route; currency and common arrows are untracked conditions.'});
 add('Vorkath\'s head',{personal:true});
+list('Holy blessing|Unholy blessing|Peaceful blessing|Honourable blessing|War blessing|Ancient blessing',{note:'Ammo-slot equipment: +1 Prayer. Can be worn when the weapon does not require ammunition in this slot.'});
+for(let tier=1;tier<=4;tier++)add('Rada\'s blessing '+tier,{personal:true,note:'Personal Kourend & Kebos diary reward. Confirm this account’s owned tier; diary completion is not inferred from the Collection Log.'});
 list('Fire cape|Infernal cape|Dizana\'s quiver|Elder venator fang|Araxyte fang|Black mask|Slayer helmet (i)|Salve amulet(ei)|Salve amulet(e)|Elite void top|Elite void robe|Void ranger helm|Void knight gloves',{personal:true});
-items['Dizana\'s quiver'].aliases=['Dizana\'s quiver (uncharged)'];items['Dizana\'s quiver'].note='Blessing/charges are not inferred from the uncharged log entry.';
+items['Dizana\'s quiver'].requirements={ranged:75};items['Dizana\'s quiver'].aliases=['Dizana\'s quiver (uncharged)'];items['Dizana\'s quiver'].note='Blessing/charges are not inferred from the uncharged log entry.';
 recipe('Necklace of rupture',{'Necklace of anguish':1,'Elder venator fang':1},{requirements:{hitpoints:90},note:'Requires the drop holder to etch the fang; finished necklace is tradeable.'});
 list('Helm of neitiznot|Fighter torso|Barrows gloves|Dragon defender|Ava\'s accumulator|Imbued god cape|Arclight|Salve amulet(ei)|Salve amulet(e)|Climbing boots|Anti-dragon shield|Rune crossbow|Dragon scimitar|Amulet of glory|Amulet of strength|Mystic hat|Mystic robe top|Mystic robe bottom|Ancient staff|Magic shortbow (i)|Magic longbow (u)|Battlestaff|Black d\'hide body|Black d\'hide chaps|Mixed hide boots|Steel axe|Harpoon|Steel pickaxe',{baseline:true});
 for(const name of ['Helm of neitiznot','Fighter torso','Barrows gloves','Dragon defender','Ava\'s accumulator','Imbued god cape','Arclight','Salve amulet(ei)','Salve amulet(e)','Magic shortbow (i)'])items[name].personal=true;
