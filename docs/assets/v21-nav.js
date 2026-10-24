@@ -4,7 +4,7 @@ const logs=[['collection-log.html','Collection Log Classic','G'],['gim.html','Co
 const levels=[['hiscores.html','Current Stats','H'],['progress.html','Stat Progress','XP'],['cumulative-xp.html','Cumulative XP','XP'],['time-machine.html','Time Machine','⧖']];
 const records=[['chronicle.html','Chronicle','✦'],['time-records.html','Time Records','★'],['goals.html','Goals','◎','beta'],['kc-comparison.html','KC comparison','KC']];
 const other=[['faq.html','FAQ','?'],['news.html','News','N'],['experimental.html','Experimental','⚗','beta']];
-const experimentalPages=['experimental.html','history.html','group-chemistry.html','nemesis.html','nemesis-beta.html'];
+const experimentalPages=['experimental.html','history.html','group-chemistry.html','nemesis.html','nemesis-beta.html','gear-planner.html'];
 function loadV22(){if(document.querySelector('script[data-v22-ui]'))return;const s=document.createElement('script');s.src='assets/v22-ui.js?v=36';s.dataset.v22Ui='1';s.addEventListener('load',()=>{s.dataset.loaded='true'},{once:true});document.head.append(s)}
 function init(){
  const nav=document.querySelector('.nav-inner');if(!nav){loadV22();return}
