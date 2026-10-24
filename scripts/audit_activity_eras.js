@@ -20,7 +20,7 @@ const assert=require('node:assert/strict'),{openPage,waitFor}=require('./audit_v
  for(const page of ['progress.html','hiscores.html']){
  const {dom,errors}=await openPage(page,{fetchLog:requests}),w=dom.window,d=w.document;
  if(page==='progress.html'){
-  assert(!d.querySelector('#progressDetail').open);
+  assert(d.querySelector('#progressDetail').hidden);
   d.querySelector('#progressPeriods [data-progress-window="365"]').click();
   d.querySelector('[data-progress-metric="attack"]').click();d.querySelector('[data-progress-view="share"]').click();
   const model=w.UGStatProgress.build(await w.UGV21.loadWom(),Array.from(w.UGV21.ALL_KEYS));

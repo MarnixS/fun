@@ -41,9 +41,8 @@ html body[data-page=progress] main #progressMetrics .progress-positive{color:#80
 .progress-metric-card:hover{filter:brightness(1.07);border-color:var(--gold2)!important}
 html body[data-page=progress] main .progress-status{margin:8px 0 0;font-size:11px!important;line-height:1.4}
 .progress-no-matches{grid-column:1/-1;padding:18px}
-.progress-dialog{width:min(1120px,calc(100% - 32px));max-width:none;max-height:calc(100dvh - 40px);padding:0;border:1px solid var(--edge);background:var(--panel);color:var(--text);box-shadow:0 12px 70px #0009;overflow:auto;overscroll-behavior:contain}
-.progress-dialog:not([open]){display:none}.progress-dialog::backdrop{background:#000b}
-.progress-dialog-shell{padding:20px}
+.progress-detail{min-width:0;margin-top:18px;padding-top:18px;border-top:1px solid var(--edge);scroll-margin-top:20px}
+html body[data-page=progress] main #progressMetrics .progress-metric-card[aria-expanded=true]{outline:2px solid var(--gold2);outline-offset:-2px}
 .progress-detail-head{display:flex;align-items:start;justify-content:space-between;gap:15px;margin-bottom:10px}
 html body[data-page=progress] main .progress-detail-head h3{display:flex;align-items:center;gap:8px;font-size:20px!important;margin:0}
 .progress-detail-head .skill-icon{width:24px;height:24px;object-fit:contain;image-rendering:pixelated}
@@ -78,7 +77,6 @@ html[data-theme=osrs] body[data-page=progress] main .progress-type-card[aria-pre
 html[data-theme=osrs] body[data-page=progress] main #progressMetrics .progress-metric-card{background:#dcc998;color:#302311;border-color:#9e8551;box-shadow:inset 0 1px #f4e3bc}
 html[data-theme=osrs] body[data-page=progress] main #progressMetrics .progress-positive{color:#315b16!important}
 html[data-theme=osrs] body[data-page=progress] main .progress-player-name{color:#3e3020;border-left:3px solid var(--pc);padding-left:6px}
-html[data-theme=osrs] body[data-page=progress] main .progress-dialog{background:#c7b17d url('../img/osrs-theme/backdrop_745.gif') center/100% auto}
 @media(max-width:1150px){.progress-metrics{grid-template-columns:repeat(8,minmax(0,1fr))}.progress-metric-name{font-size:11px}html body[data-page=progress] main #progressMetrics .progress-metric-card{grid-template-columns:21px minmax(0,1fr);column-gap:4px;padding-inline:5px!important}.progress-metric-icon{width:21px}.progress-metric-icon img{max-width:21px}}
 @media(max-width:900px){.progress-metrics{grid-template-columns:repeat(6,minmax(0,1fr))}.progress-detail-grid{grid-template-columns:1fr}.progress-chart-card .chart{min-height:0}.progress-type-card small{display:none}}
 @media(max-width:700px){
@@ -89,7 +87,7 @@ html[data-theme=osrs] body[data-page=progress] main .progress-dialog{background:
  html body[data-page=progress] main #statsMemberPicker .v21-member-list label{min-height:40px;padding:5px 7px!important;font-size:11px}
  .progress-members{align-items:start}.progress-grid-head{flex-wrap:wrap}html body[data-page=progress] main #progressGridHeading{flex-basis:100%;margin-top:2px}.progress-search{flex:1;width:auto}.progress-sort{width:125px}.progress-search input,.progress-sort select{min-height:44px;font-size:13px}
  .progress-metrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}html body[data-page=progress] main #progressMetrics .progress-metric-card{min-height:63px!important;padding:6px!important;grid-template-columns:22px minmax(0,1fr);column-gap:5px}.progress-metric-name{font-size:11px}.progress-metric-gain{font-size:13px}
- .progress-dialog{width:calc(100% - 16px);max-height:calc(100dvh - 20px)}.progress-dialog-shell{padding:14px}.progress-detail-head{gap:6px}html body[data-page=progress] main .progress-detail-head h3{font-size:17px!important}.progress-detail-head .skill-icon{display:none}
+ .progress-detail-head{gap:6px}html body[data-page=progress] main .progress-detail-head h3{font-size:17px!important}.progress-detail-head .skill-icon{display:none}
  .progress-detail-grid{gap:18px}.progress-value-col{width:105px}.progress-summary>b{font-size:24px}.progress-player-table .records-gain b{font-size:16px}.progress-observed{font-size:9px}.progress-links{gap:14px}
 }
 @media(prefers-reduced-motion:reduce){.progress-metric-card:hover{filter:none}}

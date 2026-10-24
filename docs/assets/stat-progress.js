@@ -34,7 +34,7 @@ function overview(){
  $('#progressMetrics').innerHTML=matches.length?matches.map(row=>{
   const exact=row.gain===null?'Insufficient history':'+'+number(row.gain)+' '+unit(),compact=row.gain===null?'—':'+'+(family==='computed'?U.fmt1(row.gain):row.gain>=100000?new Intl.NumberFormat('en-GB',{notation:'compact',maximumFractionDigits:1}).format(row.gain):number(row.gain));
   const detail=metricName(row.key)+': '+exact+'; '+row.known+' of '+selected.size+' players with observations. Compare players';
-  return `<button type="button" class="progress-metric-card" data-progress-metric="${esc(row.key)}" data-gain="${row.gain??''}" aria-haspopup="dialog" aria-label="${esc(detail)}" title="${esc(detail)}"><span class="progress-metric-icon" aria-hidden="true">${icon(row.key)}</span><span class="progress-metric-name">${esc(cardName(row.key))}</span><b class="progress-metric-gain ${row.gain>0?'progress-positive':''}">${compact}</b></button>`;
+  return `<button type="button" class="progress-metric-card" data-progress-metric="${esc(row.key)}" data-gain="${row.gain??''}" aria-expanded="${row.key===metric}" aria-controls="progressDetail" aria-label="${esc(detail)}" title="${esc(detail)}"><span class="progress-metric-icon" aria-hidden="true">${icon(row.key)}</span><span class="progress-metric-name">${esc(cardName(row.key))}</span><b class="progress-metric-gain ${row.gain>0?'progress-positive':''}">${compact}</b></button>`;
  }).join(''):'<p class="progress-no-matches">No matching stats. Try another name.</p>';
  for(const button of $$('#progressMetrics [data-progress-metric]')){
   const host=$('.progress-metric-icon',button),key=button.dataset.progressMetric;
@@ -83,9 +83,8 @@ function render(){
  const focus=document.activeElement,windowFocus=focus?.dataset.progressWindow,periodHost=focus?.closest('#progressGraphPeriods')?'#progressGraphPeriods':'#progressPeriods';
  const restorePeriod=()=>{if(windowFocus)$(`${periodHost} [data-progress-window="${windowFocus}"]`)?.focus({preventScroll:true})};
  picker();periods();overview();
- const dialog=$('#progressDetail');
- if(!metric){if(dialog.open)dialog.close();$('#gainCards').innerHTML='';$('#xpChart').innerHTML='';restorePeriod();return}
- if(!dialog.open)dialog.showModal();
+ $('#progressDetail').hidden=!metric;
+ if(!metric){$('#gainCards').innerHTML='';$('#xpChart').innerHTML='';restorePeriod();return}
  const {domain,rows}=compare(metric),known=rows.filter(row=>row.gain!==null),total=known.reduce((sum,row)=>sum+row.gain,0),period=M.PERIODS.find(item=>item.days===days),full=days==='max';
  $('#progressHeading').innerHTML=icon(metric)+`<span>${esc(label())} gained · ${full?'full history':'latest '+period.label}</span>`;
  $('#progressRange').textContent=domain?date(domain.start)+' → '+date(domain.end)+' · UTC':'No saved observations.';
@@ -115,11 +114,14 @@ function render(){
 }
 function choose(key){
  if(!catalogue().includes(key))return;
+ if(metric===key){closeDetail();return}
  metric=key;render();writeURL();
+ $('#progressHeading').focus({preventScroll:true});
+ $('#progressDetail').scrollIntoView?.({block:'start'});
 }
 function closeDetail(){
- const previous=metric;metric='';if($('#progressDetail').open)$('#progressDetail').close();writeURL();
- $(`#progressMetrics [data-progress-metric="${previous}"]`)?.focus({preventScroll:true});
+ const previous=metric;metric='';render();writeURL();
+ $(`#progressMetrics [data-progress-metric="${previous}"]`)?.focus();
 }
 async function load(){
  const current=++revision,doc=await U.loadWom();if(current!==revision)return false;
@@ -132,8 +134,6 @@ async function init(){
   $('#progressSearch').oninput=overview;
   $('#progressSort').onchange=()=>{sort=$('#progressSort').value;overview()};
   $('#progressClose').onclick=closeDetail;
-  $('#progressDetail').addEventListener('cancel',event=>{event.preventDefault();closeDetail()});
-  $('#progressDetail').addEventListener('click',event=>{if(event.target===$('#progressDetail'))closeDetail()});
   $('#progressAll').onclick=()=>{selected=new Set(U.ALL_KEYS);U.saveMemberSelection(selected);render();writeURL()};
   document.addEventListener('click',event=>{
    const type=event.target.closest('[data-progress-type]');if(type){family=type.dataset.progressType;metric='';$('#progressSearch').value='';render();writeURL();return}

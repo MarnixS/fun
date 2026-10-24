@@ -7,7 +7,7 @@ server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
  const w=result.dom.window,d=w.document,doc=JSON.parse(fs.readFileSync('docs/data/wom-cache.json')),keys=Array.from(w.UGV21.ALL_KEYS),model=M.build(doc,keys);
  const change=(id,value)=>{const select=d.querySelector(id);select.value=value;select.dispatchEvent(new w.Event('change'))};
  const cards=()=>[...d.querySelectorAll('#progressMetrics [data-progress-metric]')];
- const close=()=>{if(d.querySelector('#progressDetail').open)d.querySelector('#progressClose').click()};
+ const close=()=>{if(!d.querySelector('#progressDetail').hidden)d.querySelector('#progressClose').click()};
  const choose=key=>d.querySelector(`#progressMetrics [data-progress-metric="${key}"]`).click();
  const type=kind=>{close();d.querySelector(`[data-progress-type="${kind}"]`).click()};
  function overview(kind,days,selected=keys){
@@ -15,14 +15,15 @@ server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
   assert.equal(cards().length,catalogue.length,'every metric is visible, including zero and unknown gains');
   for(const key of catalogue){
    const node=d.querySelector(`#progressMetrics [data-progress-metric="${key}"]`),known=model.compare(kind,key,days,selected).rows.filter(row=>row.gain!==null),gain=known.length?known.reduce((sum,row)=>sum+row.gain,0):null;
-   assert(node);assert.equal(node.getAttribute('data-gain'),gain===null?'':String(gain));assert.equal(node.getAttribute('aria-haspopup'),'dialog');assert(node.querySelector('img'),'each card has a skill or boss icon');
+   assert(node);assert.equal(node.getAttribute('data-gain'),gain===null?'':String(gain));assert.equal(node.getAttribute('aria-haspopup'),null);assert.equal(node.getAttribute('aria-controls'),'progressDetail');assert(node.querySelector('img'),'each card has a skill or boss icon');
    if(gain===null)assert.equal(node.querySelector('b').textContent,'—');
   }
   const gridStyle=w.getComputedStyle(d.querySelector('#progressMetrics'));assert.equal(gridStyle.overflow,'visible');assert.equal(gridStyle.maxHeight,'none','the overview has no internally scrolling stat picker');
  }
  function check(kind,metric,days,selected=keys){
   const {rows,domain}=model.compare(kind,metric,days,selected);
-  assert(d.querySelector('#progressDetail').open,'selection opens the focused comparison');
+  assert(!d.querySelector('#progressDetail').hidden,'selection reveals the inline comparison');
+  assert.equal(d.querySelector('[data-progress-metric][aria-expanded="true"]')?.dataset.progressMetric,metric,'the overview highlights the current comparison');
   assert.deepEqual([...d.querySelectorAll('[data-progress-player]')].map(node=>node.dataset.progressPlayer),rows.map(row=>row.key));
   assert.deepEqual([...d.querySelectorAll('[data-progress-rank]')].map(node=>node.dataset.progressRank),rows.map(row=>String(row.rank??'')));
   assert.equal(d.querySelectorAll('#gainCards thead th').length,3);
@@ -33,24 +34,29 @@ server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
    for(const point of svg.querySelectorAll('circle'))assert(Number(point.getAttribute('cx'))>=61.9&&Number(point.getAttribute('cx'))<=882.1);
   }
  }
- assert(!d.querySelector('#progressDetail').open,'arrival shows the overview without an arbitrary selected stat');
+ assert(d.querySelector('#progressDetail').hidden,'arrival shows the overview without an arbitrary selected stat');
+ assert.equal(d.querySelector('#progressDetail').tagName,'SECTION');assert(!d.querySelector('dialog,[role="dialog"],[aria-modal="true"]'),'comparisons stay in the page without a modal');
  assert.equal(d.querySelectorAll('[data-progress-player]').length,0);assert(!d.querySelector('#historicalSourceNote'));
  assert.notEqual(w.getComputedStyle(d.querySelector('.mast-status-six')).display,'none','shared header cards remain visible');assert.notEqual(w.getComputedStyle(d.querySelector('.banner-frame')).display,'none','shared banner remains visible');
  assert(!d.querySelector('[data-progress-mode]'));assert(!d.querySelector('#skillShares'));overview('xp',7);
  for(const period of M.PERIODS){
   const button=d.querySelector(`#progressPeriods [data-progress-window="${period.days}"]`);button.focus();button.click();
-  assert.equal(d.activeElement.dataset.progressWindow,String(period.days));assert(!d.querySelector('#progressDetail').open);overview('xp',period.days);
+  assert.equal(d.activeElement.dataset.progressWindow,String(period.days));assert(d.querySelector('#progressDetail').hidden);overview('xp',period.days);
  }
- const blankReload=await openPage('progress.html'+w.location.search);doms.push(blankReload.dom);assert(!blankReload.dom.window.document.querySelector('#progressDetail').open,'shared overview does not open an unrelated stat');
+ const blankReload=await openPage('progress.html'+w.location.search);doms.push(blankReload.dom);assert(blankReload.dom.window.document.querySelector('#progressDetail').hidden,'shared overview does not open an unrelated stat');
  choose('agility');check('xp','agility','max');assert(d.querySelector('#progressHeading').textContent.includes('full history'));
+ assert.equal(d.activeElement.id,'progressHeading','choosing a stat moves keyboard focus to its inline heading');
+ choose('attack');check('xp','attack','max');choose('agility');check('xp','agility','max');
+ d.querySelector('#progressDetail').click();assert(!d.querySelector('#progressDetail').hidden,'clicking the page does not dismiss the comparison');
+ choose('agility');assert(d.querySelector('#progressDetail').hidden,'the expanded stat can collapse its inline comparison');choose('agility');check('xp','agility','max');
  for(const period of M.PERIODS){
   const button=d.querySelector(`#progressGraphPeriods [data-progress-window="${period.days}"]`);button.focus();button.click();check('xp','agility',period.days);overview('xp',period.days);
   assert.equal(d.activeElement.closest('#progressGraphPeriods')?.id,'progressGraphPeriods');assert.equal(d.querySelector('#progressPeriods [aria-pressed=true]').dataset.progressWindow,String(period.days));
  }
  assert.equal(new URL(w.location.href).searchParams.get('period'),'max');assert(!new URL(d.querySelector('#progressRecords').href).searchParams.has('period'));
  for(const graph of ['bars','share','timeline']){d.querySelector(`[data-progress-view="${graph}"]`).click();check('xp','agility','max')}
- const maxReload=await openPage('progress.html'+w.location.search);doms.push(maxReload.dom);assert(maxReload.dom.window.document.querySelector('#progressDetail').open);assert.equal(maxReload.dom.window.document.querySelector('#progressGraphPeriods [aria-pressed=true]').dataset.progressWindow,'max');assert.equal(maxReload.errors.length,0,maxReload.errors.join('; '));
- close();assert.equal(d.activeElement.dataset.progressMetric,'agility','closing returns keyboard focus to its card');assert(!new URL(w.location.href).searchParams.has('metric'));
+ const maxReload=await openPage('progress.html'+w.location.search);doms.push(maxReload.dom);assert(!maxReload.dom.window.document.querySelector('#progressDetail').hidden);assert.equal(maxReload.dom.window.document.querySelector('#progressGraphPeriods [aria-pressed=true]').dataset.progressWindow,'max');assert.equal(maxReload.errors.length,0,maxReload.errors.join('; '));
+ close();assert.equal(d.activeElement.dataset.progressMetric,'agility','closing returns keyboard focus to its card');assert(!d.querySelector('[data-progress-metric][aria-expanded="true"]'));assert(!new URL(w.location.href).searchParams.has('metric'));
  d.querySelector('#progressPeriods [data-progress-window="365"]').click();
  for(const [kind,key]of [['xp','overall'],['xp','attack'],['level','overall'],['level','agility'],['boss','zulrah'],['computed','ehp'],['computed','ehb']]){type(kind);overview(kind,365);choose(key);check(kind,key,365)}
  type('boss');assert.equal(cards().length,model.metrics.bosses.length);const search=d.querySelector('#progressSearch');search.value='cox';search.dispatchEvent(new w.Event('input'));assert.equal(cards().length,2);assert(cards().every(node=>node.dataset.progressMetric.startsWith('chambers_of_xeric')));
@@ -69,6 +75,6 @@ server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
  assert.equal(result.errors.length,0,result.errors.join('; '));assert(!requests.some(request=>request.method==='POST'||request.url.includes('api.wiseoldman.net')||request.url.includes('/api/temple-collection-log')));
  const linked=await openPage('progress.html?kind=skill&metric=attack&player=dikste&period=7');doms.push(linked.dom);assert.equal(linked.dom.window.document.querySelectorAll('[data-progress-player]').length,1);assert(linked.dom.window.document.querySelector('#progressHeading').textContent.includes('Attack'));
  const weekly=await openPage('progress.html?period=7');doms.push(weekly.dom);assert(weekly.dom.window.document.querySelector('#progressHeading').textContent.includes('Total XP'),'the weekly overview shortcut retains its explicit intent');
- console.log('Stat Progress passed: all stat/boss cards and honest gains, shared header/banner and non-scrolling grid, four families, search/raid aliases/sort, focused accessible comparison, seven synchronized periods including Max, three graphs, focus restoration, filters, shared/legacy URLs, fresh and missing data, and no upstream refresh.');
+ console.log('Stat Progress passed: all stat/boss cards and honest gains, shared header/banner and non-scrolling grid, four families, search/raid aliases/sort, accessible inline comparison, seven synchronized periods including Max, three graphs, focus restoration, filters, shared/legacy URLs, fresh and missing data, and no upstream refresh.');
  doms.forEach(dom=>dom.window.close());server.close();process.exit(0);
 }catch(error){console.error(error);doms.forEach(dom=>dom.window.close());server.close();process.exit(1)}});
