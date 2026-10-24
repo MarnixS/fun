@@ -1,18 +1,4 @@
-/* This page trades the full artwork header for room to compare every stat. */
-html body[data-page=progress] .site-top{padding:4px 0;background:transparent;border:0}
-html body[data-page=progress] .site-top>.wrap{position:relative;width:min(1190px,calc(100% - 28px))!important;display:flex;align-items:center;justify-content:space-between;min-height:44px}
-html body[data-page=progress] .mast{order:-1;display:block;min-width:0}
-html body[data-page=progress] .mast-wordmark{display:flex;justify-content:flex-start;min-height:0;padding:0;gap:8px;border:0;background:none}
-html body[data-page=progress] .mast-wordmark h1{font:22px/1 RuneScape,Georgia,serif;letter-spacing:.03em;color:#e6c26a}
-html body[data-page=progress] .mast-wordmark :is(p,.mast-the,.mast-subtitle,.mast-crest-right){display:none}
-html body[data-page=progress] .mast-wordmark img{width:30px;height:34px;object-fit:contain}
-html body[data-page=progress] :is(.banner-frame,.osrs-banner,.mast-status-six,.osrs-navigation){display:none!important}
-html body[data-page=progress] .theme-toolbar{padding:0}
-html body[data-page=progress] .theme-toggle{min-height:36px;font-size:11px}
-html body[data-page=progress] .main-nav{margin:0 0 12px;background:#17130d;border-block:1px solid #5b4b30}
-html body[data-page=progress] .main-nav>.nav-inner{display:flex!important;min-height:40px}
-html body[data-page=progress] :is(.nav-trigger,.nav-inner>.nav-link){min-height:40px;padding-block:4px;color:#e4d6b4;font-size:13px}
-html body[data-page=progress] .nav-brand{display:none}
+/* Stat Progress uses the same masthead, banner and navigation as every feature. */
 html body[data-page=progress] main.wrap{margin-top:22px;margin-bottom:25px;padding:16px 22px 30px;min-height:0}
 html body[data-page=progress] main [hidden]{display:none!important}
 html body[data-page=progress] main :is(button,input,select){font-family:Arial,sans-serif}
@@ -96,9 +82,6 @@ html[data-theme=osrs] body[data-page=progress] main .progress-dialog{background:
 @media(max-width:1150px){.progress-metrics{grid-template-columns:repeat(8,minmax(0,1fr))}.progress-metric-name{font-size:11px}html body[data-page=progress] main #progressMetrics .progress-metric-card{grid-template-columns:21px minmax(0,1fr);column-gap:4px;padding-inline:5px!important}.progress-metric-icon{width:21px}.progress-metric-icon img{max-width:21px}}
 @media(max-width:900px){.progress-metrics{grid-template-columns:repeat(6,minmax(0,1fr))}.progress-detail-grid{grid-template-columns:1fr}.progress-chart-card .chart{min-height:0}.progress-type-card small{display:none}}
 @media(max-width:700px){
- html body[data-page=progress] .site-top>.wrap{width:calc(100% - 24px)!important}.mast-wordmark h1{max-width:150px}html body[data-page=progress] .mast-wordmark h1{font-size:18px}
- html body[data-page=progress] .main-nav>.nav-inner{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-areas:"overview overview overview overview" "logs levels records other";gap:5px;padding:5px 0}
- html body[data-page=progress] .nav-inner>.nav-link{grid-area:overview;min-height:32px;padding:3px 8px}html body[data-page=progress] .nav-trigger{min-height:44px;padding:4px;font-size:11px;gap:2px;flex-direction:row}.nav-trigger .nav-rune{display:none}
  html body[data-page=progress] main.wrap{padding:14px 12px 30px;margin-top:20px}.progress-page-head{gap:8px}.progress-snapshots summary{font-size:11px}
  html body[data-page=progress] main .progress-page-head h2{font-size:23px!important}.progress-page-head .records-logo{width:24px;height:24px}.progress-page-head p{max-width:210px}
  .progress-types{gap:5px}html body[data-page=progress] main .progress-type-card{padding:7px 5px;gap:5px;flex-direction:column;justify-content:center;min-height:58px}.progress-type-card>img{width:23px;height:23px}.progress-type-card b{font-size:11px;white-space:nowrap}

@@ -1,0 +1,27 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
+const server=http.createServer((req,res)=>{const file=path.join(process.cwd(),'docs',new URL(req.url,'http://localhost').pathname);try{res.setHeader('Connection','close');res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.json')?'application/json':file.endsWith('.css')?'text/css':'text/html');res.end(fs.readFileSync(file))}catch{res.statusCode=404;res.end()}});
+server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
+ process.env.SITE_TEST_URL=`http://127.0.0.1:${server.address().port}/`;const {openPage,waitFor}=require('./audit_v25_jsdom'),requests=[];
+ const page=await openPage('gear-planner.html?boss=tombs_of_amascut',{fetchLog:requests});doms.push(page.dom);const w=page.dom.window,d=w.document;
+ await waitFor(()=>w.UGGearPlanner?.result,'gear planner ready');
+ const change=(id,value)=>{const input=d.querySelector(id);input.value=value;input.dispatchEvent(new w.Event('change',{bubbles:true}))};
+ const fill=(id,value)=>{const input=d.querySelector(id);input.value=value;input.dispatchEvent(new w.Event('input',{bubbles:true}))};
+ assert.equal(d.querySelectorAll('.gp-card').length,5);assert.equal(d.querySelectorAll('.gp-switch-details').length,5);assert(d.querySelector('#gp-boss').options.length>=73);
+ assert.notEqual(w.getComputedStyle(d.querySelector('.banner-frame')).display,'none');assert.notEqual(w.getComputedStyle(d.querySelector('.mast-status-six')).display,'none');assert(d.querySelector('.osrs-navigation'),'uses shared Old School navigation');
+ const first=w.UGGearPlanner.result.loadouts[0].player.key;d.querySelector('#gp-priority [data-gp-move="1"]').click();assert.notEqual(w.UGGearPlanner.result.loadouts[0].player.key,first);
+ change('#gp-boss','kreearra');assert(w.UGGearPlanner.result.loadouts.some(r=>r.sets[0].style==='ranged'),'Kree falls back to ranged after Shadows');assert.equal(d.querySelector('#gp-method option[value=melee]').disabled,true);
+ d.querySelector('#gp-members input[value="lompste"]').click();assert.equal(d.querySelectorAll('.gp-card').length,4);assert.equal(w.UGGearPlanner.result.state.players.length,5,'deselection does not discard group stock');
+ d.querySelector('#gp-edit').click();assert(d.querySelector('#gp-stock-dialog').open);fill('#gp-stock-search','Twisted bow');const input=d.querySelector('[data-stock-item="Twisted bow"]');input.value='0';input.dispatchEvent(new w.Event('change',{bubbles:true}));assert(!w.UGGearPlanner.result.loadouts.some(r=>r.sets[0].slots.weapon.name==='Twisted bow'));assert(w.localStorage.getItem('ug:gear-planner:v2').includes('Twisted bow'));
+ change('#gp-stock-owner','lijpste');fill('#gp-stock-search','Fire cape');assert(d.querySelector('[data-stock-item="Fire cape"]'),'personal equipment editor');
+ d.querySelector('#gp-stock-close').click();assert(!d.querySelector('#gp-stock-dialog').open);assert.equal(d.activeElement.id,'gp-edit');
+ change('#gp-boss','the_gauntlet');assert.equal(d.querySelectorAll('.gp-card').length,0);assert(d.querySelector('#gp-loadouts').textContent.includes('External equipment is not allowed'));assert(d.querySelector('#gp-method').disabled);
+ change('#gp-boss','wintertodt');assert.equal(w.UGGearPlanner.result.loadouts[0].sets[0].style,'skilling');
+ fill('#gp-find','not an encounter');assert(d.querySelector('#gp-boss').disabled);assert.equal(d.querySelectorAll('.gp-card').length,0);fill('#gp-find','vorkath');assert.equal(d.querySelector('#gp-boss').options.length,1);assert.equal(w.UGGearPlanner.result.encounter.id,'vorkath');
+ d.querySelector('#gp-edit').click();d.querySelector('#gp-stock-reset').click();assert.equal(Object.keys(w.UGGearPlanner.settings.overrides.group).length,0);d.querySelector('#gp-stock-close').click();
+ const oldCount=d.querySelectorAll('.gp-card').length;w.dispatchEvent(new w.CustomEvent('ug:members-changed',{detail:{keys:['dikste']}}));assert.equal(d.querySelectorAll('.gp-card').length,1);assert(oldCount>1);
+ const temple=JSON.parse(fs.readFileSync('docs/data/temple-clog.json'));w.dispatchEvent(new w.CustomEvent('ug:data-updated',{detail:{key:w.UGV21.TKEY,document:temple}}));await waitFor(()=>w.UGGearPlanner.result.encounter.id==='vorkath','live log update preserves encounter');
+ assert.equal(page.errors.length,0,page.errors.join('; '));assert(!requests.some(r=>r.method==='POST'||r.url.includes('api.wiseoldman.net')),'no automatic external refresh');
+ const missing=await openPage('gear-planner.html',{deployedDocs:{temple:{players:{},catalog:{items:{}},categories:{}},wom:{profiles:{},snapshots:{}}}});doms.push(missing.dom);await waitFor(()=>missing.dom.window.UGGearPlanner?.result,'empty logs');assert(missing.dom.window.document.querySelector('#gp-warnings').textContent.includes('0/5'));assert.equal(missing.errors.length,0,missing.errors.join('; '));
+ console.log('Gear UI passed: shared banner/header/nav, five-player plans, phase switches, priority, method restrictions, all-member pool, stock edits, local persistence, personal ownership editor, dialog focus, skilling/Gauntlet, search, reset, shared member updates, live log update and empty-data handling.');doms.forEach(dom=>dom.window.close());server.close();process.exit(0);
+}catch(error){console.error(error);doms.forEach(dom=>dom.window.close());server.close();process.exit(1)}});

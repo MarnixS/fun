@@ -35,7 +35,7 @@ server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
  }
  assert(!d.querySelector('#progressDetail').open,'arrival shows the overview without an arbitrary selected stat');
  assert.equal(d.querySelectorAll('[data-progress-player]').length,0);assert(!d.querySelector('#historicalSourceNote'));
- assert.equal(w.getComputedStyle(d.querySelector('.mast-status-six')).display,'none');assert.equal(w.getComputedStyle(d.querySelector('.banner-frame')).display,'none','compact page header leaves room for all stats');
+ assert.notEqual(w.getComputedStyle(d.querySelector('.mast-status-six')).display,'none','shared header cards remain visible');assert.notEqual(w.getComputedStyle(d.querySelector('.banner-frame')).display,'none','shared banner remains visible');
  assert(!d.querySelector('[data-progress-mode]'));assert(!d.querySelector('#skillShares'));overview('xp',7);
  for(const period of M.PERIODS){
   const button=d.querySelector(`#progressPeriods [data-progress-window="${period.days}"]`);button.focus();button.click();
@@ -69,6 +69,6 @@ server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
  assert.equal(result.errors.length,0,result.errors.join('; '));assert(!requests.some(request=>request.method==='POST'||request.url.includes('api.wiseoldman.net')||request.url.includes('/api/temple-collection-log')));
  const linked=await openPage('progress.html?kind=skill&metric=attack&player=dikste&period=7');doms.push(linked.dom);assert.equal(linked.dom.window.document.querySelectorAll('[data-progress-player]').length,1);assert(linked.dom.window.document.querySelector('#progressHeading').textContent.includes('Attack'));
  const weekly=await openPage('progress.html?period=7');doms.push(weekly.dom);assert(weekly.dom.window.document.querySelector('#progressHeading').textContent.includes('Total XP'),'the weekly overview shortcut retains its explicit intent');
- console.log('Stat Progress passed: all stat/boss cards and honest gains, compact header and non-scrolling grid, four families, search/raid aliases/sort, focused accessible comparison, seven synchronized periods including Max, three graphs, focus restoration, filters, shared/legacy URLs, fresh and missing data, and no upstream refresh.');
+ console.log('Stat Progress passed: all stat/boss cards and honest gains, shared header/banner and non-scrolling grid, four families, search/raid aliases/sort, focused accessible comparison, seven synchronized periods including Max, three graphs, focus restoration, filters, shared/legacy URLs, fresh and missing data, and no upstream refresh.');
  doms.forEach(dom=>dom.window.close());server.close();process.exit(0);
 }catch(error){console.error(error);doms.forEach(dom=>dom.window.close());server.close();process.exit(1)}});

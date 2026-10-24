@@ -30,6 +30,8 @@ jobs:
           node scripts/audit_xp_records.js
           node scripts/test_stat_progress.js
           node scripts/audit_stat_progress.js
+          node scripts/test_gear_planner.js
+          node scripts/audit_gear_planner.js
           node scripts/test_ge_prices.js
           python scripts/test_refresh_ge_prices.py
           node scripts/test_chronicle_prices.js
