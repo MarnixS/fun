@@ -28,7 +28,7 @@ function run(){if(!model)return;const ps=players();if(!ps.length){$('#gp-status'
  let plates=0;const arma=[['Armadyl helmet',1],['Armadyl chestplate',4],['Armadyl chainskirt',3]];
  const alreadyBuilt=['Masori mask (f)','Masori body (f)','Masori chaps (f)'];
  const usedArma=new Map();
- if(fortify){for(const [name,cost] of arma){const n=stock.get(key(name))||0;plates+=n*cost}}
+ // Plates are generated only by actually consuming an Armadyl item; no double allocation.
  const rows=[],issues=[];
  for(const p of members){const slots=[];
  for(const [slot,options] of Object.entries(STYLES[sty])){let chosen=null,source='',id=null;
@@ -36,7 +36,7 @@ function run(){if(!model)return;const ps=players();if(!ps.length){$('#gp-status'
  if(own>0){chosen=name;id=lookup.get(k);source='logged';if(shared)stock.set(k,own-1);else{const perKey=p.key+'|'+k;const used=usedArma.get(perKey)||0;if(own<=used){chosen=null;continue}usedArma.set(perKey,used+1)}break}
  // A craftable fortified Masori piece consumes normal Masori + shared Armadyl plates.
  const cost={'Masori mask (f)':1,'Masori body (f)':4,'Masori chaps (f)':3}[name];
- if(shared&&fortify&&cost&&plates>=cost){const base=name.replace(' (f)',''),bk=key(base);if((stock.get(bk)||0)>0){chosen=name;id=lookup.get(bk);source='craft '+cost+' plate'+(cost===1?'':'s');stock.set(bk,stock.get(bk)-1);plates-=cost;break}}
+ if(shared&&fortify&&cost){const base=name.replace(' (f)',''),bk=key(base);if((stock.get(bk)||0)>0){let potential=plates+arma.reduce((n,[a,yieldPlates])=>n+(stock.get(key(a))||0)*yieldPlates,0);if(potential>=cost){while(plates<cost){const feed=arma.filter(([a])=>(stock.get(key(a))||0)>0).sort((a,b)=>a[1]-b[1])[0];if(!feed)break;stock.set(key(feed[0]),stock.get(key(feed[0]))-1);plates+=feed[1]}chosen=name;id=lookup.get(bk);source='craft '+cost+' plate'+(cost===1?'':'s');stock.set(bk,stock.get(bk)-1);plates-=cost;break}}}
  }
  slots.push({slot,name:chosen,id,source});if(!chosen)issues.push(slot);
  }
@@ -45,7 +45,7 @@ function run(){if(!model)return;const ps=players();if(!ps.length){$('#gp-status'
  let msg='Gear ranked by a general '+sty+' priority list, not boss-specific DPS. ';
  if(!shared)msg+='Separate ownership assumed; players cannot borrow logged items from each other. ';
  if(!model.known.size)msg+='No trustworthy log data available. ';
- if(fortify&&sty==='ranged'&&shared)msg+='Hypothetical Armadyl plate pool: '+totalArma+' available from logged armour; '+plates+' unallocated. Existing fortified Masori is allocated first. ';
+ if(fortify&&sty==='ranged'&&shared)msg+='Hypothetical Armadyl plate pool: '+totalArma+' available from logged armour; '+plates+' unused converted plates. Existing fortified Masori is allocated first. ';
  $('#gp-status').textContent=ps.length+' player'+(ps.length>1?'s':'')+' · '+$('#gp-boss').value+' · '+sty+'. '+msg;
  $('#gp-supply').innerHTML='<div class="gp-supply"><h3>Finite supply & assumptions</h3><p>Masori fortification requires 1 plate for the mask, 4 for the body, 3 for the chaps. Armadyl helmet / chestplate / chainskirt yield 1 / 4 / 3 plates. Logged quantities may have been sold, dismantled, consumed, or transferred; existing crafted gear may not appear in the log. This planner <strong>does not confirm current ownership</strong>.</p><p>Logged Armadyl: '+arma.map(([n])=>esc(n)+': '+amount(n,idx,ps)).join(' · ')+'</p><p class="gp-note">When a resource is exhausted, remaining accounts automatically receive the next logged alternative. Ranking follows player order below; swapping the order can change who receives scarce upgrades.</p></div>';
  $('#gp-loadouts').innerHTML='<div class="gp-grid">'+rows.map(({p,slots})=>'<article class="gp-card"><h3>'+esc(p.name)+'</h3><div class="gp-gear">'+slots.map(s=>'<div class="gp-slot">'+itemImg(s.id)+'<div><small>'+esc(U.nice(s.slot))+'</small><div>'+esc(s.name||'No logged option')+'</div></div><small>'+esc(s.source)+'</small></div>').join('')+'</div></article>').join('')+'</div>';
