@@ -4,6 +4,10 @@ The Experimental planner lives at `/gear-planner`. The source page is
 `site/pages/gear-planner.html`; regenerate both public and legacy pages with
 `python scripts/build_site.py`. Do not edit the generated HTML directly.
 
+See [GEAR-DPS.md](GEAR-DPS.md) for the current DPS defaults, editable equipment
+slots, combat modifiers and calculation limits. This document describes the
+shared finite-stock and crafting model beneath that interface.
+
 ## Model
 
 `gear-planner-data.js` contains the encounter methods, equipment priorities,
@@ -20,17 +24,18 @@ Untradeable gear remains per-account. A tradeable result can be crafted by a
 group member who owns its personal ingredient; an untradeable result must be
 crafted by its recipient.
 
-The selected priority determines scarce-item recipients. Every player's main
-weapon is reserved before phase weapons, then armour and optional specs. A
-weapon and its crystal-armour dependencies are one atomic reservation. A failed
-candidate leaves no consumed materials. Equipment already held by a player can
+The selected priority determines scarce-item recipients. Main setups are
+reserved before phase switches and optional specs. A candidate and its crafting
+dependencies are one atomic reservation. A failed candidate leaves no consumed
+materials. Equipment already held by a player can
 be reused in another phase; it cannot be lent to a simultaneous second player.
 Conversions use a bounded minimum-waste search over unallocated donor pieces.
 
-These are research-based priorities, not DPS calculations or a globally optimal
-team allocation. Gear, spells, invocations, stat boosts, defence drains and
-method execution can change the ranking. Equipment checks cover the listed
-requirements; crafting skill/quest/charge conditions are displayed on items.
+Encounter methods and phase recommendations provide the encounter context;
+the DPS layer compares feasible gear using each player's levels and modifiers.
+The search is iterative rather than a proven globally optimal team allocation.
+Equipment checks cover the listed requirements; crafting skill/quest/charge
+conditions are displayed on items.
 
 ## Stock corrections
 

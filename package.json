@@ -15,10 +15,15 @@
     "test:routes": "node scripts/test_clean_routes.js",
     "test:records": "node scripts/test_xp_records.js && node scripts/audit_xp_records.js",
     "test:progress": "node scripts/test_stat_progress.js && node scripts/audit_stat_progress.js",
-    "test:gear": "node scripts/test_gear_planner.js && node scripts/test_gear_recipes.js && node scripts/audit_gear_planner.js"
+    "test:gear": "node scripts/test_gear_planner.js && node scripts/test_gear_recipes.js && node scripts/test_gear_dps.js && node scripts/test_gear_loadouts.js && node scripts/audit_gear_planner.js",
+    "build:gear-dps": "node scripts/build_gear_dps.js"
   },
   "devDependencies": {
+    "axios": "1.13.2",
+    "d3-array": "3.2.4",
+    "esbuild": "0.25.12",
     "fake-indexeddb": "^6.2.5",
-    "jsdom": "^30.0.1"
+    "jsdom": "^30.0.1",
+    "lodash.mergewith": "4.6.2"
   }
 }

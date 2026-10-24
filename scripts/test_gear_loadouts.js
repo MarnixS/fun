@@ -1,0 +1,32 @@
+'use strict';
+const assert=require('node:assert/strict'),D=require('../docs/assets/gear-planner-data'),M=require('../docs/assets/gear-planner-model'),P=require('../docs/assets/gear-loadout-model');
+const players=['a','b'].map(key=>({key,name:key})),allLevels={attack:99,strength:99,defence:99,hitpoints:99,ranged:99,magic:99,prayer:99,mining:99,herblore:99};
+function fixture(entries){const names=new Map(),counts=new Map(players.map(p=>[p.key,new Map()]));let id=1;for(const [name,values]of Object.entries(entries)){names.set(id,name);for(const [key,count]of Object.entries(typeof values==='number'?{a:values}:values))counts.get(key).set(id,count);id++}return{names,counts,known:new Set(['a','b']),categories:[]}}
+const e={id:'general_graardor',name:'General Graardor',roles:[{label:'Main setup',routes:[{style:'melee',weapons:['Dragon scimitar','Abyssal whip']}]}]};
+const settings={selected:['a','b'],levels:{a:allLevels,b:allLevels},specials:false,switches:false};
+const model=fixture({'Abyssal whip':1,'Dragon scimitar':2,'Bandos chestplate':1,'Fire cape':{a:1}});
+let p=P.plan(model,players,e,settings);assert.equal(p.loadouts[0].sets[0].slots.weapon.name,'Abyssal whip','DPS can overturn source preset order');assert.equal(p.loadouts[1].sets[0].slots.weapon.name,'Dragon scimitar','the second player receives the remaining weapon');
+const edited={...settings,edits:{b:{'Main setup':{weapon:'Abyssal whip'}}}};p=P.plan(model,players,e,edited);let selected=p.loadouts[1].sets[0];assert(selected.slots.weapon.hypothetical);assert.equal(selected.slots.weapon.source,'contended');assert(selected.hypothetical);assert.equal(p.ledger.find(r=>r.name==='Abyssal whip').used,1,'hypothetical duplicate does not debit stock');
+p=P.plan(model,players,e,{...settings,edits:{b:{'Main setup':{weapon:'Scythe of vitur'}}}});selected=p.loadouts[1].sets[0];assert.equal(selected.slots.weapon.source,'unavailable');assert.equal(selected.dps.status,'ok','unavailable gear remains useful for a labelled DPS scenario');assert(!p.ledger.some(r=>r.name==='Scythe of vitur'&&r.used));
+assert(p.ledger.every(r=>r.left>=0&&r.used+r.reserved<=r.start),'no physical stock can be overdrawn');
+const state=P.availabilityState(model,players,p,settings,'b'),initial=M.stock(model,players,settings);assert.equal(P.inventoryStatus(state,initial,'Abyssal whip','b').status,'allocated');assert.equal(P.inventoryStatus(state,initial,'Dragon scimitar','b').status,'stock');assert.equal(P.inventoryStatus(state,initial,'Tumeken\'s shadow','b').status,'unavailable');assert.equal(P.inventoryStatus(state,initial,'Fire cape','b').status,'allocated','another player’s personal cape is not shareable');
+p=P.plan(model,players,e,{...settings,edits:{a:{'Main setup':{body:null}}}});assert.equal(p.loadouts[0].sets[0].slots.body.name,null,'an explicitly empty slot remains empty');
+assert(P.catalogue.some(i=>i.name==='Rune platebody'&&i.slot==='body'));assert(P.catalogue.some(i=>i.name==='Dragon boots'&&i.slot==='feet'));
+// Equal max-hit rounding must not hide useful Strength or accuracy bonuses.
+const handDown=fixture({'Abyssal whip':2,"Inquisitor's plateskirt":1,'Blood moon tassets':1});
+p=P.plan(handDown,players,e,{...settings,levels:{a:allLevels,b:{...allLevels,attack:80,strength:80,defence:70}}});
+assert.equal(p.loadouts[0].sets[0].slots.legs.name,"Inquisitor's plateskirt",'the stronger account uses the owned +2 Strength, +12 crush, +2 Prayer alternative');
+assert.equal(p.loadouts[1].sets[0].slots.legs.name,'Blood moon tassets','Blood Moon tassets pass down to the weaker account');
+assert.equal(p.loadouts[0].sets[0].dps.bonuses.str,84);assert.equal(p.loadouts[1].sets[0].dps.bonuses.str,84);
+assert.equal(p.ledger.find(row=>row.name==="Inquisitor's plateskirt").used,1);assert.equal(p.ledger.find(row=>row.name==='Blood moon tassets').used,1);
+const assembled=fixture({'Voidwaker blade':1,'Voidwaker hilt':1,'Voidwaker gem':1,'Abyssal whip':2});
+p=P.plan(assembled,players,e,{...settings,edits:{a:{'Main setup':{weapon:'Voidwaker'}},b:{'Main setup':{weapon:'Voidwaker'}}}});assert.equal(p.loadouts[1].sets[0].slots.weapon.source,'contended','exhausted recipe ingredients are orange too');
+for(const name of ['Voidwaker blade','Voidwaker hilt','Voidwaker gem'])assert.equal(p.ledger.find(row=>row.name===name).used,1);
+const muspah=fixture({'Twisted bow':1,'Armadyl crossbow':1});
+p=P.plan(muspah,players,D.encounters.find(e=>e.id==='phantom_muspah'),{...settings,selected:['a'],switches:true});
+const shield=p.loadouts[0].sets.find(set=>set.label==='Prayer shield');assert.equal(shield.slots.weapon.name,'Armadyl crossbow','Muspah keeps the required crossbow switch');assert.equal(shield.dps.status,'unavailable','ordinary HP DPS is not misrepresented as prayer-shield damage');assert(shield.slots.ammo.name.includes('Sapphire'),'Muspah shield uses sapphire bolts with the crossbow');
+const winter=D.encounters.find(e=>e.id==='wintertodt');p=P.plan(fixture({'Dragon axe':1}),players,winter,{...settings,selected:['a'],edits:{a:{'Tools & outfit':{weapon:'Dragon axe'}}}});assert.equal(p.loadouts[0].sets[0].slots.weapon.name,'Dragon axe','skilling slots remain editable too');
+const toa=D.encounters.find(e=>e.id==='tombs_of_amascut'),raidStock=fixture({'Tumeken\'s shadow':1,'Twisted bow':1,'Abyssal whip':1});
+p=P.plan(raidStock,players,toa,{...settings,selected:['a'],combat:{context:{raidRoom:'kephri'}}});assert.equal(p.loadouts[0].sets[0].style,'melee','raid encounter changes the default combat method, rather than keeping the full-raid magic preset');assert.match(p.loadouts[0].sets[0].dps.target,/Kephri/);
+p=P.plan(raidStock,players,toa,{...settings,selected:['a'],combat:{context:{raidRoom:'zebak'}}});assert.equal(p.loadouts[0].sets[0].slots.weapon.name,'Twisted bow');assert.match(p.loadouts[0].sets[0].dps.target,/Zebak/);
+console.log('Editable loadouts passed: DPS-driven defaults, finite priority, green/orange/red availability, personal ownership, hypothetical scenarios without stock inflation, empty slots and a complete searchable equipment catalogue.');

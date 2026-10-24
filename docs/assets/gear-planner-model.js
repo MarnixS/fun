@@ -52,13 +52,13 @@ function spend(s,name,count,owner,player,stack=new Set(),existing=false,otherPer
 }
 function stock(model,players,settings={}){
  const overrides=settings.overrides||{},ids=new Map(),totals=new Map(),personal=new Map(players.map(p=>[p.key,new Map()])),shared=new Map();
- const names=new Map([...model.names].map(([id,name])=>[id,D.normalise(name)]));
+ const names=new Map();for(const [id,name] of model.names){const key=D.normalise(name);if(!names.has(key))names.set(key,[]);names.get(key).push(id)}
  for(const item of Object.values(D.items)){
-  const aliases=new Set([item.name,...item.aliases||[]].map(D.normalise)),matches=[...names].filter(([,name])=>aliases.has(name)).map(([id])=>id);
+  const aliases=new Set([item.name,...item.aliases||[]].map(D.normalise)),matches=[...aliases].flatMap(name=>names.get(name)||[]);
   ids.set(item.name,matches[0]||item.id||null);
   let total=0;
-  for(const p of players){const counts=matches.map(id=>model.known.has(p.key)?model.counts.get(p.key)?.get(id)||0:0),count=item.sumAliases?counts.reduce((a,b)=>a+b,0):Math.max(0,...counts);total+=count;if(item.personal)personal.get(p.key).set(item.name,count)}
-  totals.set(item.name,total);if(!item.personal)shared.set(item.name,total);
+  for(const p of players){const counts=matches.map(id=>model.known.has(p.key)?model.counts.get(p.key)?.get(id)||0:0),count=item.sumAliases?counts.reduce((a,b)=>a+b,0):Math.max(0,...counts);total+=count;if(item.personal&&count)personal.get(p.key).set(item.name,count)}
+  totals.set(item.name,total);if(!item.personal&&total)shared.set(item.name,total);
  }
  for(const [name,value] of Object.entries(overrides.group||{}))if(D.items[name]&&!D.items[name].personal&&finite(value))shared.set(name,Number(value));
  for(const p of players)for(const [name,value] of Object.entries(overrides.personal?.[p.key]||{}))if(D.items[name]?.personal&&finite(value))personal.get(p.key).set(name,Number(value));
@@ -164,5 +164,5 @@ function encounterList(model,metricKeys=[]){
  for(const raw of keys){const key=D.aliases[raw]||raw;if(seen.has(key))continue;seen.add(key);const name=raw.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase());out.push({id:key,name,kind:'unreviewed',group:'Awaiting verified preset',roles:[],note:'No verified encounter preset is available. No generic list is presented as BIS.',source:D.wiki(name+'/Strategies')})}
  return out.sort((a,b)=>a.name.localeCompare(b.name));
 }
-return{stock,plan,encounterList,eligible,finite};
+return{stock,plan,encounterList,eligible,finite,clone,equip,adopt};
 });
