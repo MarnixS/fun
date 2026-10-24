@@ -161,8 +161,17 @@ export const potionOptions = [
   ['imbued','Super combat + ranging + imbued heart'],['saturated','Super combat + ranging + saturated heart'],
   ['overload','Overload (CoX)'],['overloadPlus','Overload (+) (CoX)'],['salts','Smelling salts (ToA)'],['moonlight','Moonlight (Moons)'],
 ];
-export const prayerOptions = [['none','No offensive prayers'],['best','Best by level (unlocks assumed)'],['mid','15% prayers / Eagle Eye / Mystic Might'],['piety','Piety'],['chivalry','Chivalry'],['rigour','Rigour'],['deadeye','Deadeye'],['eagleEye','Eagle Eye'],['augury','Augury'],['mysticVigour','Mystic Vigour'],['mysticMight','Mystic Might']];
-export const ammoOptions = [['auto','Amethyst ammo · diamond bolts'],['dragon','Dragon ammo · diamond dragon bolts'],['ruby','Dragon ammo · ruby dragon bolts'],['sapphire','Dragon ammo · sapphire dragon bolts'],['rune','Rune ammo · diamond bolts']];
+export const prayerOptions = [['none','No offensive prayers'],['best','Best eligible prayer'],['mid','15% prayers / Eagle Eye / Mystic Might'],['piety','Piety'],['chivalry','Chivalry'],['rigour','Rigour'],['deadeye','Deadeye'],['eagleEye','Eagle Eye'],['augury','Augury'],['mysticVigour','Mystic Vigour'],['mysticMight','Mystic Might']];
+const seekingArrows: Record<string,string> = Object.fromEntries(['dragon','amethyst','rune','adamant','broad','mithril','steel','iron','bronze'].map(tier=>['seeking'+tier[0].toUpperCase()+tier.slice(1),'Seeking '+tier+' arrow'+(tier==='broad'?'s':'')]));
+export const ammoOptions = [['auto','Amethyst ammo · diamond bolts'],['dragon','Dragon ammo · diamond dragon bolts'],['ruby','Dragon ammo · ruby dragon bolts'],['sapphire','Dragon ammo · sapphire dragon bolts'],['rune','Rune ammo · diamond bolts'],...Object.entries(seekingArrows).map(([key,name])=>[key,name+' (bows)'])];
+export function slayerTaskAllowed(e:any) {return !e.kind&&(e.task==='required'||targets(e).some(t=>monsterByKey.get(t.key)?.is_slayer_monster));}
+export function prayerUnlockEvidence(model:any, players:any[]) {
+  return [['Rigour','Dexterous prayer scroll'],['Augury','Arcane prayer scroll'],['Preserve','Torn prayer scroll'],['Deadeye','Deadeye prayer scroll'],['Mystic Vigour','Mystic vigour prayer scroll']].map(([prayer,scroll])=>{
+    const ids=[...model.names].filter(([,name]:any)=>norm(name)===norm(scroll)).map(([id]:any)=>id);
+    const owners=players.filter(p=>model.known.has(p.key)&&ids.some(id=>(model.counts.get(p.key)?.get(id)||0)>0)).map(p=>p.name||p.key);
+    return {prayer,scroll,owners,logged:owners.length>0};
+  });
+}
 export const spellLevels: Record<string,number> = {'Wind Strike':1,'Water Strike':5,'Earth Strike':9,'Fire Strike':13,'Wind Bolt':17,'Water Bolt':23,'Earth Bolt':29,'Fire Bolt':35,'Wind Blast':41,'Water Blast':47,'Earth Blast':53,'Fire Blast':59,'Wind Wave':62,'Water Wave':65,'Earth Wave':70,'Fire Wave':75,'Wind Surge':81,'Water Surge':85,'Earth Surge':90,'Fire Surge':95,'Iban Blast':50,'Magic Dart':50,'Ice Burst':70,'Ice Barrage':94,'Blood Blitz':80,'Blood Barrage':92,'Inferior Demonbane':44,'Superior Demonbane':62,'Dark Demonbane':82};
 export const spellOptions = [['auto','Automatic spell / built-in attack'], ...Object.keys(spellLevels).map(n => [n,n+' ('+spellLevels[n]+')'])];
 const skillKeys: Record<string,string> = {atk:'attack',str:'strength',def:'defence',hp:'hitpoints',ranged:'ranged',magic:'magic',prayer:'prayer',mining:'mining',herblore:'herblore'};
@@ -190,7 +199,7 @@ function prayers(key: string, style: string, s: any, notes: string[]) {
 }
 function ammunition(p: Player, key: string, target: Monster, label: string, notes: string[]) {
   const weapon = p.equipment.weapon!, cat = weapon.category;
-  const dragon = ['dragon','ruby','sapphire'].includes(key);
+  const dragon = ['dragon','ruby','sapphire','seekingDragon'].includes(key);
   let name = '';
   if (BLOWPIPE_IDS.includes(weapon.id)) {
     name = key === 'rune' ? 'Rune dart' : dragon ? 'Dragon dart' : 'Amethyst dart';
@@ -202,12 +211,12 @@ function ammunition(p: Player, key: string, target: Monster, label: string, note
     name = gem + (dragon && dragonCompatible ? ' dragon bolts (e)' : ' bolts (e)');
   } else if (weapon.name === 'Eclipse atlatl') name = 'Atlatl dart';
   else if (cat === 'Bow' && !/faerdhinen|Crystal bow|Craw|Webweaver/i.test(weapon.name)) {
-    name = key === 'rune' ? 'Rune arrow' : dragon ? 'Dragon arrow' : 'Amethyst arrow';
-    if (weapon.name === 'Twisted bow' && !dragon && key !== 'rune') name = 'Amethyst arrow';
+    name = seekingArrows[key] || (key === 'rune' ? 'Rune arrow' : dragon ? 'Dragon arrow' : 'Amethyst arrow');
   }
   if (name && !BLOWPIPE_IDS.includes(weapon.id)) {
     const preferred=[name,...(cat==='Crossbow'?['Diamond bolts (e)','Runite bolts']:['Amethyst arrow','Rune arrow'])].map(n=>equipment(n)).find(p=>p&&ammoApplicability(weapon.id,p.id)===AmmoApplicability.INCLUDED);
     const fallback=preferred||availableEquipment.filter(p=>p.slot==='ammo'&&ammoApplicability(weapon.id,p.id)===AmmoApplicability.INCLUDED).sort((a,b)=>b.bonuses.ranged_str-a.bonuses.ranged_str)[0];
+    if(fallback&&fallback.name!==name)notes.push(name+' is incompatible with '+weapon.name+'; the ammo preset uses '+fallback.name+'.');
     p.equipment.ammo=fallback?clone(fallback):null;name=fallback?.name||'';
   }
   return name;
@@ -260,13 +269,16 @@ export function calculateSet(input: any): any {
   if (!potionAllowed(potion,e)) return {status:'unavailable',reason:'This boost is restricted to a different activity. Choose another potion.'};
   p.buffs.potions = potions(potion,set.style);
   for (const potion of p.buffs.potions) for (const [skill,boost] of Object.entries(PotionMap[potion].calculateFn(p.skills))) if (boost!==undefined) (p.boosts as any)[skill]=Math.max((p.boosts as any)[skill],boost);
+  p.buffs.onSlayerTask=(e.task==='required'||!!context.onTask)&&!!base.is_slayer_monster;
+  if(context.onTask&&!base.is_slayer_monster)notes.push('This target is not eligible for Slayer-task damage bonuses.');
   p.prayers = prayers(modifiers.prayer||'none',set.style,p.skills,notes);
+  if(p.prayers.length)notes.push('Prayer unlocks are treated as permanent for every account, as confirmed for this group; Prayer and Defence levels still apply.');
   let ammo = '',quiverBlessing:EquipmentPiece|null=null;
   const wornBlessing=isBlessing(p.equipment.ammo?.name||'')?p.equipment.ammo:null;
   const usesQuiver=!!wornBlessing&&!ammoSlotFree(p.equipment.weapon.name)&&ammoSlotFree(p.equipment.weapon.name,p.equipment.cape?.name);
   if (set.style==='ranged') {
     if(usesQuiver){quiverBlessing=wornBlessing;ammo=ammunition(p,modifiers.ammo||'auto',monster,set.label,notes);}
-    else if (slots.ammo?.locked) {
+    else if (slots.ammo?.locked || slots.ammo?.name&&!slots.ammo.ammoAssumption&&!wornBlessing) {
       ammo=slots.ammo.name||'';
       if (BLOWPIPE_IDS.includes(p.equipment.weapon.id)) {
         if(p.equipment.ammo&&/ dart$/i.test(p.equipment.ammo.name)){p.equipment.weapon.itemVars={blowpipeDartId:p.equipment.ammo.id,blowpipeDartName:p.equipment.ammo.name};p.equipment.ammo=null;}
@@ -279,6 +291,9 @@ export function calculateSet(input: any): any {
     notes.push('The blessing supplies Prayer bonus; it does not directly increase damage or accuracy.');
     if(usesQuiver)notes.push('Arrows or bolts are stored in Dizana’s quiver; the blessing stays in the normal ammo slot.');
   }
+  if(ammo.includes('Seeking')&&p.equipment.weapon.category==='Bow')notes.push('Seeking arrows add +20 Ranged accuracy and raise successful hits below 3 to 3; misses remain zero.');
+  if(p.buffs.onSlayerTask)notes.push('Matching Slayer task is active. Eligible black masks / Slayer helmets apply their combat bonuses; Salve does not stack with them.');
+  if(set.style==='melee'&&[p.equipment.head,p.equipment.body,p.equipment.legs].some(piece=>piece?.name.startsWith('Inquisitor')))notes.push('Inquisitor’s crush accuracy/damage bonus: helm 0.5%, body 1%, legs 1%; each applies only when using crush.');
   if (set.style==='magic') {
     p.spell = selectSpell(p,monster,modifiers.spell||'auto');
     if (p.spell && p.skills.magic+p.boosts.magic < (spellLevels[p.spell.name]||1)) return {status:'unavailable',reason:p.spell.name+' exceeds the boosted Magic level.'};
@@ -301,10 +316,10 @@ export function calculateSet(input: any): any {
   if (ammo) notes.push('Ammo assumed: '+ammo+(usesQuiver?' · stored in quiver':'')+'.');
   if (p.spell) notes.push('Spell: '+p.spell.name+'.');
   if (!Number.isFinite(dps)) return {status:'unavailable',reason:'This combination is not supported by the combat engine.'};
-  return {status:'ok',dps,maxAttackRoll:calc.getMaxAttackRoll(),maxHit:calc.getDistribution().getMax(),accuracy:calc.getDisplayHitChance(),attackTicks:calc.getExpectedAttackSpeed(),baseAttackTicks:player.attackSpeed,expectedDamage:calc.getExpectedDamage(),target:choice.label,targetKey:choice.key,targetId:monster.id,hp:current.skills.hp,currentHp:monster.inputs.monsterCurrentHp,defence:current.skills.def,magic:current.skills.magic,defenceFloor:getDefenceFloor(undrained),baseDefence:undrained.skills.def,skills:player.skills,boosts:player.boosts,bonuses:player.bonuses,offensive:player.offensive,defensive:player.defensive,style:player.style,prayers:player.prayers.map(n=>PrayerMap[n].name),potions:p.buffs.potions.map(n=>PotionMap[n].name),spell:p.spell?.name||null,ammo,ammoInQuiver:usesQuiver,notes:[...new Set(notes)]};
+  return {status:'ok',dps,maxAttackRoll:calc.getMaxAttackRoll(),maxHit:calc.getDistribution().getMax(),accuracy:calc.getDisplayHitChance(),attackTicks:calc.getExpectedAttackSpeed(),baseAttackTicks:player.attackSpeed,expectedDamage:calc.getExpectedDamage(),target:choice.label,targetKey:choice.key,targetId:monster.id,hp:current.skills.hp,currentHp:monster.inputs.monsterCurrentHp,defence:current.skills.def,magic:current.skills.magic,defenceFloor:getDefenceFloor(undrained),baseDefence:undrained.skills.def,skills:player.skills,boosts:player.boosts,bonuses:player.bonuses,offensive:player.offensive,defensive:player.defensive,style:player.style,onSlayerTask:p.buffs.onSlayerTask,prayers:player.prayers.map(n=>PrayerMap[n].name),potions:p.buffs.potions.map(n=>PotionMap[n].name),spell:p.spell?.name||null,ammo,ammoInQuiver:usesQuiver,notes:[...new Set(notes)]};
 }
 function bounded(v:any,fallback:number,min:number,max:number) { return Number.isFinite(Number(v)) && v!==null && v!=='' ? Math.max(min,Math.min(max,Math.trunc(Number(v)))) : fallback; }
-export function cleanReductions(r:any={}) { return {vulnerability:r.curse==='vulnerability',accursed:r.curse==='accursed',elderMaul:bounded(r.elderMaul,0,0,20),dwh:bounded(r.dwh,0,0,20),arclight:bounded(r.arclight,0,0,20),emberlight:bounded(r.emberlight,0,0,20),bgs:bounded(r.bgs,0,0,2000),tonalztic:0,seercull:0,ayak:bounded(r.ayak,0,0,200)}; }
+export function cleanReductions(r:any={}) { return {vulnerability:r.curse==='vulnerability',accursed:r.curse==='accursed',elderMaul:bounded(r.elderMaul,0,0,20),dwh:bounded(r.dwh,0,0,20),arclight:bounded(r.arclight,0,0,20),emberlight:bounded(r.emberlight,0,0,20),bgs:bounded(r.bgs,0,0,2000),tonalztic:bounded(r.tonalztic,0,0,20),seercull:bounded(r.seercull,0,0,2000),ayak:bounded(r.ayak,0,0,200)}; }
 
 /** One functional entry per name; cosmetic aliases share the same stock row. */
 export function catalog(D: any) {
@@ -331,6 +346,7 @@ export function weaponStyle(name:string) {
 export function weaponAttackTypes(name:string) {const item=equipment(name);return item?[...new Set(getCombatStylesForCategory(item.category).filter(s=>['stab','slash','crush'].includes(s.type||'')).map(s=>s.type))]:[];}
 export function usesDarts(name:string) {const item=equipment(name);return !!item&&BLOWPIPE_IDS.includes(item.id);}
 export function isBlessing(name:string) {return /\bblessing(?: \d)?$/i.test(name);}
+export function ammoCompatible(weaponName:string,ammoName:string) {const weapon=equipment(weaponName),ammo=equipment(ammoName);return !!weapon&&!!ammo&&ammoApplicability(weapon.id,ammo.id)===AmmoApplicability.INCLUDED;}
 export function ammoSlotFree(name:string,capeName?:string) {
   const item=name?equipment(name):null;if(!item)return false;
   if(ammoApplicability(item.id)===AmmoApplicability.ALLOWED)return true;

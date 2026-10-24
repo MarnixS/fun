@@ -7,13 +7,13 @@ for(const name of materialNames)if(D.items[name])D.items[name].craftingMaterial=
 for(const item of catalogue)D.items[item.name].equipmentSlot=item.slot;
 const bySlot=new Map(slots.map(slot=>[slot,catalogue.filter(item=>item.slot===slot)]));
 const empty=()=>({name:null,source:'missing',options:[]});
-function modifiers(settings,key){const c=settings.combat||{};return{potion:'none',prayer:'none',ammo:'auto',spell:'auto',style:'auto',...c.defaults,...Object.fromEntries(Object.entries(c.players?.[key]||{}).filter(([,v])=>v!=='inherit'))}}
-function context(settings){return{...settings.combat?.context,partySize:settings.combat?.context?.partySize||settings.selected?.length||1,partyLevels:settings.combat?.context?.partyLevels||(settings.selected||[]).map(key=>settings.levels?.[key]||{}),onTask:settings.onTask}}
+function modifiers(settings,key){const c=settings.combat||{};const value={potion:'none',prayer:'none',ammo:'auto',spell:'auto',style:'auto',...c.defaults,...Object.fromEntries(Object.entries(c.players?.[key]||{}).filter(([,v])=>v!=='inherit'))};for(const key of ['markOfDarkness','kandarin'])value[key]=value[key]===true||value[key]==='on';return value}
+function context(settings,key){const task=key?modifiers(settings,key).onTask:undefined;return{...settings.combat?.context,partySize:settings.combat?.context?.partySize||settings.selected?.length||1,partyLevels:settings.combat?.context?.partyLevels||(settings.selected||[]).map(key=>settings.levels?.[key]||{}),onTask:task===undefined||task==='inherit'?!!settings.onTask:task===true||task==='on'}}
 function scoreSettings(settings){return JSON.stringify([settings.levels,settings.combat,settings.onTask])}
 function available(s,name,key){return s.held.get(key)?.has(name)||((D.items[name]?.personal?s.personal.get(key)?.get(name):s.shared.get(name))||0)>0||s.assumed.has(key+'|'+name)||D.items[name]?.recipe}
 function options(s,slot,key,style,preset=[]){
  const names=[...new Set([...preset,...(bySlot.get(slot)||[]).map(i=>i.name)])];
- return names.filter(name=>D.items[name]&&available(s,name,key)&&M.eligible(s,name,key)&&(slot!=='weapon'||E.weaponStyle(name)===style)&&(slot!=='ammo'||E.isBlessing(name))).filter(name=>!!M.probe(s,name,key));
+ return names.filter(name=>D.items[name]&&available(s,name,key)&&M.eligible(s,name,key)&&(slot!=='weapon'||E.weaponStyle(name)===style)).filter(name=>!!M.probe(s,name,key));
 }
 function inventoryStatus(s,initial,name,key){
  if(!name)return{status:'empty',label:'Empty slot'};
@@ -65,7 +65,7 @@ function optimise(base,key,player,e,role,main,settings,locked,cache){
    ||style==='ranged'&&(/Dizana/i.test(name)||/faerdhinen|Crystal bow/i.test(weapon)&&/Crystal/i.test(name)||atlatl&&/Eclipse moon/i.test(name)||/Karil/i.test(weapon)&&/Karil|damned/i.test(name))
    ||style==='melee'&&(types.includes('crush')&&/Inquisitor/i.test(name)||weapon==='Dual macuahuitl'&&/Blood moon/i.test(name)||/Toktz|Tzhaar/i.test(weapon)&&/obsidian|berserker necklace/i.test(name)||/Dharok|Verac|Torag|Guthan/i.test(weapon)&&/Dharok|Verac|Torag|Guthan|damned/i.test(name));
   const gear=Object.fromEntries(armour.map(slot=>{
-   const capes=Object.hasOwn(locked,'cape')?[locked.cape]:role.weaponOnly?[main?.slots.cape?.name]:rawGearCache.get(style).cape;const names=slot==='ammo'&&!E.ammoSlotFree(weapon)&&!capes.some(cape=>E.ammoSlotFree(weapon,cape))?[]:rawGearCache.get(style)[slot];if(/Dinh/i.test(weapon))return[slot,names];
+   const capes=Object.hasOwn(locked,'cape')?[locked.cape]:role.weaponOnly?[main?.slots.cape?.name]:rawGearCache.get(style).cape;const names=slot==='ammo'?rawGearCache.get(style)[slot].filter(name=>E.isBlessing(name)?E.ammoSlotFree(weapon)||capes.some(cape=>E.ammoSlotFree(weapon,cape)):!E.usesDarts(weapon||'')&&E.ammoCompatible(weapon||'',name)):rawGearCache.get(style)[slot];if(/Dinh/i.test(weapon))return[slot,names];
    const stats=new Map(names.map(name=>{const i=E.equipment(name),b=i?.bonuses||{},a=i?.offensive||{};return[name,style==='magic'?[a.magic||0,b.magic_str||0,b.prayer||0]:style==='ranged'?[a.ranged||0,atlatl?b.str||0:b.ranged_str||0,b.prayer||0]:[...types.map(type=>a[type]||0),b.str||0,b.prayer||0]]}));
    return[slot,names.filter(name=>relevant(name)||!names.some(other=>{if(name===other)return false;const a=stats.get(other),b=stats.get(name);return a.every((n,j)=>n>=b[j])&&a.some((n,j)=>n>b[j])}))];
   }));gearCache.set(cacheKey,gear);return gear;
@@ -79,7 +79,7 @@ function optimise(base,key,player,e,role,main,settings,locked,cache){
    let layout=build(base,key,names,locked);if(!layout)return{weapon,style,value:-1};
    for(const slot of armour)if((!role.weaponOnly||slot==='ammo')&&!Object.hasOwn(locked,slot)&&!(slot==='offhand'&&D.items[weapon]?.twoHanded))for(const name of gear[slot]){const item=M.equip(layout.state,name,key);if(item){names[slot]=name;layout.slots[slot]=item;break}}
    const set={label:role.label,style,weaponOnly:!!role.weaponOnly,slots:layout.slots};let value=-1;
-   try{const calc=E.calculateSet({encounter:e,row:{player,sets:role.weaponOnly?[main,set]:[set]},setIndex:role.weaponOnly?1:0,levels:settings.levels?.[key]||{},context:context(settings),modifiers:modifiers(settings,key)});if(calc.status==='ok')value=calc.dps}catch{}
+   try{const calc=E.calculateSet({encounter:e,row:{player,sets:role.weaponOnly?[main,set]:[set]},setIndex:role.weaponOnly?1:0,levels:settings.levels?.[key]||{},context:context(settings,key),modifiers:modifiers(settings,key)});if(calc.status==='ok')value=calc.dps}catch{}
    return{weapon,style,value};
   });
   shortlist=[...new Set([...styles.flatMap(style=>ranked.filter(r=>r.style===style).sort((a,b)=>b.value-a.value).slice(0,3).map(r=>r.weapon)),...weapons.filter(n=>/faerdhinen|Dual macuahuitl|Inquisitor.s mace|Scythe of vitur|Obsidian/i.test(n))])];
@@ -100,7 +100,7 @@ function optimise(base,key,player,e,role,main,settings,locked,cache){
    if(cache.has(id)){const dps=cache.get(id);return{...plan,set:{label:role.label,style,weaponOnly:!!role.weaponOnly,slots:plan.slots},dps,value:dps.status==='ok'?dps.dps:-1}}
    const set={label:role.label,style,weaponOnly:!!role.weaponOnly,slots:plan.slots};
    const row={player,sets:role.weaponOnly?[main,set]:[set]};
-   let dps;try{dps=E.calculateSet({encounter:e,row,setIndex:role.weaponOnly?1:0,levels:settings.levels?.[key]||{},context:context(settings),modifiers:modifiers(settings,key)})}catch(error){dps={status:'unavailable',reason:'Combat calculation unavailable: '+error.message}}
+   let dps;try{dps=E.calculateSet({encounter:e,row,setIndex:role.weaponOnly?1:0,levels:settings.levels?.[key]||{},context:context(settings,key),modifiers:modifiers(settings,key)})}catch(error){dps={status:'unavailable',reason:'Combat calculation unavailable: '+error.message}}
    const evaluated={...plan,set,dps,value:dps.status==='ok'?dps.dps:-1};cache.set(id,dps);return evaluated;
   };
   let currentResult=evaluate(current);

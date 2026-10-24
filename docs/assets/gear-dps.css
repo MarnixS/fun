@@ -34,3 +34,5 @@ html body[data-page=gear-planner] #gp-equipment-dialog .gp-picker-item.gp-picker
 html body[data-page=gear-planner] #main-content .gp-owned-actions button{border:1px solid var(--edge)!important;background:var(--panel2)!important;color:var(--text)!important;box-shadow:none!important}
 html[data-theme=osrs] body[data-page=gear-planner] #main-content .gp-owned-actions button{border-color:#8b764b!important;background:#c4b079!important;color:#352714!important}
 html[data-theme=osrs] body[data-page=gear-planner] .gp-equipment-hint{color:#695338}
+
+.gp-player-combat-link{margin:0 8px 8px;min-height:32px;font-size:11px!important;cursor:pointer}.gp-combat .gp-dps-advanced>p,.gp-combat #gp-prayer-evidence{font-size:12px;line-height:1.6}.gp-combat #gp-prayer-evidence{padding-left:20px}.gp-combat [hidden]{display:none!important}

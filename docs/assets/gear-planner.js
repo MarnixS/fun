@@ -7,9 +7,9 @@ let saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch{}
 let selected=U.loadMemberSelection(),order=[...new Set([...(Array.isArray(saved.order)?saved.order:[]),...U.ALL_KEYS])].filter(k=>U.ALL_KEYS.includes(k)),overrides={group:{},personal:{},...saved.overrides},model,encounters=[],result,levels={},edits=saved.edits||{},revision=0,picker=null,pickerLimit=60;
 const dialog=$('#gp-stock-dialog'),labels={log:'Log estimate',craft:'Potential craft',assumed:'Assumed',confirmed:'Confirmed',reused:'Same player: reused',missing:'No available option','two-handed':'Two-handed weapon',contended:'Acquired · out of stock',unavailable:'Not available'};
 const editKey=()=>{const room=F.settings().context.raidRoom;return $('#gp-boss').value+(room&&room!=='all'?'::'+room:'')};
-const settings=()=>({selected:[...selected],order,overrides,levels,craft:$('#gp-crafted').checked,baseline:$('#gp-baseline').checked,respectLevels:$('#gp-levels').checked,onTask:$('#gp-task').checked,switches:$('#gp-switches').checked,specials:$('#gp-specials').checked,method:$('#gp-method').value,edits:edits[editKey()]||{},combat:F.settings()});
-function persist(){try{localStorage.setItem(KEY,JSON.stringify({order,overrides,edits,boss:$('#gp-boss').value,options:Object.fromEntries(['crafted','baseline','levels','task','switches','specials'].map(id=>[id,$('#gp-'+id).checked]))}))}catch{$('#gp-edits').textContent='Browser storage unavailable; current changes still apply.'}}
-for(const id of ['crafted','baseline','levels','task','switches','specials'])if(typeof saved.options?.[id]==='boolean')$('#gp-'+id).checked=saved.options[id];
+const settings=()=>({selected:[...selected],order,overrides,levels,craft:$('#gp-crafted').checked,baseline:$('#gp-baseline').checked,respectLevels:$('#gp-levels').checked,switches:$('#gp-switches').checked,specials:$('#gp-specials').checked,method:$('#gp-method').value,edits:edits[editKey()]||{},combat:F.settings()});
+function persist(){try{localStorage.setItem(KEY,JSON.stringify({order,overrides,edits,boss:$('#gp-boss').value,options:Object.fromEntries(['crafted','baseline','levels','switches','specials'].map(id=>[id,$('#gp-'+id).checked]))}))}catch{$('#gp-edits').textContent='Browser storage unavailable; current changes still apply.'}}
+for(const id of ['crafted','baseline','levels','switches','specials'])if(typeof saved.options?.[id]==='boolean')$('#gp-'+id).checked=saved.options[id];
 const link=name=>'<a href="'+esc(D.wiki(name))+'" target="_blank" rel="noopener">'+esc(name)+'</a>';
 const icon=id=>id?'<img class="gp-item-icon" src="https://static.runelite.net/cache/item/icon/'+Number(id)+'.png" alt="" loading="lazy" decoding="async">':'<span class="gp-item-icon gp-icon-empty" aria-hidden="true">◇</span>';
 function slotHTML(slot,v,key,phase){
@@ -30,7 +30,7 @@ function renderBosses(keep){
 }
 function run(){
  if(!model)return;const e=encounters.find(e=>e.id===$('#gp-boss').value);if(!e)return;F.configure(e);
- $('#gp-task').disabled=e.task==='required'||!e.task;$('#gp-method').disabled=!!e.kind;
+ $('#gp-method').disabled=!!e.kind;
  const room=E.raidRoom(e,F.settings().context.raidRoom),methods=new Set(room?.styles.length?room.styles:(e.roles[0]?.routes||[]).map(route=>route.style));
  for(const option of $('#gp-method').options)option.disabled=option.value!=='auto'&&!methods.has(option.value);
  if($('#gp-method').value!=='auto'&&!methods.has($('#gp-method').value))$('#gp-method').value='auto';
@@ -99,7 +99,7 @@ $('#gp-equipment-list').addEventListener('keydown',ev=>{const options=[...docume
 $('#gp-equipment-close').addEventListener('click',closePicker);$('#gp-equipment-auto').addEventListener('click',()=>selectEquipment(null,true));$('#gp-equipment-empty').addEventListener('click',()=>selectEquipment(null));
 $('#gp-priority').addEventListener('click',ev=>{const b=ev.target.closest('[data-gp-move]');if(!b)return;const active=order.filter(k=>selected.has(k)),i=active.indexOf(b.dataset.player),j=i+Number(b.dataset.gpMove);if(j<0||j>=active.length)return;[active[i],active[j]]=[active[j],active[i]];order=[...active,...order.filter(k=>!selected.has(k))];run();$('#gp-priority [data-player="'+b.dataset.player+'"][data-gp-move="'+b.dataset.gpMove+'"]')?.focus()});
 $('#gp-find').addEventListener('input',()=>renderBosses($('#gp-boss').value));$('#gp-boss').addEventListener('change',()=>{$('#gp-method').value='auto';run()});
-for(const id of ['method','crafted','baseline','levels','task','switches','specials'])$('#gp-'+id).addEventListener('change',run);
+for(const id of ['method','crafted','baseline','levels','switches','specials'])$('#gp-'+id).addEventListener('change',run);
 let stockTrigger=$('#gp-edit');
 function openStock(owner,search,trigger){if(owner)$('#gp-stock-owner').value=owner;if(search!==undefined)$('#gp-stock-search').value=search;stockTrigger=trigger||document.activeElement||$('#gp-edit');stockRows();if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');$('#gp-stock-search').focus()}
 $('#gp-edit').addEventListener('click',()=>openStock());

@@ -24,7 +24,7 @@ equipment data and integration adapter are served under `vendor/osrs-dps/`.
   not estimate whole-fight duration, movement, phase downtime or missed inputs.
   Muspah's prayer shield instead shows its sapphire-bolt switch and an explicit
   unavailable result: ordinary HP DPS does not measure prayer-shield damage.
-- Team defaults and per-player overrides control potions, offensive prayers,
+- A single panel, scoped to Team defaults or one player, controls potions, offensive prayers,
   ammo, spells, melee style, Soulreaper stacks, Mark of Darkness and the Kandarin
   hard diary. Raid-only potions are restricted to their activities.
 - Raid scaling uses selected players' saved combat, HP and Mining levels. Party
@@ -34,8 +34,11 @@ equipment data and integration adapter are served under `vendor/osrs-dps/`.
   warhammer, Arclight/Emberlight and BGS in that order and respects NPC floors.
 - Ammo and charges/repairs are maintained assumptions. Automatic ammo must be
   compatible with the weapon; special cases include blowpipe darts, ballista
-  javelins, Karil's bolt racks and Dorgeshuun bone bolts. Prayer unlocks and every
-  crafting/quest prerequisite cannot be established from a Collection Log.
+  javelins, Karil's bolt racks and Dorgeshuun bone bolts. This group explicitly
+  treats every prayer unlock as permanent for every account. Logged Dexterous,
+  Arcane and other prayer scrolls are displayed as evidence, not consumed or
+  allocated as equipment. Base Prayer/Defence requirements still apply. Other
+  crafting/quest prerequisites remain stated assumptions.
 
 ## Defaults and finite supply
 
@@ -151,3 +154,39 @@ Sources:
 - https://oldschool.runescape.wiki/w/Damage_per_second
 - https://oldschool.runescape.wiki/w/Dragon_warhammer
 - https://prices.runescape.wiki/api/v1/osrs/mapping
+
+## Combat panel, Slayer tasks and Seeking arrows (25 October 2026)
+
+Potions, prayers, ammo, task status and advanced player buffs each have one
+control in a shared panel. Its scope selector edits team defaults or an individual
+account. Individual fields explicitly inherit unless overridden. Scope changes
+do not alter settings. Equipment-slot edits remain local to that setup; loaded
+blowpipe darts and quiver ammo follow the scoped preset. Existing saved player
+overrides persist. The first upgrade migrates the former no-prayer default to
+Best; subsequent explicit None choices persist. All other skill requirements
+remain enforced.
+
+Task status resolves separately for each player in both ownership and loan
+passes. Required-task encounters force matching task status. The upstream target
+flag gates actual Slayer effects, including raid phases that do not qualify.
+Imbued helmets support melee, ranged and magic; Salve never stacks.
+
+All nine Seeking arrow variants are in the equipment catalogue and ammo presets.
+Compatible physical stock competes in the default loadout search, with finite
+quantities and owner claims. Preset consumables remain an explicit supply
+assumption. Arrow tier compatibility is checked before a preset is applied. The
+upstream engine adds +20 bow accuracy and raises accurate damage below three to
+three without converting misses. Quiver-projected ammo retains the same effect.
+Inquisitor's three armour pieces and mace use actual stats; helm/body/legs supply
+0.5%/1%/1% additional accuracy and damage on crush, including partial sets.
+
+Defence inputs describe one shared target for the party. Tonalztics landed hits
+and Seercull Magic drain are now exposed alongside the existing reductions.
+Numbers recalculate on input or change; the active-input count stays visible in
+the section summary. The upstream ordering and target floors are unchanged.
+
+Sources: [Seeking arrows](https://oldschool.runescape.wiki/w/Seeking_arrows),
+[Inquisitor armour](https://oldschool.runescape.wiki/w/Inquisitor%27s_armour),
+[Slayer helmet (i)](https://oldschool.runescape.wiki/w/Slayer_helmet_(i)),
+[prayer unlocks](https://oldschool.runescape.wiki/w/Unlockable_content#Prayers),
+and the pinned upstream combat/scaling source served with the site.
