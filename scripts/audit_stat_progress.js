@@ -48,6 +48,7 @@ server.listen(0,'127.0.0.1',async()=>{const doms=[];try{
  assert.equal(d.activeElement.id,'progressHeading','choosing a stat moves keyboard focus to its inline heading');
  choose('attack');check('xp','attack','max');choose('agility');check('xp','agility','max');
  d.querySelector('#progressDetail').click();assert(!d.querySelector('#progressDetail').hidden,'clicking the page does not dismiss the comparison');
+ d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert(!d.querySelector('#progressDetail').hidden,'Escape does not dismiss an ordinary inline section');
  choose('agility');assert(d.querySelector('#progressDetail').hidden,'the expanded stat can collapse its inline comparison');choose('agility');check('xp','agility','max');
  for(const period of M.PERIODS){
   const button=d.querySelector(`#progressGraphPeriods [data-progress-window="${period.days}"]`);button.focus();button.click();check('xp','agility',period.days);overview('xp',period.days);

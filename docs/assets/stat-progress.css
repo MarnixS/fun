@@ -41,7 +41,7 @@ html body[data-page=progress] main #progressMetrics .progress-positive{color:#80
 .progress-metric-card:hover{filter:brightness(1.07);border-color:var(--gold2)!important}
 html body[data-page=progress] main .progress-status{margin:8px 0 0;font-size:11px!important;line-height:1.4}
 .progress-no-matches{grid-column:1/-1;padding:18px}
-.progress-detail{min-width:0;margin-top:18px;padding-top:18px;border-top:1px solid var(--edge);scroll-margin-top:20px}
+.progress-detail{min-width:0;margin-top:18px;padding-top:18px;border-top:1px solid var(--edge);scroll-margin-top:72px}
 html body[data-page=progress] main #progressMetrics .progress-metric-card[aria-expanded=true]{outline:2px solid var(--gold2);outline-offset:-2px}
 .progress-detail-head{display:flex;align-items:start;justify-content:space-between;gap:15px;margin-bottom:10px}
 html body[data-page=progress] main .progress-detail-head h3{display:flex;align-items:center;gap:8px;font-size:20px!important;margin:0}

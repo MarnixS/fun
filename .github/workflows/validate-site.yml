@@ -31,6 +31,7 @@ jobs:
           node scripts/test_stat_progress.js
           node scripts/audit_stat_progress.js
           node scripts/test_gear_planner.js
+          node scripts/test_gear_recipes.js
           node scripts/audit_gear_planner.js
           node scripts/test_ge_prices.js
           python scripts/test_refresh_ge_prices.py

@@ -79,6 +79,27 @@ Each encounter links its OSRS Wiki strategy page. The key conversion references:
   [Yama](https://oldschool.runescape.wiki/w/Yama/Strategies), and the three raid
   strategy pages document the encounter-specific choices and switches.
 
+## Assembly limits
+
+- Voidwaker: one blade + one hilt + one gem per weapon. The assembly fee is a condition, not a tracked bank balance.
+- Abyssal bludgeon: one axon + one claw + one spine held by the same crafter.
+- Noxious halberd: one point + one blade + one pommel held by the same crafter.
+- Brimstone ring: one hydra eye + one fang + one heart held by the same crafter.
+- Soulreaper axe: all four personal pieces held by the same crafter.
+- Venator bow: five shards per bow; burning claws: two claws per weapon.
+- Godswords: every assembly consumes one complete three-shard blade as well as its hilt.
+- Heavy/light ballistae: limbs, spring and monkey tail compete across both frame types.
+
+Finished tradeable outcomes can be passed to another selected player. Personal
+pieces split across different members cannot be combined. Slot details show the
+recipe and the concrete inputs reserved by the plan.
+
+References: [Voidwaker](https://oldschool.runescape.wiki/w/Voidwaker),
+[Abyssal bludgeon](https://oldschool.runescape.wiki/w/Abyssal_bludgeon),
+[Noxious halberd](https://oldschool.runescape.wiki/w/Noxious_halberd),
+[Brimstone ring](https://oldschool.runescape.wiki/w/Brimstone_ring), and
+[Heavy ballista](https://oldschool.runescape.wiki/w/Heavy_ballista).
+
 ## Verification
 
 `npm run test:gear` checks finite supplies, donor conversion, seed/zenyte

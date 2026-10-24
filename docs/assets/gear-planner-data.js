@@ -34,10 +34,10 @@ recipe('Amulet of rancour',{'Amulet of torture':1,'Araxyte fang':1},{requirement
 recipe('Amulet of blood fury',{'Amulet of fury':1,'Blood shard':1},{note:'Blood shards and charges are finite; ongoing upkeep is outside the planner.'});
 for(const [name,base] of [['Ultor ring','Berserker ring'],['Bellator ring','Warrior ring'],['Venator ring','Archers ring'],['Magus ring','Seers ring']])recipe(name,{[name.split(' ')[0]+' vestige']:1,[base]:1,'Chromium ingot':3},{note:'Requires the corresponding DT2 boss kill and 80 Magic.'});
 for(const name of ['Berserker ring','Archers ring','Seers ring','Ring of suffering','Ring of the gods','Tyrannical ring','Treasonous ring'])recipe(name+' (i)',{[name]:1},{personal:true,note:'Imbuing is assumed obtainable, not proven by the Collection Log.'});
-recipe('Noxious halberd',{'Noxious point':1,'Noxious blade':1,'Noxious pommel':1},{twoHanded:true,requirements:{attack:80},note:'82 Smithing.'});
+recipe('Noxious halberd',{'Noxious point':1,'Noxious blade':1,'Noxious pommel':1},{sameCrafter:true,twoHanded:true,requirements:{attack:80},note:'72 Crafting and 72 Smithing; the three untradeable components must belong to one crafter. The finished halberd can be shared.'});
 recipe('Burning claws',{'Burning claw':2},{requirements:{attack:60}});
 recipe('Venator bow',{'Venator shard':5},{twoHanded:true,requirements:{ranged:80},note:'Ancient essence charges required.'});
-recipe('Voidwaker',{'Voidwaker blade':1,'Voidwaker gem':1,'Voidwaker hilt':1},{requirements:{attack:75}});
+recipe('Voidwaker',{'Voidwaker blade':1,'Voidwaker gem':1,'Voidwaker hilt':1},{requirements:{attack:75},note:'One blade + one hilt + one gem make one weapon; Madam Sikaro also charges 500,000 coins.'});
 for(const god of ['Bandos','Armadyl','Saradomin','Zamorak','Ancient'])recipe(god+' godsword',{[god+' hilt']:1,'Godsword shard 1':1,'Godsword shard 2':1,'Godsword shard 3':1},{twoHanded:true,requirements:{attack:75}});
 recipe('Zaryte crossbow',{'Armadyl crossbow':1,'Nihil horn':1},{requirements:{ranged:80},note:'250 nihil shards also required; attachment has no skill requirement.'});
 for(const [name,base] of [['Spectral spirit shield','Spectral sigil'],['Arcane spirit shield','Arcane sigil'],['Elysian spirit shield','Elysian sigil']])recipe(name,{[base]:1,'Blessed spirit shield':1});
@@ -200,6 +200,10 @@ for(const encounter of encounters)for(const role of [...encounter.roles,...encou
 for(const name of ['Zamorakian spear','Dragon spear','Magic shortbow','Magic shortbow (i)','Bone shortbow']){if(!items[name])add(name);items[name].twoHanded=true;}
 items['Purging staff'].personal=true;items['Purging staff'].requirements={magic:77,attack:50};items['Purging staff'].note='74 Crafting, 55 Smithing, an iron bar and While Guthix Sleeps/Duradel’s notes required. Use demonbane with Mark of Darkness.';
 items['Soulreaper axe'].personal=false;items['Soulreaper axe'].sameCrafter=true;items['Soulreaper axe'].requirements={attack:80,strength:80};items['Soulreaper axe'].note='All four personal pieces must belong to the same crafter; 75 Magic and 2,000 blood runes also required. The finished axe can be shared.';
+for(const name of ['Bludgeon axon','Bludgeon claw','Bludgeon spine',"Hydra's eye","Hydra's fang","Hydra's heart",'Noxious point','Noxious blade','Noxious pommel']){if(!items[name])add(name);items[name].personal=true;}
+recipe('Abyssal bludgeon',{'Bludgeon axon':1,'Bludgeon claw':1,'Bludgeon spine':1},{sameCrafter:true,twoHanded:true,id:13263,requirements:{attack:70,strength:70},note:'One of each personal component must belong to the same crafter. The Overseer/book assembles a tradeable bludgeon.'});
+recipe('Brimstone ring',{"Hydra's eye":1,"Hydra's fang":1,"Hydra's heart":1},{sameCrafter:true,id:22975,note:'One eye, fang and heart on the same crafter make one tradeable ring.'});
+for(const [name,frame,level] of [['Heavy ballista','Heavy frame',75],['Light ballista','Light frame',65]])recipe(name,{'Ballista limbs':1,'Ballista spring':1,[frame]:1,'Monkey tail':1},{twoHanded:true,requirements:{ranged:level},note:name==='Heavy ballista'?'72 Fletching and Monkey Madness II required; uses javelins.':'47 Fletching required; uses javelins.'});
 // Every recipe ingredient and every selectable gear item is a first-class stock row.
 for(const item of Object.values(items))for(const name of Object.keys(item.recipe||{}))if(!items[name])add(name);
 return{reviewed,wiki,items,gear,weapons,encounters,aliases,normalise:s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,'')};
