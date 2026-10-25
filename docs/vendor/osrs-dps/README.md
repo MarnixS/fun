@@ -7,7 +7,7 @@ Pinned commit: `98e4fac38b580901cc3f8d485bbaa48bbb3277ed`, retrieved 24 October 
 `src/` contains the upstream calculator, equipment handling, scaling, prayer and
 potion definitions. Combat formulas are unchanged. `src/lib/Equipment.ts` indexes
 immutable equipment aliases and item IDs for repeated calculations; this lookup
-change is marked in that file and preserves canonical IDs. `src/lib/BaseCalc.ts` matches equipment names without case differences, fixing set-effect checks when Wiki display names change capitalisation (for example Blood Moon armour). `adapter.ts` connects its inputs to the United
+change is marked in that file and preserves canonical IDs. `src/lib/BaseCalc.ts` matches equipment names without case differences, fixing set-effect checks when Wiki display names change capitalisation (for example Blood Moon armour). The item-name index is also hydrated in upstream no-init subcalculators, preserving equipped passives in nested/HP-dependent calculations. The Flames of Zamorak input guard also uses the correct spell spelling, matching the spell catalogue. `adapter.ts` connects its inputs to the United
 Gimps planner. The calculator and adapter are distributed under GPL-3.0; see
 [LICENSE](LICENSE). The readable corresponding source is served here alongside
 the compiled calculator, and is also tracked in the public site repository.

@@ -59,10 +59,10 @@ function stock(model,players,settings={}){
  for(const item of Object.values(D.items)){
   const aliases=new Set([item.name,...item.aliases||[]].map(D.normalise)),matches=[...aliases].flatMap(name=>names.get(name)||[]);
   ids.set(item.name,matches[0]||item.id||null);
-  let total=0;const owners=new Map();
-  for(const p of players){const counts=matches.map(id=>model.known.has(p.key)?model.counts.get(p.key)?.get(id)||0:0),count=item.sumAliases?counts.reduce((a,b)=>a+b,0):Math.max(0,...counts);total+=count;if(count)owners.set(p.key,count);if(item.personal&&count)personal.get(p.key).set(item.name,count)}
+  let total=0,physical=0;const owners=new Map();
+  for(const p of players){const counts=matches.map(id=>model.known.has(p.key)?model.counts.get(p.key)?.get(id)||0:0),count=item.sumAliases?counts.reduce((a,b)=>a+b,0):Math.max(0,...counts);total+=count;const legacy=overrides.personal?.[p.key]?.[item.name];physical+=item.legacyPersonal&&finite(legacy)?Number(legacy):count;if(count)owners.set(p.key,count);if(item.personal&&count)personal.get(p.key).set(item.name,count)}
   if(owners.size)logged.set(item.name,owners);
-  totals.set(item.name,total);if(!item.personal&&total)shared.set(item.name,total);
+  totals.set(item.name,total);if(!item.personal&&physical)shared.set(item.name,physical);
  }
  for(const [name,value] of Object.entries(overrides.group||{}))if(D.items[name]&&!D.items[name].personal&&finite(value))shared.set(name,Number(value));
  for(const p of players)for(const [name,value] of Object.entries(overrides.personal?.[p.key]||{}))if(D.items[name]?.personal&&finite(value))personal.get(p.key).set(name,Number(value));

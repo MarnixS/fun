@@ -7,7 +7,7 @@ for(const name of materialNames)if(D.items[name])D.items[name].craftingMaterial=
 for(const item of catalogue)D.items[item.name].equipmentSlot=item.slot;
 const bySlot=new Map(slots.map(slot=>[slot,catalogue.filter(item=>item.slot===slot)]));
 const empty=()=>({name:null,source:'missing',options:[]});
-function modifiers(settings,key){const c=settings.combat||{};const value={potion:'none',prayer:'none',ammo:'auto',spell:'auto',style:'auto',...c.defaults,...Object.fromEntries(Object.entries(c.players?.[key]||{}).filter(([,v])=>v!=='inherit'))};for(const key of ['markOfDarkness','kandarin'])value[key]=value[key]===true||value[key]==='on';return value}
+function modifiers(settings,key){const c=settings.combat||{};const value={potion:'none',prayer:'none',ammo:'auto',spell:'auto',style:'auto',...c.defaults,...Object.fromEntries(Object.entries(c.players?.[key]||{}).filter(([,v])=>v!=='inherit'))};for(const key of ['markOfDarkness','kandarin','sunfire','charge','forinthry'])value[key]=value[key]===true||value[key]==='on';return value}
 function context(settings,key){const task=key?modifiers(settings,key).onTask:undefined;return{...settings.combat?.context,partySize:settings.combat?.context?.partySize||settings.selected?.length||1,partyLevels:settings.combat?.context?.partyLevels||(settings.selected||[]).map(key=>settings.levels?.[key]||{}),onTask:task===undefined||task==='inherit'?!!settings.onTask:task===true||task==='on'}}
 function scoreSettings(settings){return JSON.stringify([settings.levels,settings.combat,settings.onTask])}
 function available(s,name,key){return s.held.get(key)?.has(name)||((D.items[name]?.personal?s.personal.get(key)?.get(name):s.shared.get(name))||0)>0||s.assumed.has(key+'|'+name)||D.items[name]?.recipe}
@@ -198,7 +198,7 @@ function improvesRow(next,current){
 }
 function plan(model,players,e,settings={}){
  const chosen=settings.selected||players.map(p=>p.key);
- if(settings.ownerPriority===false||chosen.length<2||e.kind&&e.kind!=='skilling')return allocate(model,players,e,settings);
+ if(settings.ownerPriority===false||chosen.length<2||e.kind&&e.kind!=='skilling')return analysePlan(allocate(model,players,e,settings),settings);
  // First allocate each selected owner's logged items and ingredients. These
  // claims cover switches as well as main gear; an earlier non-owner cannot
  // consume the last copy or dismantle another owner's reserved armour.
@@ -218,8 +218,29 @@ function plan(model,players,e,settings={}){
  for(const row of result.loadouts){const seen=new Set();for(const set of row.sets)for(const item of Object.values(set.slots))if(item.name&&!item.hypothetical&&!item.ammoAssumption){const held=result.state.held.get(row.player.key)?.get(item.name);if(held){Object.assign(item,held,{source:seen.has(item.name)?'reused':held.source});seen.add(item.name)}}}
  result.ledger=ledger(result.state);result.ownerPriority=true;
  result.missing=result.loadouts.reduce((n,row)=>n+row.sets.reduce((sum,set)=>sum+Object.values(set.slots).filter(item=>item.source==='missing').length,0),0);
+ return analysePlan(result,settings);
+}
+function analysePlan(result,settings){
+ if(result.encounter.kind)return result;
+ for(const row of result.loadouts){const key=row.player.key,input={encounter:result.encounter,row,levels:settings.levels?.[key]||{},context:context(settings,key),modifiers:modifiers(settings,key),analysis:true};
+  for(let i=0;i<row.sets.length;i++)try{row.sets[i].dps=E.calculateSet({...input,setIndex:i})}catch(error){row.sets[i].dps={status:'unavailable',reason:'Combat analysis unavailable: '+error.message}}
+  if(row.special)try{row.special.combat=E.calculateSpecial(input)}catch(error){row.special.combat={status:'unavailable',reason:'Special-attack analysis unavailable: '+error.message}}
+ }
  return result;
 }
+// Controlled one-slot comparison: retain this player's armour, levels, buffs and
+// exact phase; do not mutate or reassign anyone's physical stock during preview.
+function compareItem(result,settings,key,phase,slot,name){
+ const original=result.loadouts.find(r=>r.player.key===key);if(!original)return null;
+ const row={...original,sets:original.sets.map(set=>({...set,slots:{...set.slots}})),special:original.special?{...original.special}:null};
+ const index=row.sets.findIndex(set=>set.label===phase),baseContext=context(settings,key),target=(phase==='Special attack'?original.sets[0]:original.sets[index])?.dps?.targetKey,input={encounter:result.encounter,row,levels:settings.levels?.[key]||{},context:{...baseContext,target:target||baseContext.target},modifiers:modifiers(settings,key)};
+ if(phase==='Special attack'){row.special={name};return E.calculateSpecial(input)}
+ if(index<0)return null;const set=row.sets[index];set.slots[slot]={name,locked:true};if(slot==='weapon')set.style=E.weaponStyle(name||'');
+ const preview=E.calculateSet({...input,setIndex:index});if(preview.status==='ok'){preview.delta=preview.dps-(original.sets[index].dps?.dps||0);preview.percent=original.sets[index].dps?.dps?preview.delta/original.sets[index].dps.dps*100:null;
+  if(slot==='ring'&&row.special&&index===0){set.dps=preview;const spec=E.calculateSpecial(input);preview.cycleDps=spec.cycleDps??null;preview.cycleDelta=Number.isFinite(spec.cycleDps)&&Number.isFinite(original.special?.combat?.cycleDps)?spec.cycleDps-original.special.combat.cycleDps:null;}
+ }
+ return preview;
+}
 function availabilityState(model,players,result,settings,key){const s=M.stock(model,players,settings);for(const row of result.loadouts)if(row.player.key!==key){for(const set of row.sets)for(const item of Object.values(set.slots))if(item.name&&!item.hypothetical&&!item.ammoAssumption)M.equip(s,item.name,row.player.key);if(row.special?.name&&!row.special.hypothetical)M.equip(s,row.special.name,row.player.key)}return s}
-return{plan,catalogue,slots,modifiers,context,inventoryStatus,availabilityState};
+return{plan,catalogue,slots,modifiers,context,inventoryStatus,availabilityState,compareItem};
 });

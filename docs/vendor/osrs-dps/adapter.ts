@@ -6,9 +6,10 @@ import { availableEquipment, calculateEquipmentBonusesFromGear, calculateAttackS
 import { getMonsters, INITIAL_MONSTER_INPUTS } from '@/lib/Monsters';
 import { scaleMonster } from '@/lib/MonsterScaling';
 import { getDefenceFloor } from '@/lib/scaling/DefenceReduction';
-import { PotionMap, getCombatStylesForCategory, calculateCombatLevel } from '@/utils';
+import { PotionMap, getCombatStylesForCategory, calculateCombatLevel, FeatureStatus } from '@/utils';
 import Potion from '@/enums/Potion';
 import { Prayer, PrayerMap } from '@/enums/Prayer';
+import UserIssueType from '@/enums/UserIssueType';
 import { spells } from '@/types/Spell';
 import { Player, EquipmentPiece } from '@/types/Player';
 import { Monster } from '@/types/Monster';
@@ -163,7 +164,7 @@ export const potionOptions = [
 ];
 export const prayerOptions = [['none','No offensive prayers'],['best','Best eligible prayer'],['mid','15% prayers / Eagle Eye / Mystic Might'],['piety','Piety'],['chivalry','Chivalry'],['rigour','Rigour'],['deadeye','Deadeye'],['eagleEye','Eagle Eye'],['augury','Augury'],['mysticVigour','Mystic Vigour'],['mysticMight','Mystic Might']];
 const seekingArrows: Record<string,string> = Object.fromEntries(['dragon','amethyst','rune','adamant','broad','mithril','steel','iron','bronze'].map(tier=>['seeking'+tier[0].toUpperCase()+tier.slice(1),'Seeking '+tier+' arrow'+(tier==='broad'?'s':'')]));
-export const ammoOptions = [['auto','Amethyst ammo · diamond bolts'],['dragon','Dragon ammo · diamond dragon bolts'],['ruby','Dragon ammo · ruby dragon bolts'],['sapphire','Dragon ammo · sapphire dragon bolts'],['rune','Rune ammo · diamond bolts'],...Object.entries(seekingArrows).map(([key,name])=>[key,name+' (bows)'])];
+export const ammoOptions = [['adaptive','Auto · ruby / diamond bolts'],['adaptiveDragon','Auto · dragon ammo / enchanted bolts'],['auto','Amethyst ammo · diamond bolts'],['dragon','Dragon ammo · diamond dragon bolts'],['ruby','Dragon ammo · ruby dragon bolts'],['sapphire','Dragon ammo · sapphire dragon bolts'],['rune','Rune ammo · diamond bolts'],...Object.entries(seekingArrows).map(([key,name])=>[key,name+' (bows)'])];
 export function slayerTaskAllowed(e:any) {return !e.kind&&(e.task==='required'||targets(e).some(t=>monsterByKey.get(t.key)?.is_slayer_monster));}
 export function prayerUnlockEvidence(model:any, players:any[]) {
   return [['Rigour','Dexterous prayer scroll'],['Augury','Arcane prayer scroll'],['Preserve','Torn prayer scroll'],['Deadeye','Deadeye prayer scroll'],['Mystic Vigour','Mystic vigour prayer scroll']].map(([prayer,scroll])=>{
@@ -172,7 +173,7 @@ export function prayerUnlockEvidence(model:any, players:any[]) {
     return {prayer,scroll,owners,logged:owners.length>0};
   });
 }
-export const spellLevels: Record<string,number> = {'Wind Strike':1,'Water Strike':5,'Earth Strike':9,'Fire Strike':13,'Wind Bolt':17,'Water Bolt':23,'Earth Bolt':29,'Fire Bolt':35,'Wind Blast':41,'Water Blast':47,'Earth Blast':53,'Fire Blast':59,'Wind Wave':62,'Water Wave':65,'Earth Wave':70,'Fire Wave':75,'Wind Surge':81,'Water Surge':85,'Earth Surge':90,'Fire Surge':95,'Iban Blast':50,'Magic Dart':50,'Ice Burst':70,'Ice Barrage':94,'Blood Blitz':80,'Blood Barrage':92,'Inferior Demonbane':44,'Superior Demonbane':62,'Dark Demonbane':82};
+export const spellLevels: Record<string,number> = {'Wind Strike':1,'Water Strike':5,'Earth Strike':9,'Fire Strike':13,'Wind Bolt':17,'Water Bolt':23,'Earth Bolt':29,'Fire Bolt':35,'Wind Blast':41,'Water Blast':47,'Earth Blast':53,'Fire Blast':59,'Wind Wave':62,'Water Wave':65,'Earth Wave':70,'Fire Wave':75,'Wind Surge':81,'Water Surge':85,'Earth Surge':90,'Fire Surge':95,'Iban Blast':50,'Magic Dart':50,'Ice Burst':70,'Ice Barrage':94,'Blood Blitz':80,'Blood Barrage':92,'Inferior Demonbane':44,'Superior Demonbane':62,'Dark Demonbane':82,'Saradomin Strike':60,'Claws of Guthix':60,'Flames of Zamorak':60};
 export const spellOptions = [['auto','Automatic spell / built-in attack'], ...Object.keys(spellLevels).map(n => [n,n+' ('+spellLevels[n]+')'])];
 const skillKeys: Record<string,string> = {atk:'attack',str:'strength',def:'defence',hp:'hitpoints',ranged:'ranged',magic:'magic',prayer:'prayer',mining:'mining',herblore:'herblore'};
 function skillsFromLevels(levels: any) { return Object.fromEntries(Object.entries(skillKeys).map(([a,b])=>[a,Math.min(99, Math.max(1, Number(levels?.[b]) || 1))])); }
@@ -199,7 +200,7 @@ function prayers(key: string, style: string, s: any, notes: string[]) {
 }
 function ammunition(p: Player, key: string, target: Monster, label: string, notes: string[]) {
   const weapon = p.equipment.weapon!, cat = weapon.category;
-  const dragon = ['dragon','ruby','sapphire','seekingDragon'].includes(key);
+  const dragon = ['dragon','ruby','sapphire','seekingDragon','adaptiveDragon'].includes(key);
   let name = '';
   if (BLOWPIPE_IDS.includes(weapon.id)) {
     name = key === 'rune' ? 'Rune dart' : dragon ? 'Dragon dart' : 'Amethyst dart';
@@ -207,7 +208,7 @@ function ammunition(p: Player, key: string, target: Monster, label: string, note
   } else if (weapon.name.includes('ballista')) name = dragon ? 'Dragon javelin' : 'Amethyst javelin';
   else if (cat === 'Crossbow') {
     const dragonCompatible = !['Rune crossbow','Dorgeshuun crossbow'].includes(weapon.name);
-    const gem = label === 'Prayer shield' || key === 'sapphire' ? 'Sapphire' : key === 'ruby' ? 'Ruby' : 'Diamond';
+    const gem = label === 'Prayer shield' || key === 'sapphire' ? 'Sapphire' : key === 'ruby'||key==='rubyNormal' ? 'Ruby' : 'Diamond';
     name = gem + (dragon && dragonCompatible ? ' dragon bolts (e)' : ' bolts (e)');
   } else if (weapon.name === 'Eclipse atlatl') name = 'Atlatl dart';
   else if (cat === 'Bow' && !/faerdhinen|Crystal bow|Craw|Webweaver/i.test(weapon.name)) {
@@ -235,10 +236,16 @@ function selectSpell(p: Player, target: Monster, selected: string) {
   return [...spells].reverse().filter(s=>s.element===element && spellLevels[s.name] && p.skills.magic+p.boosts.magic>=spellLevels[s.name]).sort((a,b)=>spellLevels[b.name]-spellLevels[a.name])[0] || null;
 }
 export function calculateSet(input: any): any {
-  const { encounter:e, row, setIndex=0, levels={}, context={}, modifiers={} } = input;
+  const { encounter:e, row, setIndex=0, levels={}, context={}, modifiers={}, analysis=false, specialAttack=false } = input;
   const set = row.sets[setIndex];
   if (!set || e.kind) return {status:'unavailable',reason:'This activity does not use a standard equipped combat setup.'};
   if (!set.slots.weapon?.name) return {status:'unavailable',reason:'No weapon is assigned to this setup.'};
+  const inputSlots=set.weaponOnly?{...row.sets[0].slots,...set.slots}:set.slots;
+  if(['adaptive','adaptiveDragon'].includes(modifiers.ammo)&&set.style==='ranged'&&ammoCompatible(set.slots.weapon.name,'Diamond bolts (e)')&&(!inputSlots.ammo?.name||inputSlots.ammo.ammoAssumption||isBlessing(inputSlots.ammo.name))&&!inputSlots.ammo?.locked){
+    const keys=modifiers.ammo==='adaptiveDragon'?['ruby','dragon']:['rubyNormal','auto'];
+    const attempts=keys.map(ammo=>calculateSet({...input,modifiers:{...modifiers,ammo}})).filter(r=>r.status==='ok').sort((a,b)=>b.dps-a.dps);
+    if(attempts.length){const best=attempts[0];return{...best,ammoAlternatives:attempts.map(r=>({name:r.ammo,dps:r.dps})),notes:[...best.notes,'Auto ammo compares ruby and diamond bolts at the selected target HP. It does not simulate switching bolts during a kill.']};}
+  }
   const missing = ['attack','strength','defence','hitpoints','ranged','magic','prayer'].filter(k=>!Number.isFinite(Number(levels[k])) || Number(levels[k])<1);
   if (missing.length) return {status:'unavailable',reason:'Saved player stats are missing: '+missing.join(', ')+'.'};
   const room=raidRoom(e,context.raidRoom);
@@ -251,7 +258,7 @@ export function calculateSet(input: any): any {
   const party = context.partyLevels?.length ? context.partyLevels.map(skillsFromLevels) : [skillValues];
   const monster: Monster = { ...clone(base), inputs:{...clone(INITIAL_MONSTER_INPUTS),isFromCoxCm:e.id.endsWith('challenge_mode'),toaInvocationLevel:bounded(context.invocation,e.id.endsWith('expert')?350:150,0,600),toaPathLevel:bounded(context.pathLevel,0,0,6),partySize:bounded(context.partySize,row.partySize||1,1,100),partyMaxCombatLevel:Math.max(...party.map(calculateCombatLevel)),partyMaxHpLevel:Math.max(...party.map((s:any)=>s.hp)),partySumMiningLevel:party.reduce((n:number,s:any)=>n+s.mining,0),monsterCurrentHp:base.skills.hp,defenceReductions:{...clone(INITIAL_MONSTER_INPUTS.defenceReductions),...cleanReductions(context.reductions)}}};
   const scaled = scaleMonster(monster);
-  monster.inputs.monsterCurrentHp = Math.max(1,Math.floor(scaled.skills.hp * bounded(context.hpPercent,100,1,100)/100));
+  monster.inputs.monsterCurrentHp = bounded(context.currentHp,Math.max(1,Math.floor(scaled.skills.hp * bounded(context.hpPercent,100,1,100)/100)),1,scaled.skills.hp);
   const undrained=scaleMonster({...monster,inputs:{...monster.inputs,defenceReductions:cleanReductions()}});
   const current = scaleMonster(monster);
   const emptyEquipment = Object.fromEntries(['head','cape','neck','ammo','weapon','body','shield','legs','hands','feet','ring'].map(k=>[k,null]));
@@ -269,6 +276,8 @@ export function calculateSet(input: any): any {
   if (!potionAllowed(potion,e)) return {status:'unavailable',reason:'This boost is restricted to a different activity. Choose another potion.'};
   p.buffs.potions = potions(potion,set.style);
   for (const potion of p.buffs.potions) for (const [skill,boost] of Object.entries(PotionMap[potion].calculateFn(p.skills))) if (boost!==undefined) (p.boosts as any)[skill]=Math.max((p.boosts as any)[skill],boost);
+  const playerHp=Math.max(1,Math.floor(p.skills.hp*bounded(modifiers.playerHpPercent,100,1,100)/100));p.boosts.hp=playerHp-p.skills.hp;
+  p.buffs.usingSunfireRunes=!!modifiers.sunfire;p.buffs.chargeSpell=!!modifiers.charge;p.buffs.forinthrySurge=!!modifiers.forinthry&&p.buffs.inWilderness;
   p.buffs.onSlayerTask=(e.task==='required'||!!context.onTask)&&!!base.is_slayer_monster;
   if(context.onTask&&!base.is_slayer_monster)notes.push('This target is not eligible for Slayer-task damage bonuses.');
   p.prayers = prayers(modifiers.prayer||'none',set.style,p.skills,notes);
@@ -291,6 +300,7 @@ export function calculateSet(input: any): any {
     notes.push('The blessing supplies Prayer bonus; it does not directly increase damage or accuracy.');
     if(usesQuiver)notes.push('Arrows or bolts are stored in Dizana’s quiver; the blessing stays in the normal ammo slot.');
   }
+  if(p.equipment.ammo&&!wornBlessing&&ammoApplicability(p.equipment.weapon.id)!==AmmoApplicability.ALLOWED&&!ammoCompatible(p.equipment.weapon.name,p.equipment.ammo.name))return{status:'unavailable',reason:p.equipment.ammo.name+' is incompatible with '+p.equipment.weapon.name+'.'};
   if(ammo.includes('Seeking')&&p.equipment.weapon.category==='Bow')notes.push('Seeking arrows add +20 Ranged accuracy and raise successful hits below 3 to 3; misses remain zero.');
   if(p.buffs.onSlayerTask)notes.push('Matching Slayer task is active. Eligible black masks / Slayer helmets apply their combat bonuses; Salve does not stack with them.');
   if(set.style==='melee'&&[p.equipment.head,p.equipment.body,p.equipment.legs].some(piece=>piece?.name.startsWith('Inquisitor')))notes.push('Inquisitor’s crush accuracy/damage bonus: helm 0.5%, body 1%, legs 1%; each applies only when using crush.');
@@ -305,18 +315,57 @@ export function calculateSet(input: any): any {
   if (!styles.length) return {status:'unavailable',reason:'This weapon cannot use the selected attack style.'};
   const results = styles.map(style=>{
     const player=copyPlayer(p,style);Object.assign(player,calculateEquipmentBonusesFromGear(player,monster));if(quiverBlessing)player.bonuses.prayer+=quiverBlessing.bonuses.prayer;player.attackSpeed=calculateAttackSpeed(player,monster);
-    const calc=new PlayerVsNPCCalc(player,monster,{loadoutName:row.player.name});
+    const calc=new PlayerVsNPCCalc(player,monster,{loadoutName:row.player.name,detailedOutput:!!analysis,usingSpecialAttack:!!specialAttack});
     return {calc,player,dps:calc.getDps()};
   }).sort((a,b)=>b.dps-a.dps);
   const {calc,player,dps}=results[0];
+  const invalid=calc.userIssues.find(i=>[UserIssueType.SPELL_WRONG_WEAPON,UserIssueType.SPELL_WRONG_MONSTER,UserIssueType.EQUIPMENT_WRONG_AMMO,UserIssueType.EQUIPMENT_MISSING_AMMO].includes(i.type));
+  if(invalid)return{status:'unavailable',reason:invalid.message};
+  if(specialAttack&&![FeatureStatus.IMPLEMENTED,FeatureStatus.PARTIALLY_IMPLEMENTED].includes(calc.isSpecSupported()))return{status:'unavailable',reason:'This weapon’s special attack is not supported for this setup/target.'};
   for (const issue of calc.userIssues) if ((issue as any).message) notes.push((issue as any).message);
   if (set.weaponOnly) notes.push('Weapon switch calculated with this player’s main armour.');
   const emptySlots=Object.entries(slots).filter(([_,v]:any)=>v.source==='missing' && !v.name).length;
   if (emptySlots) notes.push(emptySlots+' empty equipment slot'+(emptySlots===1?'':'s')+' treated as unequipped.');
   if (ammo) notes.push('Ammo assumed: '+ammo+(usesQuiver?' · stored in quiver':'')+'.');
   if (p.spell) notes.push('Spell: '+p.spell.name+'.');
+  if(playerHp!==p.skills.hp)notes.push('Player current HP: '+playerHp+' / '+p.skills.hp+'. HP-sensitive effects use this value.');
   if (!Number.isFinite(dps)) return {status:'unavailable',reason:'This combination is not supported by the combat engine.'};
-  return {status:'ok',dps,maxAttackRoll:calc.getMaxAttackRoll(),maxHit:calc.getDistribution().getMax(),accuracy:calc.getDisplayHitChance(),attackTicks:calc.getExpectedAttackSpeed(),baseAttackTicks:player.attackSpeed,expectedDamage:calc.getExpectedDamage(),target:choice.label,targetKey:choice.key,targetId:monster.id,hp:current.skills.hp,currentHp:monster.inputs.monsterCurrentHp,defence:current.skills.def,magic:current.skills.magic,defenceFloor:getDefenceFloor(undrained),baseDefence:undrained.skills.def,skills:player.skills,boosts:player.boosts,bonuses:player.bonuses,offensive:player.offensive,defensive:player.defensive,style:player.style,onSlayerTask:p.buffs.onSlayerTask,prayers:player.prayers.map(n=>PrayerMap[n].name),potions:p.buffs.potions.map(n=>PotionMap[n].name),spell:p.spell?.name||null,ammo,ammoInQuiver:usesQuiver,notes:[...new Set(notes)]};
+  const detail = analysis ? combatAnalysis(calc,player,monster,specialAttack) : {};
+  return {status:'ok',...detail,dps,maxAttackRoll:calc.getMaxAttackRoll(),maxHit:calc.getDistribution().getMax(),accuracy:calc.getDisplayHitChance(),attackTicks:calc.getExpectedAttackSpeed(),baseAttackTicks:player.attackSpeed,expectedDamage:calc.getExpectedDamage(),target:choice.label,targetKey:choice.key,targetId:monster.id,hp:current.skills.hp,currentHp:monster.inputs.monsterCurrentHp,defence:current.skills.def,magic:current.skills.magic,defenceFloor:getDefenceFloor(undrained),baseDefence:undrained.skills.def,skills:player.skills,boosts:player.boosts,bonuses:player.bonuses,offensive:player.offensive,defensive:player.defensive,style:player.style,onSlayerTask:p.buffs.onSlayerTask,prayers:player.prayers.map(n=>PrayerMap[n].name),potions:p.buffs.potions.map(n=>PotionMap[n].name),spell:p.spell?.name||null,ammo,ammoInQuiver:usesQuiver,notes:[...new Set(notes)]};
+}
+function combatAnalysis(calc:PlayerVsNPCCalc,player:Player,monster:Monster,specialAttack:boolean) {
+  const distribution=calc.getDistribution().asHistogram().filter(p=>p.value>0).map(p=>({damage:Number(p.name),probability:p.value}));
+  const details=calc.details.map(d=>({label:d.label,formula:d.displayValue}));
+  const effects=details.filter(d=>/black mask|salve|void|inquisitor|fang|dragonhunter|demonbane|obsidian|berserker|tome|spellement|sunfire|soulreaper|revenant|ratbane|golembane|confliction|wardens/i.test(d.label));
+  const issues=calc.userIssues.map(i=>i.message).filter(Boolean);
+  const hp=monster.inputs.monsterCurrentHp||monster.skills.hp;
+  const ttk=!specialAttack&&calc.getExpectedDamage()>0&&hp<=10000?expectedAttackTime(calc,player,monster,hp):null;
+  const cost=specialAttack?calc.getSpecCost():undefined;
+  const regen=cost?cost*(player.equipment.ring?.name==='Lightbearer'?1.5:3):null;
+  return{distribution,details,effects,issues,ttk:Number.isFinite(ttk)?ttk:null,npcDefenceRoll:calc.getNPCDefenceRoll(),playerCurrentHp:player.skills.hp+player.boosts.hp,dotExpected:calc.getDoTExpected(),specialAttack,partialSpecial:specialAttack&&calc.isSpecSupported()===FeatureStatus.PARTIALLY_IMPLEMENTED,specCost:cost??null,specRecoverySeconds:regen};
+}
+// Backward HP-state DP uses the upstream hit distributions and conditional
+// delays. Unlike HP / DPS or a fixed histogram, ruby damage and supported target
+// HP effects are re-evaluated as HP falls. Counts the full attack interval of the
+// killing attack, matching the planner's active-attacking time convention.
+function expectedAttackTime(calc:PlayerVsNPCCalc,player:Player,monster:Monster,startHp:number) {
+  const base=calc.getDistribution().singleHitsplat.withProbabilisticDelays(calc.getWeaponDelayProvider());
+  const dynamic=calc.distIsCurrentHpDependent(player,monster),times=new Float64Array(startHp+1);
+  const summarise=(dist:typeof base)=>({hits:dist.map(([hit,delay])=>({damage:hit.getSum(),probability:hit.probability,delay})),zero:dist.reduce((sum,[hit])=>sum+(hit.getSum()===0?hit.probability:0),0)});
+  const initial=summarise(base);
+  for(let hp=1;hp<=startHp;hp++){
+    const dist=dynamic?calc.distAtHp(base,hp):base,info=dist===base?initial:summarise(dist);if(info.zero>=1-1e-14)return null;
+    let value=0;for(const hit of info.hits)value+=hit.probability*(hit.delay+(hit.damage>0?times[Math.max(0,hp-hit.damage)]:0));
+    times[hp]=value/(1-info.zero);
+  }
+  return times[startHp]*.6;
+}
+export function calculateSpecial(input:any) {
+  const {row}=input;if(!row.special?.name||!row.sets[0])return{status:'unavailable',reason:'No special-attack weapon is assigned.'};
+  const main=row.sets[0],set={label:main.label,style:weaponStyle(row.special.name),slots:{...main.slots,weapon:{...row.special,locked:true},ammo:{name:null}}};
+  const result=calculateSet({...input,row:{...row,sets:[set]},setIndex:0,specialAttack:true,analysis:true,context:{...input.context,target:main.dps?.targetKey||input.context?.target}});
+  if(result.status==='ok'&&result.specRecoverySeconds){const seconds=result.attackTicks*.6;result.damagePer100Energy=result.expectedDamage*100/result.specCost;result.cycleDps=main.dps?.status==='ok'?main.dps.dps+(result.expectedDamage-main.dps.dps*seconds)/Math.max(seconds,result.specRecoverySeconds):null;result.notes.push('Damage-only cycle estimate: one spec per natural energy recovery, normal attacks otherwise. It excludes debuff gains, movement, Death Charge, adrenaline and overlapping burn behaviour.');}
+  return result;
 }
 function bounded(v:any,fallback:number,min:number,max:number) { return Number.isFinite(Number(v)) && v!==null && v!=='' ? Math.max(min,Math.min(max,Math.trunc(Number(v)))) : fallback; }
 export function cleanReductions(r:any={}) { return {vulnerability:r.curse==='vulnerability',accursed:r.curse==='accursed',elderMaul:bounded(r.elderMaul,0,0,20),dwh:bounded(r.dwh,0,0,20),arclight:bounded(r.arclight,0,0,20),emberlight:bounded(r.emberlight,0,0,20),bgs:bounded(r.bgs,0,0,2000),tonalztic:bounded(r.tonalztic,0,0,20),seercull:bounded(r.seercull,0,0,2000),ayak:bounded(r.ayak,0,0,200)}; }

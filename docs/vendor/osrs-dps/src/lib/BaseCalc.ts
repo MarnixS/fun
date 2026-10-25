@@ -217,6 +217,9 @@ export default class BaseCalc {
    * @param item - item name
    */
   protected wearing(item: string | string[]): boolean {
+    // noInitSubCalc copies the upstream item list. Hydrate the compatibility
+    // index there too, preserving passive effects in nested calculations.
+    if(!this.allEquippedItemKeys.size&&this.allEquippedItems.length)this.allEquippedItemKeys=new Set(this.allEquippedItems.map(name=>name.toLowerCase()));
     if (Array.isArray(item)) {
       return (item as string[]).some((i) => this.allEquippedItemKeys.has(i.toLowerCase()));
     }
@@ -228,6 +231,7 @@ export default class BaseCalc {
    * @param items - array of item names
    */
   protected wearingAll(items: string[]) {
+    if(!this.allEquippedItemKeys.size&&this.allEquippedItems.length)this.allEquippedItemKeys=new Set(this.allEquippedItems.map(name=>name.toLowerCase()));
     return items.every((i) => this.allEquippedItemKeys.has(i.toLowerCase()));
   }
 
@@ -828,7 +832,7 @@ export default class BaseCalc {
       (spellName === 'Iban Blast' && !this.wearing(['Iban\'s staff', 'Iban\'s staff (u)']))
       || (spellName === 'Saradomin Strike' && !this.wearing(['Saradomin staff', 'Staff of Light']))
       || (spellName === 'Claws of Guthix' && !this.wearing(['Guthix staff', 'Void knight mace', 'Staff of balance']))
-      || (spellName === 'Flames of Zamarok' && !this.wearing(['Zamorak staff', 'Staff of the dead', 'Toxic staff of the dead', 'Thammaron\'s sceptre (a)', 'Accursed sceptre (a)']))
+      || (spellName === 'Flames of Zamorak' && !this.wearing(['Zamorak staff', 'Staff of the dead', 'Toxic staff of the dead', 'Thammaron\'s sceptre (a)', 'Accursed sceptre (a)']))
       || (spellName === 'Magic Dart' && !this.wearing(['Slayer\'s staff', 'Slayer\'s staff (e)', 'Staff of the Dead', 'Toxic staff of the Dead', 'Staff of Light', 'Staff of Balance']))
     ) {
       this.player = {

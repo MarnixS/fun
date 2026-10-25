@@ -190,3 +190,52 @@ Sources: [Seeking arrows](https://oldschool.runescape.wiki/w/Seeking_arrows),
 [Slayer helmet (i)](https://oldschool.runescape.wiki/w/Slayer_helmet_(i)),
 [prayer unlocks](https://oldschool.runescape.wiki/w/Unlockable_content#Prayers),
 and the pinned upstream combat/scaling source served with the site.
+
+## Research-driven comparison and analysis (25 October 2026)
+
+[Research review and primary sources](GEAR-RESEARCH.md) compare the Wiki calculator,
+GearScape, RuneTools, CalcOSRS, Skillcape, StatTuner and OSRSPortal. The upstream
+Wiki main revision was checked again and still matched the vendored revision;
+no competing formula engine or guessed item stats were substituted.
+
+- Encounter/phase controls sit with boss selection. Combat inputs remain in one
+  scoped editor; individual overrides can be cleared back to team defaults.
+- The equipment picker previews a one-slot change for the same player, equipped
+  armour, stats, buffs and exact NPC phase. It shows actual bonuses, normal DPS
+  and delta, plus a stock filter. A weapon can change combat style, but cannot
+  silently move the comparison to another raid target. Selecting an item still
+  reallocates the whole team; a preview never consumes physical stock.
+- Final setups expose actual engine calculation steps and recorded applied
+  effects. Direct-damage probability plots include misses at zero and separate
+  delayed damage. Unsupported engine effects remain explicit modelling notes.
+- Active-attack time is a backward HP-state dynamic program over the upstream
+  hit distributions and conditional attack delays. It accounts for overkill,
+  supported HP-dependent effects (such as ruby bolts and Vardorvis), and variable
+  delays. It counts the full interval of the killing attack. Movement, special
+  rotations, defence regeneration and other encounter downtime are excluded.
+  Targets above 10,000 HP omit this extra estimate. A forward probability
+  propagation test uses freshly constructed calculators at every HP to verify
+  the result and catch dropped passives in upstream no-init subcalculations.
+- Auto ammo compares ruby and diamond bolts at the currently selected target HP.
+  Dragon and ordinary tiers remain separate; a manually chosen or physical ammo
+  slot takes precedence. The selected bolt is held for the attack-time estimate;
+  auto ammo does not simulate a mid-kill switch. The alternatives and their DPS
+  are shown, so snapshot DPS is not presented as a whole-fight optimum.
+- Special attacks use the reserved weapon, main armour, saved levels, modifiers
+  and main target. Results distinguish mean damage, maximum attack damage and
+  energy cost. A damage-only cycle uses one spec per natural energy recovery and
+  replaces the equivalent normal-attack time; it is not free extra damage.
+  Lightbearer changes that recovery to 15 seconds per 10% energy. Debuff gains,
+  Death Charge, adrenaline, movement and overlapping burns are excluded. Ring
+  previews can show this cycle beside the normal-DPS tradeoff. Unsupported or
+  partially implemented specials are labelled rather than silently treated as
+  fully supported.
+- Current player HP, Sunfire runes, Charge, and Wilderness Forinthry Surge are
+  scoped inputs. God spells were added to the spell selector; invalid ammo and
+  spell/weapon combinations produce an unavailable result.
+- Black masks are shared tradeable ingredients, including charged log aliases.
+  One mask can support an imbued mask or personal Slayer helmet under the
+  potential-craft setting. Crafting, Slayer unlock and imbuing costs remain
+  explicit extra conditions. Finished headgear stays personal. Owner priority,
+  confirmed-finished-craft reservations and legacy personal mask adjustments
+  preserve the finite supply.
