@@ -66,10 +66,10 @@ function stock(model,players,settings={}){
  }
  for(const [name,value] of Object.entries(overrides.group||{}))if(D.items[name]&&!D.items[name].personal&&finite(value))shared.set(name,Number(value));
  for(const p of players)for(const [name,value] of Object.entries(overrides.personal?.[p.key]||{}))if(D.items[name]?.personal&&finite(value))personal.get(p.key).set(name,Number(value));
- // Opt-in baseline represents one standard quest/shop item per account. Never
- // infer capes, raid rewards, void, endgame boots or a personal drop from a teammate.
+ // Seed explicitly group-confirmed rewards and optional standard quest/shop
+ // gear per account. Never infer a personal drop from another player’s log.
  const assumed=new Set();
- if(settings.baseline)for(const p of players)for(const item of Object.values(D.items))if(item.baseline&&!Object.hasOwn(overrides.group||{},item.name)&&!Object.hasOwn(overrides.personal?.[p.key]||{},item.name)){const key=p.key+'|'+item.name;if(!quantity({personal},item.name,p.key)){personal.get(p.key).set(item.name,1);assumed.add(key)}}
+ for(const p of players)for(const item of Object.values(D.items))if((item.assumedForAll||settings.baseline&&item.baseline)&&!Object.hasOwn(overrides.group||{},item.name)&&!Object.hasOwn(overrides.personal?.[p.key]||{},item.name)){const key=p.key+'|'+item.name;if(!quantity({personal},item.name,p.key)){personal.get(p.key).set(item.name,1);assumed.add(key)}}
  const state={players,settings:{craft:true,respectLevels:true,...settings},overrides,ids,totals,logged,claims:new Map(),known:model.known,shared,personal,assumed,held:new Map(players.map(p=>[p.key,new Map()])),spent:new Map(),events:[],warnings:[],levels:settings.levels||{}};
  state.input={shared:new Map(shared),personal:copyMap(personal)};
  // A confirmed finished item reserves its inputs from inferred lifetime drops.
@@ -87,10 +87,13 @@ function stock(model,players,settings={}){
  state.reserved=new Map(state.spent);state.events=[];
  if(settings.reserveOwners){
   const selected=new Set(settings.selected||players.map(p=>p.key)),order=[...new Set([...(settings.order||[]),...players.map(p=>p.key)])].filter(key=>selected.has(key));
-  for(const [name,available] of state.shared){let left=available;const owners=logged.get(name),claims=new Map();if(!owners)continue;
+  for(const [name,available] of state.shared){let left=available;const owners=logged.get(name)||new Map(),claims=new Map();if(!owners.size&&!D.items[name]?.loanPriority?.length)continue;
    // Give each logged owner first refusal on one copy before reserving extras
    // and ingredients. Confirmed shortages are resolved by the displayed order.
    for(const key of order)if(left&&owners.get(key)>0){claims.set(key,1);left--}
+   // The group's explicit item-specific loan preferences follow logged owners.
+   // A preferred borrower gets one spare copy, never the owner's only item.
+   for(const key of D.items[name]?.loanPriority||[])if(left&&selected.has(key)&&!claims.has(key)&&eligible(state,name,key)){claims.set(key,1);left--}
    for(const key of order)if(left&&owners.get(key)>1&&(!D.items[name].equipmentSlot||D.items[name].craftingMaterial)){const count=Math.min(left,owners.get(key)-1);claims.set(key,(claims.get(key)||0)+count);left-=count}
    if(claims.size)state.claims.set(name,claims);
   }

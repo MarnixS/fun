@@ -1,9 +1,9 @@
-/* Reviewed OSRS Wiki equipment priorities and recipes, 24 October 2026.
+/* Reviewed OSRS Wiki equipment priorities and recipes, 25 October 2026.
  * Priorities are encounter/method recommendations, never calculated DPS values.
  * Keep this module free of DOM/storage so allocation is reproducible in tests. */
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.UGGearData=factory()})(typeof window==='object'?window:this,function(){
 'use strict';
-const reviewed='2026-10-24',wiki=page=>'https://oldschool.runescape.wiki/w/'+encodeURIComponent(page.replaceAll(' ','_'));
+const reviewed='2026-10-25',wiki=page=>'https://oldschool.runescape.wiki/w/'+encodeURIComponent(page.replaceAll(' ','_'));
 const items={};
 function add(name,options={}){items[name]={name,...options};return name}
 function recipe(name,ingredients,options={}){return add(name,{recipe:ingredients,...options})}
@@ -87,7 +87,21 @@ for(const item of Object.values(items)){
  if(item.name.startsWith('Ancestral '))item.requirements={magic:75,defence:65};
  if(item.name.startsWith('Virtus '))item.requirements={magic:78,defence:75};
  if(item.name.startsWith('Oathplate '))item.requirements={attack:80,defence:80};
+ if(["Inquisitor's great helm","Inquisitor's hauberk","Inquisitor's plateskirt"].includes(item.name))item.requirements={strength:70,defence:30};
+ if(item.name==="Inquisitor's mace")item.requirements={attack:80};
+ if(['Blood moon helm','Blood moon chestplate','Blood moon tassets'].includes(item.name))item.requirements={strength:75,defence:50};
+ if(item.name==='Dual macuahuitl')item.requirements={attack:70,strength:75};
 }
+// Group-confirmed defaults: spare Shadow goes to Big Dog Aura after its logged
+// owner, and every account owns a normal Ava's accumulator. Explicit stock zero
+// still removes a lost/consumed accumulator.
+items["Tumeken's shadow"].loanPriority=['big dog aura'];
+Object.assign(items["Ava's accumulator"],{assumedForAll:true,requirements:{ranged:50},note:'Confirmed group assumption: this account owns a normal accumulator. A personal Vorkath head supports upgrading to an assembler; set stock to 0 to remove the accumulator.'});
+const voidRequirements={attack:42,strength:42,defence:42,hitpoints:42,ranged:42,magic:42,prayer:22};
+const annotate=(name,options)=>{if(!items[name])add(name);Object.assign(items[name],options)};
+for(const name of ['Void melee helm','Void ranger helm','Void mage helm','Void knight gloves','Void knight top','Void knight robe','Elite void top','Elite void robe'])annotate(name,{personal:true,requirements:{...voidRequirements}});
+for(const [owner,parts]of Object.entries({Ahrim:['hood','robetop','robeskirt'],Karil:['coif','leathertop','leatherskirt'],Dharok:['helm','platebody','platelegs'],Verac:['helm','brassard','plateskirt'],Torag:['helm','platebody','platelegs'],Guthan:['helm','platebody','chainskirt']}))for(const part of parts)annotate(owner+"'s "+part,{requirements:{defence:70,...(owner==='Ahrim'?{magic:70}:owner==='Karil'?{ranged:70}:{})}});
+for(const [name,requirements]of Object.entries({"Ahrim's staff":{attack:70,magic:70},"Karil's crossbow":{ranged:70},"Dharok's greataxe":{attack:70,strength:70},"Torag's hammers":{attack:70,strength:70},"Guthan's warspear":{attack:70},"Verac's flail":{attack:70}}))annotate(name,{requirements});
 // Crafted outcomes with prerequisites outside the log stay manual until confirmed.
 items['Confliction gauntlets'].note='Confirm the finished gauntlets in stock; the log alone does not prove crafting.';
 const blessed=part=>['Armadyl','Bandos','Saradomin','Zamorak','Guthix','Ancient'].map(g=>g+' '+part);

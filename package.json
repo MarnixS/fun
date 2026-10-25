@@ -15,7 +15,7 @@
     "test:routes": "node scripts/test_clean_routes.js",
     "test:records": "node scripts/test_xp_records.js && node scripts/audit_xp_records.js",
     "test:progress": "node scripts/test_stat_progress.js && node scripts/audit_stat_progress.js",
-    "test:gear": "node scripts/test_gear_planner.js && node scripts/test_gear_recipes.js && node scripts/test_gear_dps.js && node scripts/test_gear_mechanics.js && node scripts/test_gear_loadouts.js && node scripts/audit_gear_planner.js",
+    "test:gear": "node scripts/test_gear_planner.js && node scripts/test_gear_recipes.js && node scripts/test_gear_dps.js && node scripts/test_gear_mechanics.js && node scripts/test_gear_loadouts.js && node scripts/test_gear_accounts.js && node scripts/audit_gear_planner.js",
     "build:gear-dps": "node scripts/build_gear_dps.js"
   },
   "devDependencies": {

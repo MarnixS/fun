@@ -39,7 +39,21 @@ function build(base,key,names,locked={}){
  return{state,slots:out};
 }
 const crystalNames=['Crystal helm','Crystal body','Crystal legs'],crystalSlots=['head','body','legs'];
-const bundles=[...Array.from({length:7},(_,i)=>Object.fromEntries(crystalSlots.map((slot,j)=>[slot,(i+1)&(1<<j)?crystalNames[j]:null]))),{head:"Inquisitor's great helm",body:"Inquisitor's hauberk",legs:"Inquisitor's plateskirt"},{head:'Blood moon helm',body:'Blood moon chestplate',legs:'Blood moon tassets'},{head:'Void ranger helm',body:'Elite void top',legs:'Elite void robe',hands:'Void knight gloves'},{head:'Void ranger helm',body:'Void knight top',legs:'Void knight robe',hands:'Void knight gloves'},{head:'Obsidian helmet',body:'Obsidian platebody',legs:'Obsidian platelegs',neck:'Berserker necklace'}];
+// Start complete combinations together: a one-slot search cannot discover a
+// bonus that switches on only after the last otherwise-weaker piece is worn.
+const setBundles=[
+ ...Array.from({length:7},(_,i)=>({style:'ranged',weapons:['Bow of faerdhinen','Crystal bow'],slots:Object.fromEntries(crystalSlots.map((slot,j)=>[slot,(i+1)&(1<<j)?crystalNames[j]:null]))})),
+ {style:'melee',crush:true,slots:{head:"Inquisitor's great helm",body:"Inquisitor's hauberk",legs:"Inquisitor's plateskirt"}},
+ {style:'melee',weapons:['Dual macuahuitl'],slots:{head:'Blood moon helm',body:'Blood moon chestplate',legs:'Blood moon tassets'}},
+ ...[['melee','Void melee helm'],['ranged','Void ranger helm'],['magic','Void mage helm']].flatMap(([style,head])=>['Elite void top','Void knight top'].flatMap(body=>['Elite void robe','Void knight robe'].map(legs=>({style,slots:{head,body,legs,hands:'Void knight gloves'}})))),
+ {style:'melee',weapons:['Toktz-xil-ak','Toktz-xil-ek','Tzhaar-ket-om','Tzhaar-ket-em'],slots:{head:'Obsidian helmet',body:'Obsidian platebody',legs:'Obsidian platelegs',neck:'Berserker necklace'}},
+ {style:'melee',weapons:["Dharok's greataxe"],slots:{head:"Dharok's helm",body:"Dharok's platebody",legs:"Dharok's platelegs"}},
+ {style:'melee',weapons:["Verac's flail"],slots:{head:"Verac's helm",body:"Verac's brassard",legs:"Verac's plateskirt"}},
+ {style:'ranged',weapons:["Karil's crossbow"],slots:{head:"Karil's coif",body:"Karil's leathertop",legs:"Karil's leatherskirt",neck:'Amulet of the Damned'}},
+ {style:'magic',weapons:["Ahrim's staff"],slots:{head:"Ahrim's hood",body:"Ahrim's robetop",legs:"Ahrim's robeskirt",neck:'Amulet of the Damned'}},
+];
+const bundlesFor=(style,weapon)=>setBundles.filter(b=>b.style===style&&(!b.weapons||b.weapons.includes(weapon))&&(!b.crush||E.weaponAttackTypes(weapon||'').includes('crush')));
+const setWeapon=name=>setBundles.some(b=>b.weapons?.includes(name));
 function quality(result){
  const r=result.dps||{},b=r.bonuses||{},a=r.offensive||{},d=r.defensive||{},style=result.set?.style,atlatl=result.set?.slots.weapon?.name==='Eclipse atlatl';
  return style==='magic'?[b.magic_str||0,a.magic||0,b.prayer||0,Object.values(d).reduce((n,v)=>n+v,0)]:style==='ranged'?[atlatl?b.str||0:b.ranged_str||0,a.ranged||0,b.prayer||0,Object.values(d).reduce((n,v)=>n+v,0)]:[b.str||0,(a.stab||0)+(a.slash||0)+(a.crush||0),b.prayer||0,Object.values(d).reduce((n,v)=>n+v,0)];
@@ -60,7 +74,7 @@ function optimise(base,key,player,e,role,main,settings,locked,cache){
   const cacheKey=style+'|'+weapon;if(gearCache.has(cacheKey))return gearCache.get(cacheKey);
   if(!rawGearCache.has(style))rawGearCache.set(style,Object.fromEntries(armour.map(slot=>[slot,options(base,slot,key,style,D.gear[style]?.[slot]||[])])));
   const types=E.weaponAttackTypes(weapon||''),atlatl=weapon==='Eclipse atlatl';
-  const relevant=name=>/void|salve|slayer|black mask/i.test(name)
+  const relevant=name=>/salve|slayer|black mask/i.test(name)||/void/i.test(name)&&(!/helm/i.test(name)||name.toLowerCase().includes(style==='melee'?'melee':style==='magic'?'mage':'ranger'))
    ||style==='magic'&&(/virtus|confliction|tome of/i.test(name)||/Ahrim/i.test(weapon)&&/Ahrim|damned/i.test(name)||/Blue Moon spear/i.test(weapon)&&/Blue moon/i.test(name))
    ||style==='ranged'&&(/Dizana/i.test(name)||/faerdhinen|Crystal bow/i.test(weapon)&&/Crystal/i.test(name)||atlatl&&/Eclipse moon/i.test(name)||/Karil/i.test(weapon)&&/Karil|damned/i.test(name))
    ||style==='melee'&&(types.includes('crush')&&/Inquisitor/i.test(name)||weapon==='Dual macuahuitl'&&/Blood moon/i.test(name)||/Toktz|Tzhaar/i.test(weapon)&&/obsidian|berserker necklace/i.test(name)||/Dharok|Verac|Torag|Guthan/i.test(weapon)&&/Dharok|Verac|Torag|Guthan|damned/i.test(name));
@@ -82,7 +96,7 @@ function optimise(base,key,player,e,role,main,settings,locked,cache){
    try{const calc=E.calculateSet({encounter:e,row:{player,sets:role.weaponOnly?[main,set]:[set]},setIndex:role.weaponOnly?1:0,levels:settings.levels?.[key]||{},context:context(settings,key),modifiers:modifiers(settings,key)});if(calc.status==='ok')value=calc.dps}catch{}
    return{weapon,style,value};
   });
-  shortlist=[...new Set([...styles.flatMap(style=>ranked.filter(r=>r.style===style).sort((a,b)=>b.value-a.value).slice(0,3).map(r=>r.weapon)),...weapons.filter(n=>/faerdhinen|Dual macuahuitl|Inquisitor.s mace|Scythe of vitur|Obsidian/i.test(n))])];
+  shortlist=[...new Set([...styles.flatMap(style=>ranked.filter(r=>r.style===style).sort((a,b)=>b.value-a.value).slice(0,3).map(r=>r.weapon)),...weapons.filter(n=>setWeapon(n)||/Inquisitor.s mace|Scythe of vitur/i.test(n))])];
  }
  let best=null;
  for(const weapon of shortlist){
@@ -105,7 +119,7 @@ function optimise(base,key,player,e,role,main,settings,locked,cache){
   };
   let currentResult=evaluate(current);
   const seeds=[initial];
-  if(!role.weaponOnly)for(const bundle of bundles){if(Object.entries(bundle).every(([slot,name])=>Object.hasOwn(locked,slot)?!name||locked[slot]===name:!name||candidates[slot].includes(name)))seeds.push({...initial,...bundle,...locked})}
+  if(!role.weaponOnly)for(const {slots:bundle} of bundlesFor(style,weapon)){if(Object.entries(bundle).every(([slot,name])=>Object.hasOwn(locked,slot)?!name||locked[slot]===name:!name||candidates[slot].includes(name)))seeds.push({...initial,...bundle,...locked})}
   // Each candidate is reserved from the same base state. Replacements release
   // their previous ingredients instead of leaving invisible spent components.
   for(const seed of seeds){
@@ -228,6 +242,17 @@ function analysePlan(result,settings){
  }
  return result;
 }
+// Update damage immediately for the equipped sets while the worker searches
+// again. Keep the physical stock, crafts and original results untouched.
+function refreshDps(result,settings){
+ const next={...result,loadouts:result.loadouts.map(row=>({...row,sets:row.sets.map(set=>({...set,slots:{...set.slots}})),special:row.special?{...row.special}:null}))};
+ analysePlan(next,settings);
+ for(const row of next.loadouts)for(const set of row.sets)if(set.slots.ammo?.ammoAssumption&&set.dps?.status==='ok'){
+  const name=set.dps.ammo;
+  set.slots.ammo=name&&!set.dps.ammoInQuiver&&!E.usesDarts(set.slots.weapon?.name||'')?{...set.slots.ammo,name,id:E.equipment(name)?.id}:empty();
+ }
+ return next;
+}
 // Controlled one-slot comparison: retain this player's armour, levels, buffs and
 // exact phase; do not mutate or reassign anyone's physical stock during preview.
 function compareItem(result,settings,key,phase,slot,name){
@@ -242,5 +267,5 @@ function compareItem(result,settings,key,phase,slot,name){
  return preview;
 }
 function availabilityState(model,players,result,settings,key){const s=M.stock(model,players,settings);for(const row of result.loadouts)if(row.player.key!==key){for(const set of row.sets)for(const item of Object.values(set.slots))if(item.name&&!item.hypothetical&&!item.ammoAssumption)M.equip(s,item.name,row.player.key);if(row.special?.name&&!row.special.hypothetical)M.equip(s,row.special.name,row.player.key)}return s}
-return{plan,catalogue,slots,modifiers,context,inventoryStatus,availabilityState,compareItem};
+return{plan,catalogue,slots,modifiers,context,inventoryStatus,availabilityState,compareItem,refreshDps};
 });

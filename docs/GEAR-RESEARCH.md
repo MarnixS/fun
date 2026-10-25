@@ -46,6 +46,44 @@ matched when checked for this release.
   the upstream engine. Applied-effect traces show the recorded calculation
   stages; the list is not a claim that every possible game effect is supported.
 
+## Complete-set search and account settings
+
+The engine already evaluated complete-set effects, but the iterative optimiser
+could miss them by changing one piece at a time. Reproduced inventories exposed
+missed low-HP Dharok, mixed regular/elite melee Void and elite magic Void upgrades.
+The search now seeds these combinations, Verac, and Ahrim/Karil with an
+[Amulet of the Damned](https://oldschool.runescape.wiki/w/Amulet_of_the_damned).
+Set-dependent weapons survive the initial weapon shortlist. Mixed regular/elite
+Void grants the base effect; elite-specific damage still requires both elite
+body/legs. The engine determines the actual damage rather than a set-name score.
+
+Equipment checks now include [Void](https://oldschool.runescape.wiki/w/Void_Knight_equipment)
+(42 combat stats including HP, 22 Prayer), relevant Barrows armour/weapons,
+[Inquisitor](https://oldschool.runescape.wiki/w/Inquisitor%27s_armour) (70 Strength,
+30 Defence; mace 80 Attack), and
+[Blood Moon](https://oldschool.runescape.wiki/w/Blood_Moon_armour) (75 Strength,
+50 Defence; macuahuitl also 70 Attack). Elite diary/unlock conditions remain
+ownership conditions rather than being inferred from combat levels alone.
+
+Every account has separate combat settings, including one prayer selection per
+style. Existing saved team defaults are materialised per account before editing.
+The chosen account's settings cannot change another account's buffs. Landed
+defence reductions still describe the shared monster. A direct recalculation of
+current gear updates damage while the worker searches for better legal gear;
+it does not alter the finite inventory. Cards state their actual prayers/boosts.
+
+Two group-confirmed rules are explicit: Big Dog Aura has first refusal on a spare
+Shadow after logged owners, and each account owns an
+[Ava's accumulator](https://oldschool.runescape.wiki/w/Ava%27s_accumulator).
+Accumulators retain their 50 Ranged requirement and explicit stock-zero override.
+Personal Vorkath-head assembler crafts still consume one tracked head and check
+70 Ranged. These assumptions do not grant other non-log quest rewards.
+
+`test_gear_accounts.js` checks these ownership rules, independent account/style
+prayers, immutable refresh and the previously missed complete-set upgrades.
+The UI audit also checks legacy migration, persistence, account filtering and
+flushing unfinished numeric edits to the correct account.
+
 ## Additional checks and combined insights
 
 A dropped lookup in our case-insensitive item compatibility patch affected

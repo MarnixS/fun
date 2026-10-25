@@ -239,6 +239,8 @@ export function calculateSet(input: any): any {
   const { encounter:e, row, setIndex=0, levels={}, context={}, modifiers={}, analysis=false, specialAttack=false } = input;
   const set = row.sets[setIndex];
   if (!set || e.kind) return {status:'unavailable',reason:'This activity does not use a standard equipped combat setup.'};
+  const room=raidRoom(e,context.raidRoom);
+  if(room?.reason)return{status:'unavailable',reason:room.reason};
   if (!set.slots.weapon?.name) return {status:'unavailable',reason:'No weapon is assigned to this setup.'};
   const inputSlots=set.weaponOnly?{...row.sets[0].slots,...set.slots}:set.slots;
   if(['adaptive','adaptiveDragon'].includes(modifiers.ammo)&&set.style==='ranged'&&ammoCompatible(set.slots.weapon.name,'Diamond bolts (e)')&&(!inputSlots.ammo?.name||inputSlots.ammo.ammoAssumption||isBlessing(inputSlots.ammo.name))&&!inputSlots.ammo?.locked){
@@ -248,8 +250,6 @@ export function calculateSet(input: any): any {
   }
   const missing = ['attack','strength','defence','hitpoints','ranged','magic','prayer'].filter(k=>!Number.isFinite(Number(levels[k])) || Number(levels[k])<1);
   if (missing.length) return {status:'unavailable',reason:'Saved player stats are missing: '+missing.join(', ')+'.'};
-  const room=raidRoom(e,context.raidRoom);
-  if(room?.reason)return{status:'unavailable',reason:room.reason};
   const choices = roomTargets(e,context.raidRoom), choice = context.target && context.target !== 'auto' ? choices.find(m=>m.key===context.target) : automaticTarget(e,set,choices,context.raidRoom);
   if (!choice) return {status:'unavailable',reason:'No verified monster data for this phase. Select a target phase above.'};
   if (choice.name==='Phantom Muspah'&&choice.version==='Shielded')return {status:'unavailable',reason:'Muspah’s prayer shield needs prayer damage. Normal HP DPS does not model sapphire bolts or Smite; use the crossbow switch.'};
@@ -280,7 +280,8 @@ export function calculateSet(input: any): any {
   p.buffs.usingSunfireRunes=!!modifiers.sunfire;p.buffs.chargeSpell=!!modifiers.charge;p.buffs.forinthrySurge=!!modifiers.forinthry&&p.buffs.inWilderness;
   p.buffs.onSlayerTask=(e.task==='required'||!!context.onTask)&&!!base.is_slayer_monster;
   if(context.onTask&&!base.is_slayer_monster)notes.push('This target is not eligible for Slayer-task damage bonuses.');
-  p.prayers = prayers(modifiers.prayer||'none',set.style,p.skills,notes);
+  const prayerKey='prayer'+set.style[0].toUpperCase()+set.style.slice(1);
+  p.prayers = prayers(modifiers[prayerKey]||modifiers.prayer||'none',set.style,p.skills,notes);
   if(p.prayers.length)notes.push('Prayer unlocks are treated as permanent for every account, as confirmed for this group; Prayer and Defence levels still apply.');
   let ammo = '',quiverBlessing:EquipmentPiece|null=null;
   const wornBlessing=isBlessing(p.equipment.ammo?.name||'')?p.equipment.ammo:null;

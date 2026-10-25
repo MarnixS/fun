@@ -42,3 +42,5 @@ html[data-theme=osrs] body[data-page=gear-planner] .gp-equipment-hint{color:#695
 @media(max-width:600px){.gp-target-controls .gp-field{min-width:100%}.gp-dps-secondary{font-size:11px!important}.gp-effect-details table{font-size:11px}.gp-picker-item{min-height:110px}.gp-picker-item .gp-picker-calculation{font-size:12px}}
 
 .gp-picker-controls{display:grid;grid-template-columns:1.7fr 1fr;gap:12px;align-items:end}.gp-equipment-dialog .gp-picker-controls input{min-height:40px;padding:7px;background:var(--panel2);color:var(--text);border:1px solid var(--edge)}#gp-equipment-current details{margin-top:6px}#gp-equipment-current summary{cursor:pointer;min-height:28px;line-height:28px}@media(max-width:600px){.gp-picker-controls{grid-template-columns:1fr}}
+
+.gp-prayer-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:10px 0}.gp-active-combat{font-size:11px;color:var(--muted);margin:5px 0;line-height:1.5}@media(max-width:520px){.gp-prayer-grid{grid-template-columns:1fr}}

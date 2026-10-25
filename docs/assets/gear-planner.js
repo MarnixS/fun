@@ -28,14 +28,16 @@ function renderBosses(keep){
  if(filtered.some(e=>e.id===keep))$('#gp-boss').value=keep;$('#gp-boss').disabled=!filtered.length;
  if(filtered.length)run();else{revision++;$('#gp-status').textContent='No encounters match this search.';for(const id of ['loadouts','encounter','warnings'])$('#gp-'+id).replaceChildren()}
 }
-function run(){
+function run(options={}){
  if(!model)return;const e=encounters.find(e=>e.id===$('#gp-boss').value);if(!e)return;F.configure(e);
  $('#gp-method').disabled=!!e.kind;
  const room=E.raidRoom(e,F.settings().context.raidRoom),methods=new Set(room?.styles.length?room.styles:(e.roles[0]?.routes||[]).map(route=>route.style));
  for(const option of $('#gp-method').options)option.disabled=option.value!=='auto'&&!methods.has(option.value);
  if($('#gp-method').value!=='auto'&&!methods.has($('#gp-method').value))$('#gp-method').value='auto';
+ const refreshed=options.combatOnly===true&&result?.encounter.id===e.id;
+ if(refreshed)renderPlan(P.refreshDps(result,settings()),e);
  const serial=++revision;const computed=F.plan(model,U.PLAYERS,e,settings());
- if(computed?.then){$('#gp-status').textContent='Calculating player loadouts…';computed.then(next=>{if(serial===revision&&next)renderPlan(next,e)}).catch(error=>{if(serial===revision)$('#gp-status').textContent='Gear calculation could not finish: '+error.message});return}
+ if(computed?.then){$('#gp-status').textContent=refreshed?'DPS updated for equipped gear · optimising available equipment…':'Calculating player loadouts…';computed.then(next=>{if(serial===revision&&next)renderPlan(next,e)}).catch(error=>{if(serial===revision)$('#gp-status').textContent='Gear calculation could not finish: '+error.message});return}
  renderPlan(computed,e);
 }
 function renderPlan(next,e){
@@ -47,7 +49,7 @@ function renderPlan(next,e){
  $('#gp-encounter').innerHTML='<div><h3>'+esc(e.name)+'</h3><p>'+esc(e.note)+'</p>'+(e.task==='required'?'<p><strong>Matching Slayer task required.</strong> Task headgear is prioritised automatically.</p>':'')+'</div><a href="'+esc(e.source)+'" target="_blank" rel="noopener">Strategy &amp; gear source ↗</a>';
  const warnings=[];
  if(model.known.size<5)warnings.push('Collection Log available for '+model.known.size+'/5 members. Missing logs are unknown and do not add stock.');
- if(!$('#gp-baseline').checked)warnings.push('Strict log mode: common quest/shop equipment stays unavailable until you confirm stock or enable standard gear.');
+ if(!$('#gp-baseline').checked)warnings.push('Common quest/shop equipment needs confirmed stock or the standard-gear option. Each account’s normal Ava’s accumulator is already assumed for this group.');
  if(e.kind==='unreviewed')warnings.push('This encounter is listed for coverage, but has no verified BIS recommendation.');
  if($('#gp-crafted').checked&&!e.kind)warnings.push('Potential crafts need the additional quests, skills, currency and charges listed on the item. Log quantities estimate acquired gear.');
  warnings.push(...new Set(result.state.warnings));

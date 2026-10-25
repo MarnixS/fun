@@ -24,9 +24,10 @@ equipment data and integration adapter are served under `vendor/osrs-dps/`.
   not estimate whole-fight duration, movement, phase downtime or missed inputs.
   Muspah's prayer shield instead shows its sapphire-bolt switch and an explicit
   unavailable result: ordinary HP DPS does not measure prayer-shield damage.
-- A single panel, scoped to Team defaults or one player, controls potions, offensive prayers,
-  ammo, spells, melee style, Soulreaper stacks, Mark of Darkness and the Kandarin
-  hard diary. Raid-only potions are restricted to their activities.
+- A single panel always edits one selected account. Potions, ammo, spells, melee
+  style, HP, Soulreaper stacks and other buffs are independent per account. Each
+  account has separate melee, ranged and magic prayers. Raid-only potions are
+  restricted to their activities; defence reductions describe the shared monster.
 - Raid scaling uses selected players' saved combat, HP and Mining levels. Party
   size, ToA raid/path levels, current target HP and defence reductions are editable.
 - Defence reductions represent successful attacks already landed, not attempts
@@ -43,7 +44,10 @@ equipment data and integration adapter are served under `vendor/osrs-dps/`.
 ## Defaults and finite supply
 
 Defaults compare feasible weapons, refine their leading DPS candidates and test
-set combinations, including partial crystal sets. Armour choices improve by
+set combinations, including partial crystal, all three Void styles and regular/elite
+mixes, low-HP Dharok, Verac, and Ahrim/Karil with an Amulet of the Damned.
+Set-dependent weapons survive the initial shortlist. Known Void, Barrows,
+Inquisitor and Blood Moon equipment requirements are checked. Armour choices improve by
 coordinate search, retaining relevant set effects rather than pruning them as
 ordinary stat items. This is an iterative search, not an exhaustive global
 optimiser over every possible team and switch combination.
@@ -56,7 +60,8 @@ account while Blood Moon tassets pass down to a weaker account.
 
 Logged owners get first use of their gear and crafting materials, including
 phase switches. Spare copies and unused owned items can then be borrowed in the
-displayed order. The initial owner pass reserves one wearable copy per selected
+displayed order, with Big Dog Aura first for a spare Shadow after its logged owner.
+An unused or ineligible preferred loan is released for the other accounts. The initial owner pass reserves one wearable copy per selected
 owner and protects ingredient stock; personal components cannot be assembled
 for a teammate before their selected owner has first refusal. Loan improvements
 rebuild a complete player’s reservations while retaining all other accounts’
@@ -101,6 +106,10 @@ the unknown log estimate and zero excludes the reward. Optional baseline gear
 is still a separate, visible assumption.
 
 ## Assembler and blessing inference
+
+Every account owns a normal Ava’s accumulator, as explicitly confirmed for this
+group. It requires 50 Ranged, is independent of optional baseline quest/shop
+equipment, and can be removed by setting its personal remaining stock to zero.
 
 A personal Vorkath head supports Ava’s assembler via the coin purchase route:
 one head, 75 mithril arrows, and either an accumulator or 4,999 coins. Only the
@@ -158,9 +167,10 @@ Sources:
 ## Combat panel, Slayer tasks and Seeking arrows (25 October 2026)
 
 Potions, prayers, ammo, task status and advanced player buffs each have one
-control in a shared panel. Its scope selector edits team defaults or an individual
-account. Individual fields explicitly inherit unless overridden. Scope changes
-do not alter settings. Equipment-slot edits remain local to that setup; loaded
+control in a shared panel, with separate melee/ranged/magic prayer selectors. Its
+Account selector always edits one player. Existing saved team defaults and
+overrides are materialised per account; changing or resetting one account cannot
+alter another account’s combat settings. Scope changes do not alter settings. Equipment-slot edits remain local to that setup; loaded
 blowpipe darts and quiver ammo follow the scoped preset. Existing saved player
 overrides persist. The first upgrade migrates the former no-prayer default to
 Best; subsequent explicit None choices persist. All other skill requirements
@@ -199,7 +209,10 @@ Wiki main revision was checked again and still matched the vendored revision;
 no competing formula engine or guessed item stats were substituted.
 
 - Encounter/phase controls sit with boss selection. Combat inputs remain in one
-  scoped editor; individual overrides can be cleared back to team defaults.
+  account editor; its reset applies only to the selected account. Cards show the
+  actual prayer and boosts applied. Combat edits update equipped-gear DPS directly
+  while the worker re-optimises finite equipment. The pending search is labelled,
+  and the quick refresh does not reallocate stock.
 - The equipment picker previews a one-slot change for the same player, equipped
   armour, stats, buffs and exact NPC phase. It shows actual bonuses, normal DPS
   and delta, plus a stock filter. A weapon can change combat style, but cannot
