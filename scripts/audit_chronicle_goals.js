@@ -6,6 +6,8 @@ async function run(){
  assert.equal(d.querySelector('#chronicleMemberPicker legend').textContent,'Players in Chronicle');assert.equal(d.querySelector('#chronicleMemberPicker .v21-member-help').textContent,'');assert(!d.querySelector('#chronicleMemberStatus'));
  assert(!d.querySelector('#historyLocalNav'));assert(!d.querySelector('#chronicleRefresh'));
  assert.equal(d.querySelectorAll('[data-refresh-wom]').length,1);assert.equal(d.querySelectorAll('[data-refresh-temple]').length,1);
+ assert.deepEqual([...d.querySelectorAll('[data-chrono-filter]')].map(b=>b.textContent),['All events','Skill milestones','KC milestones','Item unlocks']);
+ assert.equal(d.querySelector('[data-chrono-filter].active').dataset.chronoFilter,'all','All events remains the initial feed');assert.equal(d.querySelector('[data-chrono-filter=all]').getAttribute('aria-pressed'),'true');
  const first=d.querySelector('.chronicle-event').textContent;
  let select=d.querySelector('#chroniclePagerTop [data-chrono-select]');const last=select.options.length;
  select.value=String(last);select.dispatchEvent(new w.Event('change'));
@@ -19,6 +21,15 @@ async function run(){
  d.querySelector('[data-chrono-size="all"]').click();
  await waitFor(()=>d.querySelector('[data-chrono-size="all"]')?.classList.contains('active')&&d.querySelectorAll('.chronicle-event[data-level]').length>1000,'expanded Chronicle history',30000);
  const kc=[...d.querySelectorAll('.chronicle-event')].filter(e=>/ KC$/.test(e.querySelector('h4').textContent));assert(kc.length>0);assert(kc.every(e=>/WOM accuracy ±\d+h/.test(e.querySelector('.chronicle-date').textContent)),'KC crossings show snapshot timing accuracy');
+ const snapshot=()=>[...d.querySelectorAll('.chronicle-event')].map(el=>({title:el.querySelector('h4').textContent,date:el.querySelector('.chronicle-date').textContent,type:el.dataset.eventType,kind:el.querySelector('h4 [data-metric-kind]')?.dataset.metricKind,player:el.dataset.playerKey}));
+ const allEvents=snapshot(),skillEvents=allEvents.filter(e=>e.type==='level'||['skill','level'].includes(e.kind)),kcEvents=allEvents.filter(e=>e.kind==='boss'||/ KC$/.test(e.title)),itemEvents=allEvents.filter(e=>e.type==='drop');
+ for(const [filter,expected]of [['skills',skillEvents],['kc',kcEvents],['drops',itemEvents]]){
+  d.querySelector('[data-chrono-filter="'+filter+'"]').click();assert(expected.length>0,filter+' contains existing events');assert.deepEqual(snapshot(),expected,filter+' contains only its existing category, in the original order');assert.equal(d.querySelector('[data-chrono-filter="'+filter+'"]').getAttribute('aria-pressed'),'true');
+ }
+ d.querySelector('[data-chrono-filter=skills]').click();d.querySelector('[data-chrono-size="100"]').click();const skillPages=d.querySelector('#chroniclePagerTop [data-chrono-select]');assert(skillPages.options.length>1);skillPages.value='2';skillPages.dispatchEvent(new w.Event('change'));assert.equal(d.querySelector('#chroniclePagerTop [data-chrono-select]').value,'2');
+ d.querySelector('[data-chrono-filter=kc]').click();assert.equal(d.querySelector('#chroniclePagerTop [data-chrono-select]').value,'1','changing categories resets pagination');assert.equal(snapshot()[0].title,kcEvents[0].title);d.querySelector('[data-chrono-size="all"]').click();
+ w.UGV21.saveMemberSelection(new Set(['dikste']));await waitFor(()=>snapshot().every(e=>e.player==='dikste'),'KC tab applies member filtering');assert(snapshot().length>0);assert(snapshot().every(e=>e.kind==='boss'||/ KC$/.test(e.title)));
+ w.UGV21.saveMemberSelection(new Set(w.UGV21.ALL_KEYS));await waitFor(()=>snapshot().length===kcEvents.length,'KC tab restores all selected members');d.querySelector('[data-chrono-filter=all]').click();assert.deepEqual(snapshot(),allEvents,'returning to All events preserves the complete original feed');
  assert(!d.querySelector('#playerGoals'));assert(!d.querySelector('[data-set-goal]'));assert(!d.body.textContent.includes('Private goals on this device'));
  const groups=new Map();
  for(const el of d.querySelectorAll('.chronicle-event[data-level]')){
@@ -59,6 +70,6 @@ async function run(){
  assert(article(700305).classList.contains('broadcast'));assert.match(article(700305).querySelector('.chronicle-item-price').textContent,/500,001 gp each/);assert(!article(700305).dataset.groupUnlock,'expensive repeats do not become group unlocks');
  assert.equal(itemPage.errors.length,0,itemPage.errors.join('; '));
  for(const page of [dom,goals.dom,kcPage.dom,itemPage.dom])page.window.close();
- console.log('Chronicle item filtering and group labels, level order, suggested goals and removal of private goals passed');
+ console.log('Chronicle passed: unchanged default All events, separate skill/KC/item subsets and original ordering, category pagination, member filtering, item/group labels, level order and suggested goals.');
 }
 run().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)});

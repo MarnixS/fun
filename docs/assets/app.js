@@ -377,6 +377,13 @@ function renderGoals(){
  }).join('');
 }
 function chronicleEventLink(e){if(e.type==='drop')return window.UGV21.itemLink(e.itemId,e.historicalLog?`${e.name} · ${fmt(e.recordedCount)} logged`:e.repeatDrop&&e.currentCount>1?`${e.name} · #${fmt(e.currentCount)}`:e.name);const data=snapData(e.key)||{},kind=e.metric in (data.skills||{})?(e.metric==='overall'&&/total level/i.test(e.name)?'level':'skill'):e.metric in (data.bosses||{})?'boss':e.metric in (data.activities||{})?'activity':e.metric in (data.computed||{})?'computed':null;return kind?window.UGV21.metricLink(kind,e.metric,e.name,e.type!=='level'):esc(e.name)}
+function chronicleEventCategory(e){
+ if(e.type==='drop')return'drops';
+ const data=snapData(e.key)||{};
+ if(e.measure==='kills'||e.metric in (data.bosses||{})||/\sKC$/i.test(e.name||''))return'kc';
+ if(e.type==='level'||e.metric==='overall'||e.metric in (data.skills||{}))return'skills';
+ return'other';
+}
 let chronoFilter='all',chronoPage=1,chronoPageSize=100;
 function chroniclePagerHtml(total,totalPages,start,end){
  if(!total)return'';
@@ -400,7 +407,8 @@ async function renderChronicle(){
  const host=$('#chronicle');if(!host)return;
  if(!mastPrices)loadMastPrices().then(()=>{if(mastPrices&&document.body.dataset.page==='chronicle')renderChronicle()});
  const keys=selectedMemberKeys();let ev=chronicleEvents().filter(e=>keys.has(e.key));
- if(chronoFilter==='milestones')ev=ev.filter(e=>e.type==='achievement'||e.type==='level');
+ if(chronoFilter==='skills'||chronoFilter==='kc')ev=ev.filter(e=>chronicleEventCategory(e)===chronoFilter);
+ else if(chronoFilter==='milestones')ev=ev.filter(e=>e.type==='achievement'||e.type==='level');
  else if(chronoFilter==='drops')ev=ev.filter(e=>e.type==='drop');
  else if(chronoFilter==='core')ev=ev.filter(e=>e.core);
  else if(chronoFilter==='side')ev=ev.filter(e=>!e.core);
@@ -424,7 +432,7 @@ async function renderChronicle(){
  const pager=chroniclePagerHtml(total,totalPages,start,end);
  for(const id of ['#chroniclePagerTop','#chroniclePagerBottom']){const el=$(id);if(el)el.innerHTML=pager}
  bindChroniclePager();renderGoals();
- $$('[data-chrono-filter]').forEach(b=>b.classList.toggle('active',b.dataset.chronoFilter===chronoFilter));
+ $$('[data-chrono-filter]').forEach(b=>{const active=b.dataset.chronoFilter===chronoFilter;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});
 }
 function bindChronicle(){$$('[data-chrono-filter]').forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{chronoFilter=b.dataset.chronoFilter;chronoPage=1;renderChronicle()}})}
 let eraWindowDays=7,timelineRange='365';
