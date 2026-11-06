@@ -5,7 +5,7 @@ const levels=[['hiscores.html','Current Stats','H'],['progress.html','Stat Progr
 const records=[['chronicle.html','Chronicle','✦'],['time-records.html','Time Records','★'],['goals.html','Goals','◎','beta'],['kc-comparison.html','KC comparison','KC']];
 const other=[['faq.html','FAQ','?'],['news.html','News','N'],['experimental.html','Experimental','⚗','beta']];
 const experimentalPages=['experimental.html','history.html','group-chemistry.html','nemesis.html','nemesis-beta.html','gear-planner.html'];
-function loadV22(){if(document.querySelector('script[data-v22-ui]'))return;const s=document.createElement('script');s.src='assets/v22-ui.js?v=37';s.dataset.v22Ui='1';s.addEventListener('load',()=>{s.dataset.loaded='true'},{once:true});document.head.append(s)}
+function loadV22(){if(document.querySelector('script[data-v22-ui]'))return;const s=document.createElement('script');s.src='assets/v22-ui.js?v=38';s.dataset.v22Ui='1';s.addEventListener('load',()=>{s.dataset.loaded='true'},{once:true});document.head.append(s)}
 function init(){
  const nav=document.querySelector('.nav-inner');if(!nav){loadV22();return}
  nav.closest('.main-nav')?.setAttribute('aria-label','Primary');

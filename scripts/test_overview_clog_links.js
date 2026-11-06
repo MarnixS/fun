@@ -81,6 +81,9 @@ server.listen(0,'127.0.0.1',async()=>{
   const update=()=>hd.defaultView.dispatchEvent(new hd.defaultView.CustomEvent('ug:data-updated',{detail:{key:hd.defaultView.UGV21.TKEY,document:cached}}));
   update();await waitFor(()=>hd.querySelector('[data-player-key="dikste"] [data-clog-metric="unlocked"] b')?.textContent==='6','cached Collection Log invalidation');
   items.pop();update();await waitFor(()=>hd.querySelector('[data-player-key="dikste"] [data-clog-metric="unlocked"] b')?.textContent==='5','cached Collection Log restoration');
+  const replacement=structuredClone(cached);replacement.players.dikste.data.items.test.push({id:1009,name:'Replacement document unlock',count:1});
+  hd.defaultView.dispatchEvent(new hd.defaultView.CustomEvent('ug:data-updated',{detail:{key:hd.defaultView.UGV21.TKEY,document:replacement}}));
+  await waitFor(()=>hd.querySelector('[data-player-key="dikste"] [data-clog-metric="unlocked"] b')?.textContent==='6','replacement document uses the latest Collection Log after all data listeners');
   unavailableTheme=true;const fallback=await open('index.html');unavailableTheme=false;
   assert.equal(fallback.dom.window.UGExperimentalTheme,undefined,'exercise a failed theme script');
   assert.equal(fallback.dom.window.document.querySelectorAll('#playerCards>.player-card').length,5);

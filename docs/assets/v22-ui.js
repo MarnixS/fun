@@ -2,15 +2,17 @@
 'use strict';
 const U=window.UGV21;if(!U)return;
 const {PLAYERS,$,$$,fmt,loadClog,TKEY}=U;
-let ownedCache=new WeakMap(),renderVersion=0;
+let ownedCache=new WeakMap(),renderVersion=0,renderQueued=false;
 function valid(x){if(!x||typeof x!=='object'||x.error||x.errors)return false;const d=x.data??x;return !!(d&&typeof d==='object'&&d.items&&typeof d.items==='object')}
 function ownedIds(log){if(!valid(log))return null;if(ownedCache.has(log))return ownedCache.get(log);const d=log.data??log,root=d.items||{},ids=new Set();function walk(n){if(Array.isArray(n)){n.forEach(walk);return}if(!n||typeof n!=='object')return;if(Number.isFinite(+n.id)){if(Math.max(0,+(n.count??n.quantity??0))>0)ids.add(+n.id);return}Object.values(n).forEach(walk)}walk(root);ownedCache.set(log,ids);return ids}
 function collectionLink(player,slots,selected){const query=new URLSearchParams({member:player.key,slots,members:[...selected].join(',')});return 'gim.html?'+query+'#collection'}
 async function renderOverviewClog(){if(document.body.dataset.page!=='home')return;const version=++renderVersion;let doc;try{doc=await loadClog()}catch{return}if(version!==renderVersion)return;const selected=U.loadMemberSelection(),owned=new Map(),owners=new Map();for(const p of PLAYERS.filter(p=>selected.has(p.key))){const ids=ownedIds(doc?.players?.[p.key]);owned.set(p.key,ids);if(ids)for(const id of ids){if(!owners.has(id))owners.set(id,new Set());owners.get(id).add(p.key)}}for(const card of $$('.player-card,.side-card')){const p=U.player(card.dataset.playerKey);if(!p)continue;$('.v22-clog-quick',card)?.remove();const ids=owned.get(p.key),box=document.createElement('div');box.className='v22-clog-quick';if(!ids){box.innerHTML='<div><span>Collection Log</span><b>Unknown</b><small>no data available yet</small></div>'}else{let exclusive=0,shared=0;for(const id of ids)(owners.get(id)?.size===1?exclusive++:shared++);box.innerHTML=`<a href="${collectionLink(p,'unlocked',selected)}" data-clog-metric="unlocked" title="Unlocked Collection Log slots" aria-label="${p.name}: ${fmt(ids.size)} unlocked Collection Log slots"><span>Unlocked</span><b>${fmt(ids.size)}</b></a><a href="${collectionLink(p,'exclusive',selected)}" data-clog-metric="exclusive" title="Only this member has these slots among the selected members" aria-label="${p.name}: ${fmt(exclusive)} exclusive Collection Log slots in this selection"><span>Exclusive</span><b>${fmt(exclusive)}</b></a><a href="${collectionLink(p,'shared',selected)}" data-clog-metric="shared" title="Also held by another selected member" aria-label="${p.name}: ${fmt(shared)} Collection Log slots shared with another selected member"><span>Shared</span><b>${fmt(shared)}</b></a>`}card.append(box)}}
 function enhanceDeveloper(){if(document.body.dataset.page!=='developer')return;const link=$('#developerRefreshLink');if(link)link.href='https://github.com/MarnixS/fun/actions/workflows/temple-cache.yml';const clog=$('#collection-log-refresh .btn');if(clog){clog.textContent='Update Collection Log via Temple';clog.title='Open the manual GitHub workflow that retrieves the latest Collection Log data from Temple.'}}
-window.addEventListener('ug:page-rendered',renderOverviewClog);
-// App renders already cover member and data changes; avoid duplicate recounts.
-window.addEventListener('ug:data-updated',event=>{if(event.detail?.key===TKEY)ownedCache=new WeakMap()});
+// Read the shared document after every listener has applied the current update.
+// Page/data events in the same turn share one render rather than racing old data.
+function scheduleOverviewClog(){if(renderQueued)return;renderQueued=true;queueMicrotask(()=>{renderQueued=false;renderOverviewClog()})}
+window.addEventListener('ug:page-rendered',scheduleOverviewClog);
+window.addEventListener('ug:data-updated',event=>{if(event.detail?.key===TKEY)ownedCache=new WeakMap();if([U.WKEY,TKEY].includes(event.detail?.key))scheduleOverviewClog()});
 async function init(){enhanceDeveloper();await renderOverviewClog()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
