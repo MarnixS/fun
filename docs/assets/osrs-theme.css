@@ -300,7 +300,6 @@ html[data-theme="osrs"] body[data-page="home"] #standingTable .rank-chip{backgro
 /* Frame all original models at 90% height, with matching head/foot margins. */
 html[data-theme="osrs"] .osrs-portrait-frame{position:relative;display:inline-block;margin:0;overflow:hidden;flex:0 0 auto;vertical-align:middle;line-height:0;background:#4b4334;image-rendering:pixelated}
 html[data-theme="osrs"] .osrs-portrait-frame:has(>.player-portrait){width:58px;height:78px;box-shadow:inset 1px 1px #211e16,inset -1px -1px #766c52}
-html[data-theme="osrs"] .player-card-wide .osrs-portrait-frame:has(>.player-portrait){width:46px;height:60px}
 html[data-theme="osrs"] .side-card>.osrs-portrait-frame{width:68px;height:88px}
 html[data-theme="osrs"] .goal-head>.osrs-portrait-frame{width:34px;height:44px}
 html[data-theme="osrs"] .era-player-head>.osrs-portrait-frame{width:36px;height:48px}

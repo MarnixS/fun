@@ -20,7 +20,8 @@ const EXPECTED={
  'poep aura':{unlocked:[1005,1006],exclusive:[1006],shared:[1005]},
  'lompste':{unlocked:[1005,1007,27277],exclusive:[1007],shared:[1005,27277]}
 };
-const server=http.createServer((req,res)=>{const file=path.join(process.cwd(),'docs',new URL(req.url,'http://localhost').pathname);try{res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.json')?'application/json':file.endsWith('.css')?'text/css':'text/html');res.end(fs.readFileSync(file))}catch{res.statusCode=404;res.end()}});
+let unavailableTheme=false;
+const server=http.createServer((req,res)=>{if(unavailableTheme&&req.url.includes('/assets/experimental-theme.js')){res.statusCode=503;res.end('Theme temporarily unavailable');return}const file=path.join(process.cwd(),'docs',new URL(req.url,'http://localhost').pathname);try{res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.json')?'application/json':file.endsWith('.css')?'text/css':'text/html');res.end(fs.readFileSync(file))}catch{res.statusCode=404;res.end()}});
 const itemIds=d=>[...d.querySelectorAll('#clogItemTable tbody tr .item-cell>img')].map(x=>+x.src.match(/icon\/(\d+)\.png/)[1]);
 server.listen(0,'127.0.0.1',async()=>{
  process.env.SITE_TEST_URL=`http://127.0.0.1:${server.address().port}/`;
@@ -30,6 +31,9 @@ server.listen(0,'127.0.0.1',async()=>{
  try{
   const home=await open('index.html'),hd=home.dom.window.document;
   await waitFor(()=>hd.querySelectorAll('[data-clog-metric]').length===15,'all five card links');
+  assert.equal(hd.querySelectorAll('#playerCards > .player-card').length,5,'all members share one card grid');
+  assert.equal(hd.querySelector('.player-card-wide,#sideCastGrid'),null,'no separate supporting-member layout');
+  assert.deepEqual([...hd.querySelectorAll('#playerCards > .player-card')].map(card=>card.querySelectorAll('.stat-box').length),[5,5,5,5,5],'same useful metrics without repeated snapshot dates');
   const topSkills=hd.querySelectorAll('#gainCards [data-skill]').length;assert(topSkills>0,'top skill graph links exist');
   hd.querySelector('[data-period-button="7"]').click();await waitFor(()=>hd.querySelector('#gainCards small')?.textContent.includes('1 week'),'weekly gains');
   hd.querySelector('[data-period-button="365"]').click();await waitFor(()=>hd.querySelector('#gainCards small')?.textContent.includes('1 year'),'yearly gains');
@@ -72,7 +76,17 @@ server.listen(0,'127.0.0.1',async()=>{
   assert.equal(d.querySelector('#clogSort').value,'value-asc');
   assert.equal(d.activeElement,d.querySelector('[data-clog-value-sort]'),'keyboard focus survives table redraw');
   for(const result of [home,subset,focused,single,invalid,sorted])assert.equal(result.errors.length,0,result.errors.join('; '));
-  console.log('Top skill links after period changes, all 15 card links, subset context, zero shared slots, editable filters, invalid URLs and reversible GE stack-value sorting passed.');
+  const cached=await hd.defaultView.UGV21.loadClog(),items=cached.players.dikste.data.items.test;
+  items.push({id:1008,name:'New cached unlock',count:1});
+  const update=()=>hd.defaultView.dispatchEvent(new hd.defaultView.CustomEvent('ug:data-updated',{detail:{key:hd.defaultView.UGV21.TKEY,document:cached}}));
+  update();await waitFor(()=>hd.querySelector('[data-player-key="dikste"] [data-clog-metric="unlocked"] b')?.textContent==='6','cached Collection Log invalidation');
+  items.pop();update();await waitFor(()=>hd.querySelector('[data-player-key="dikste"] [data-clog-metric="unlocked"] b')?.textContent==='5','cached Collection Log restoration');
+  unavailableTheme=true;const fallback=await open('index.html');unavailableTheme=false;
+  assert.equal(fallback.dom.window.UGExperimentalTheme,undefined,'exercise a failed theme script');
+  assert.equal(fallback.dom.window.document.querySelectorAll('#playerCards>.player-card').length,5);
+  for(const image of fallback.dom.window.document.querySelectorAll('.player-portrait,.mast-player-avatar'))assert(image.getAttribute('src')?.includes('img/osrs-theme/players/'),'Old School keeps original portraits when the theme script fails');
+  assert(fallback.errors.every(error=>error.includes('Could not load script')),'only the deliberately failed theme request is reported');
+  console.log('Uniform five-member cards, failed-theme portrait fallback, cached unlock invalidation, all 15 card links, period changes, subset context, editable filters and reversible GE sorting passed.');
   doms.forEach(dom=>dom.window.close());server.close();process.exit(0);
  }catch(error){console.error(error);doms.forEach(dom=>dom.window.close());server.close();process.exit(1)}
 });

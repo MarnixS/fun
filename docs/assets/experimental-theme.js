@@ -49,23 +49,39 @@ function framePortrait(image,player){
  frame.style.setProperty('--osrs-portrait-clip',crop.clip||'none');
 }
 let imageObserver=null;
+const playerSelector='.player-portrait,.mast-player-avatar,.side-card>img,.goal-head>img,.era-player-head>img,.osrs-portrait-frame>img';
+const imageSelector=playerSelector+',.group-banner,.mast-crest';
 function swapImage(image,target,player='',banner=false){
  const current=image.getAttribute('src');if(!current)return;
- if(current!==target||image.dataset.modernSrc&&!originalImages.has(image))originalImages.set(image,Object.fromEntries(['src','srcset','alt','width','height'].map(name=>[name,image.getAttribute('data-modern-'+name)??image.getAttribute(name)])));
+ if(current!==target||image.hasAttribute('srcset')||!originalImages.has(image)){
+  const previous=originalImages.get(image),original=Object.fromEntries(['src','srcset','alt','width','height'].map(name=>[name,image.getAttribute('data-modern-'+name)??image.getAttribute(name)]));
+  if(current===target&&previous)original.src=previous.src;
+  originalImages.set(image,original);
+ }
  if(image.dataset.modernSrc){const original=originalImages.get(image);original.src=image.dataset.modernSrc;original.alt=image.getAttribute('data-modern-alt')??image.getAttribute('alt')}
- if(current===target){if(player)image.dataset.osrsPlayer=player;return}
- image.setAttribute('src',target);image.removeAttribute('srcset');if(player)image.dataset.osrsPlayer=player;
- if(banner){const cohesive=image.dataset.osrsHeader==='cohesive';image.alt=cohesive?'United Gimps: Poep Aura, Dikste, Big Dog Aura, Lijpste and Lompste with their pets, the United Gimps logo and ten Old School side characters':'Original in-game appearances of Dikste, Big Dog Aura, Lijpste, Poep Aura and Lompste in an Old School courtyard';image.width=cohesive?2172:2048;image.height=cohesive?724:690}
+ // A stale srcset overrides src in the browser even when src is already correct.
+ if(current!==target)image.setAttribute('src',target);
+ if(image.hasAttribute('srcset'))image.removeAttribute('srcset');
+ if(player)image.dataset.osrsPlayer=player;
+ if(banner){const cohesive=image.dataset.osrsHeader==='cohesive',alt=cohesive?'United Gimps: Poep Aura, Dikste, Big Dog Aura, Lijpste and Lompste with their pets, the United Gimps logo and ten Old School side characters':'Original in-game appearances of Dikste, Big Dog Aura, Lijpste, Poep Aura and Lompste in an Old School courtyard';if(image.alt!==alt)image.alt=alt;image.width=cohesive?2172:2048;image.height=cohesive?724:690}
+}
+function refreshImage(image){
+ if(!enabled||!image.isConnected)return;
+ if(image.matches(playerSelector)){
+  const key=playerKeyFor(image);
+  if(playerFiles[key]){swapImage(image,'img/osrs-theme/players/'+playerFiles[key]+'.png',key);framePortrait(image,key)}
+ }else if(image.matches('.group-banner')){
+  if(image.dataset.osrsHeader==='cohesive')swapImage(image,'img/osrs-theme/united-gimps-cutout-banner.webp','',true);
+  else{swapImage(image,'img/osrs-theme/united-gimps-plain-banner.webp','',true);mountPets(image)}
+ }else if(image.matches('.mast-crest'))swapImage(image,'img/osrs-theme/group-ironman-helm.png');
+}
+function forgetRemovedImages(){
+ for(const image of originalImages.keys())if(!image.isConnected){originalImages.delete(image);const frame=portraitFrames.get(image);if(frame?.isConnected&&!frame.children.length)frame.remove();portraitFrames.delete(image)}
 }
 function refreshImages(){
  if(!enabled||typeof document==='undefined'||!document.body)return;
- document.querySelectorAll('.player-portrait,.mast-player-avatar,.side-card>img,.goal-head>img,.era-player-head>img,.osrs-portrait-frame>img').forEach(image=>{
-  const key=playerKeyFor(image);
-  if(playerFiles[key]){swapImage(image,'img/osrs-theme/players/'+playerFiles[key]+'.png',key);framePortrait(image,key)}
- });
- document.querySelectorAll('.group-banner').forEach(image=>{if(image.dataset.osrsHeader==='cohesive')swapImage(image,'img/osrs-theme/united-gimps-cutout-banner.webp','',true);else{swapImage(image,'img/osrs-theme/united-gimps-plain-banner.webp','',true);mountPets(image)}});
- document.querySelectorAll('.mast-crest').forEach(image=>swapImage(image,'img/osrs-theme/group-ironman-helm.png'));
- for(const image of originalImages.keys())if(!image.isConnected){originalImages.delete(image);const frame=portraitFrames.get(image);if(frame?.isConnected&&!frame.children.length)frame.remove();portraitFrames.delete(image)}
+ document.querySelectorAll(imageSelector).forEach(refreshImage);
+ forgetRemovedImages();
 }
 // Companion sprites sit above the untouched banner; original character pixels are never redrawn.
 function mountPets(banner){
@@ -83,7 +99,18 @@ function mountPets(banner){
 }
 function watchImages(){
  refreshImages();
- if(!imageObserver&&document.body){imageObserver=new MutationObserver(refreshImages);imageObserver.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['src','srcset','alt']})}
+ if(!imageObserver&&document.body){
+  imageObserver=new MutationObserver(records=>{
+   const images=new Set();let removed=false;
+   for(const record of records){
+    if(record.type==='attributes'){if(record.target.matches(imageSelector))images.add(record.target);continue}
+    removed ||= record.removedNodes.length>0;
+    for(const node of record.addedNodes)if(node.nodeType===1){if(node.matches(imageSelector))images.add(node);node.querySelectorAll(imageSelector).forEach(image=>images.add(image))}
+   }
+   images.forEach(refreshImage);if(removed)forgetRemovedImages();
+  });
+  imageObserver.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['src','srcset','alt']});
+ }
 }
 function restoreImages(){
  imageObserver?.disconnect();imageObserver=null;
@@ -139,7 +166,7 @@ function syncControls(){
 function apply(){
  if(enabled){
   root.dataset.theme='osrs';
-  if(!document.querySelector('#osrsThemeStyles')){const link=document.createElement('link');link.id='osrsThemeStyles';link.rel='stylesheet';link.href='assets/osrs-theme.css?v=25';link.setAttribute('blocking','render');document.head.append(link)}
+  if(!document.querySelector('#osrsThemeStyles')){const link=document.createElement('link');link.id='osrsThemeStyles';link.rel='stylesheet';link.href='assets/osrs-theme.css?v=26';link.setAttribute('blocking','render');document.head.append(link)}
   mount();
  }else{restoreImages();delete root.dataset.theme;document.querySelectorAll('[data-osrs-banner],[data-osrs-nav],[data-osrs-pets]').forEach(node=>node.remove())}
  syncControls();window.dispatchEvent(new CustomEvent('ug:theme-changed',{detail:{enabled}}));
@@ -163,5 +190,8 @@ if(!requested)setEnabled(false,false);
 function init(){ready=true;if(enabled)mount();else restoreImages();syncControls();document.querySelectorAll('[data-osrs-theme-switch]').forEach(control=>{if(control.tagName==='BUTTON')control.addEventListener('click',event=>{const choice=event.target.closest('[data-theme-choice]');setEnabled(choice?choice.dataset.themeChoice==='osrs':!(loading?requested:enabled))});else control.addEventListener('change',()=>setEnabled(control.checked))})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 window.addEventListener('ug:navigation-ready',()=>{if(enabled)mount()});
+window.addEventListener('ug:page-rendered',()=>{if(enabled)refreshImages()});
+// Back/forward restoration can resume an old DOM after another tab changed the preference.
+window.addEventListener('pageshow',event=>{if(event.persisted){let value=enabled;try{value=localStorage.getItem(key)!=='off'}catch{storageAvailable=false}setEnabled(value,false)}else if(enabled)refreshImages()});
 window.addEventListener('storage',event=>{if(event.key===key||event.key===null){let value=true;try{value=localStorage.getItem(key)!=='off'}catch{storageAvailable=false}setEnabled(value,false)}});
 })();
